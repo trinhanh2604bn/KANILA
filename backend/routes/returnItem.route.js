@@ -1,0 +1,10 @@
+const express = require("express");
+const router = express.Router();
+const { getAllReturnItems, getReturnItemById, getItemsByReturnId, createReturnItem, updateReturnItem, deleteReturnItem } = require("../controllers/returnItem.controller");
+router.get("/", getAllReturnItems);
+router.get("/return/:returnId", getItemsByReturnId);
+router.get("/:id", getReturnItemById);
+router.post("/", createReturnItem);
+router.put("/:id", updateReturnItem);
+router.delete("/:id", deleteReturnItem);
+module.exports = router;

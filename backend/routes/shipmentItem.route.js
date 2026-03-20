@@ -1,0 +1,10 @@
+const express = require("express");
+const router = express.Router();
+const { getAllShipmentItems, getShipmentItemById, getItemsByShipmentId, createShipmentItem, updateShipmentItem, deleteShipmentItem } = require("../controllers/shipmentItem.controller");
+router.get("/", getAllShipmentItems);
+router.get("/shipment/:shipmentId", getItemsByShipmentId);
+router.get("/:id", getShipmentItemById);
+router.post("/", createShipmentItem);
+router.put("/:id", updateShipmentItem);
+router.delete("/:id", deleteShipmentItem);
+module.exports = router;

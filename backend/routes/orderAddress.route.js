@@ -1,0 +1,10 @@
+const express = require("express");
+const router = express.Router();
+const { getAllOrderAddresses, getOrderAddressById, getAddressesByOrderId, createOrderAddress, updateOrderAddress, deleteOrderAddress } = require("../controllers/orderAddress.controller");
+router.get("/", getAllOrderAddresses);
+router.get("/order/:orderId", getAddressesByOrderId);
+router.get("/:id", getOrderAddressById);
+router.post("/", createOrderAddress);
+router.put("/:id", updateOrderAddress);
+router.delete("/:id", deleteOrderAddress);
+module.exports = router;

@@ -1,0 +1,180 @@
+const Coupon = require("../models/coupon.model");
+const Promotion = require("../models/promotion.model");
+const validateObjectId = require("../utils/validateObjectId");
+
+// GET /api/coupons
+const getAllCoupons = async (req, res) => {
+  try {
+    const coupons = await Coupon.find()
+      .populate("promotionId", "promotionCode promotionName discountType discountValue")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Get all coupons successfully",
+      count: coupons.length,
+      data: coupons,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/coupons/:id
+const getCouponById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid coupon ID" });
+    }
+
+    const coupon = await Coupon.findById(id).populate(
+      "promotionId",
+      "promotionCode promotionName discountType discountValue"
+    );
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Get coupon successfully",
+      data: coupon,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/coupons/code/:couponCode
+const getCouponByCode = async (req, res) => {
+  try {
+    const { couponCode } = req.params;
+
+    const coupon = await Coupon.findOne({ couponCode: couponCode.toUpperCase() }).populate(
+      "promotionId",
+      "promotionCode promotionName discountType discountValue promotionStatus"
+    );
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Get coupon by code successfully",
+      data: coupon,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/coupons
+const createCoupon = async (req, res) => {
+  try {
+    const { promotionId, couponCode } = req.body;
+
+    if (!promotionId || !couponCode) {
+      return res.status(400).json({
+        success: false,
+        message: "promotionId and couponCode are required",
+      });
+    }
+
+    if (!validateObjectId(promotionId)) {
+      return res.status(400).json({ success: false, message: "Invalid promotionId" });
+    }
+
+    const promotionExists = await Promotion.findById(promotionId);
+    if (!promotionExists) {
+      return res.status(404).json({ success: false, message: "Promotion not found" });
+    }
+
+    const coupon = await Coupon.create(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: "Coupon created successfully",
+      data: coupon,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon code already exists",
+      });
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// PUT /api/coupons/:id
+const updateCoupon = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid coupon ID" });
+    }
+
+    const coupon = await Coupon.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Coupon updated successfully",
+      data: coupon,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "Coupon code already exists",
+      });
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE /api/coupons/:id
+const deleteCoupon = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid coupon ID" });
+    }
+
+    const coupon = await Coupon.findByIdAndDelete(id);
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Coupon deleted successfully",
+      data: coupon,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = {
+  getAllCoupons,
+  getCouponById,
+  getCouponByCode,
+  createCoupon,
+  updateCoupon,
+  deleteCoupon,
+};

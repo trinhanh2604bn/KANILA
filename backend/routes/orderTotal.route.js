@@ -1,0 +1,10 @@
+const express = require("express");
+const router = express.Router();
+const { getAllOrderTotals, getOrderTotalById, getTotalsByOrderId, createOrderTotal, updateOrderTotal, deleteOrderTotal } = require("../controllers/orderTotal.controller");
+router.get("/", getAllOrderTotals);
+router.get("/order/:orderId", getTotalsByOrderId);
+router.get("/:id", getOrderTotalById);
+router.post("/", createOrderTotal);
+router.put("/:id", updateOrderTotal);
+router.delete("/:id", deleteOrderTotal);
+module.exports = router;

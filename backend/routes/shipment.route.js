@@ -1,0 +1,10 @@
+const express = require("express");
+const router = express.Router();
+const { getAllShipments, getShipmentById, getShipmentsByOrderId, createShipment, updateShipment, deleteShipment } = require("../controllers/shipment.controller");
+router.get("/", getAllShipments);
+router.get("/order/:orderId", getShipmentsByOrderId);
+router.get("/:id", getShipmentById);
+router.post("/", createShipment);
+router.put("/:id", updateShipment);
+router.delete("/:id", deleteShipment);
+module.exports = router;

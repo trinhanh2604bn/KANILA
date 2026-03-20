@@ -1,0 +1,10 @@
+const express = require("express");
+const router = express.Router();
+const { getAllLoyaltyPointLedger, getLoyaltyPointLedgerById, getLedgerByCustomerId, getLedgerByAccountId, createLoyaltyPointLedger, deleteLoyaltyPointLedger } = require("../controllers/loyaltyPointLedger.controller");
+router.get("/", getAllLoyaltyPointLedger);
+router.get("/customer/:customerId", getLedgerByCustomerId);
+router.get("/account/:loyaltyAccountId", getLedgerByAccountId);
+router.get("/:id", getLoyaltyPointLedgerById);
+router.post("/", createLoyaltyPointLedger);
+router.delete("/:id", deleteLoyaltyPointLedger);
+module.exports = router;
