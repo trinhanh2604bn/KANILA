@@ -18,10 +18,14 @@ const accountSchema = new mongoose.Schema(
     phone: {
       type: String,
       default: "",
+      trim: true,
     },
     username: {
       type: String,
       default: "",
+      trim: true,
+      unique: true,
+      sparse: true, // Allow multiple empty/null values
     },
     passwordHash: {
       type: String,
@@ -55,5 +59,9 @@ const accountSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Create indexes
+accountSchema.index({ email: 1 }, { unique: true });
+accountSchema.index({ username: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Account", accountSchema);

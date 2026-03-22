@@ -1,0 +1,17 @@
+<div class="stat-card card">
+  <div class="stat-icon-container" [attr.data-color]="stat().color">
+    <span class="material-symbols-rounded">{{ stat().icon }}</span>
+  </div>
+  <div class="stat-content">
+    <span class="stat-label">{{ stat().label }}</span>
+    <span class="stat-value">{{ stat().value }}</span>
+    @if (stat().trend) {
+      <span class="stat-trend" [class.up]="stat().trendUp" [class.down]="!stat().trendUp">
+        <span class="material-symbols-rounded trend-icon">
+          {{ stat().trendUp ? 'trending_up' : 'trending_down' }}
+        </span>
+        <span class="trend-text">{{ stat().trend }}</span>
+      </span>
+    }
+  </div>
+</div>

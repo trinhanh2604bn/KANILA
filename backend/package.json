@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "seed:admin": "node seed-admin.js",
+    "cleanup:customers": "node cleanup-invalid-customers.js",
+    "seed:categories:makeup": "node scripts/seed-category-makeup-tree.js",
+    "seed:brands": "node scripts/seed-brands.js"
   },
   "keywords": [],
   "author": "",

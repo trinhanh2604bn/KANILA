@@ -1,0 +1,50 @@
+<div class="permission-matrix grid-2-col gap-6">
+  @for (group of groups; track group.id) {
+    <div class="card p-0 shadow-sm border permission-card" [class.has-selection]="group.isAllSelected || group.isIndeterminate">
+      <!-- Group Header with Select All -->
+      <div class="card-header border-b px-5 py-4 flex justify-between items-center transition-colors hover-bg-surface-hover cursor-pointer" (click)="toggleSelectAll(group)">
+        <div>
+           <div class="flex items-center gap-2">
+             <h3 class="font-bold text-md text-dark m-0">{{ group.title }}</h3>
+             @if (group.isAllSelected) {
+               <span class="badge badge-primary text-xs ml-2">Full Access</span>
+             } @else if (group.isIndeterminate) {
+               <span class="badge badge-warning text-xs ml-2">Partial</span>
+             }
+           </div>
+           <p class="text-xs text-muted mt-1 m-0">{{ group.description }}</p>
+        </div>
+        
+        <div class="checkbox-wrapper" (click)="$event.stopPropagation()">
+           <input 
+             type="checkbox" 
+             class="custom-checkbox select-all-cbx" 
+             [checked]="group.isAllSelected" 
+             [indeterminate]="group.isIndeterminate"
+             (change)="toggleSelectAll(group)" 
+           />
+        </div>
+      </div>
+
+      <!-- Action Items Rows -->
+      <div class="card-body p-0">
+        <ul class="action-list m-0 p-0 list-none">
+          @for (action of group.actions; track action.id) {
+            <li class="action-row flex justify-between items-center px-5 py-3 border-b border-light transition-colors hover-bg-muted" [class.active-row]="action.selected" (click)="toggleAction(group, action)">
+               <span class="font-medium text-dark text-sm">{{ action.label }}</span>
+               
+               <div class="checkbox-wrapper" (click)="$event.stopPropagation()">
+                 <input 
+                   type="checkbox" 
+                   class="custom-checkbox action-cbx" 
+                   [checked]="action.selected"
+                   (change)="toggleAction(group, action)"
+                 />
+               </div>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
+  }
+</div>

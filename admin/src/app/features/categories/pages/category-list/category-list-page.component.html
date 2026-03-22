@@ -1,0 +1,99 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Categories</h1>
+      <p class="page-subtitle">Organize your products into a logical hierarchy — expand a parent to see its subcategories</p>
+    </div>
+    <a routerLink="create" class="btn btn-primary">
+      <span class="material-symbols-rounded">add</span>
+      Add Category
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading categories...</p>
+    </div>
+  } @else {
+    <div class="category-tree card">
+      <div class="tree-header">
+        <div class="col-name">Category Name</div>
+        <div class="col-code">Code</div>
+        <div class="col-order">Order</div>
+        <div class="col-status">Status</div>
+        <div class="col-actions">Actions</div>
+      </div>
+
+      <div class="tree-body">
+        @for (cat of displayList(); track cat.id) {
+          <div
+            class="tree-row"
+            [class.tree-row--child]="(cat.level ?? 0) > 0"
+            [class.tree-row--parent]="hasChildren(cat.id)"
+          >
+            <div
+              class="col-name"
+              [class.col-name--expandable]="hasChildren(cat.id)"
+              [style.padding-left.px]="8 + (cat.level ?? 0) * 28"
+              (click)="onParentRowActivate(cat, $event)"
+              (keydown)="onNameKeydown(cat, $event)"
+              [attr.tabindex]="hasChildren(cat.id) ? 0 : null"
+              [attr.role]="hasChildren(cat.id) ? 'button' : null"
+              [attr.aria-expanded]="hasChildren(cat.id) ? !!cat.expanded : null"
+            >
+              @if (hasChildren(cat.id)) {
+                <button
+                  type="button"
+                  class="expand-btn"
+                  (click)="toggleExpand(cat.id, $event)"
+                  [attr.aria-label]="cat.expanded ? 'Collapse subcategories' : 'Expand subcategories'"
+                >
+                  <span class="material-symbols-rounded expand-icon">
+                    {{ cat.expanded ? 'expand_more' : 'chevron_right' }}
+                  </span>
+                </button>
+              } @else {
+                <span class="spacer" aria-hidden="true"></span>
+              }
+              <span class="material-symbols-rounded cat-icon" [class.cat-icon--leaf]="!hasChildren(cat.id)">
+                {{ hasChildren(cat.id) ? 'folder_open' : 'folder' }}
+              </span>
+              <span class="cat-name">{{ cat.categoryName }}</span>
+              @if (hasChildren(cat.id)) {
+                <span class="child-count">{{ childCount(cat.id) }}</span>
+              }
+            </div>
+
+            <div class="col-code">
+              <span class="code-badge">{{ cat.categoryCode }}</span>
+            </div>
+
+            <div class="col-order">{{ cat.displayOrder }}</div>
+
+            <div class="col-status">
+              <span class="badge" [class.badge-success]="cat.isActive" [class.badge-muted]="!cat.isActive">
+                {{ cat.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+
+            <div class="col-actions" (click)="$event.stopPropagation()">
+              <a class="action-btn" [routerLink]="['create']" [queryParams]="{ parent: cat.id }" title="Add sub-category">
+                <span class="material-symbols-rounded">add_circle</span>
+              </a>
+              <a class="action-btn" [routerLink]="[cat.id, 'edit']" title="Edit">
+                <span class="material-symbols-rounded">edit</span>
+              </a>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-tree">
+            <span class="material-symbols-rounded">category</span>
+            <p>No categories defined. Create one to start organizing products.</p>
+            <a routerLink="create" class="btn btn-soft">Create Category</a>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,126 @@
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 320px;
+  max-width: 400px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.toast-success::before { background-color: var(--success-color, #10b981); }
+.toast-success .toast-icon { color: var(--success-color, #10b981); }
+
+.toast-error::before { background-color: var(--danger-color, #ef4444); }
+.toast-error .toast-icon { color: var(--danger-color, #ef4444); }
+
+.toast-info::before { background-color: var(--primary-color, #d18a91); }
+.toast-info .toast-icon { color: var(--primary-color, #d18a91); }
+
+.toast-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toast-icon .material-symbols-rounded {
+  font-size: 24px;
+}
+
+.toast-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toast-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark, #1f2937);
+  line-height: 1.4;
+}
+
+.toast-message {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  padding: 4px;
+  margin: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.toast-close:hover {
+  background: var(--surface-hover, #f3f4f6);
+  color: var(--text-dark, #1f2937);
+}
+.toast-close .material-symbols-rounded {
+  font-size: 18px;
+}
+
+.toast-undo-btn {
+  background: var(--surface-hover, #f3f4f6);
+  color: var(--text-dark, #1f2937);
+  border: 1px solid var(--border-strong, #e5e7eb);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  align-self: center;
+}
+.toast-undo-btn:hover {
+  background: var(--border-strong, #e5e7eb);
+}

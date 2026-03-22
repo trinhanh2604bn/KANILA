@@ -1,0 +1,103 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Returns</h1>
+      <p class="page-subtitle">Review, approve, and process customer returns</p>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="filter-group">
+      <div class="search-input-wrap">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input
+          type="text"
+          class="form-input search-input"
+          placeholder="Search return #, order, customer…"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </div>
+
+      <select class="form-input" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+        <option value="all">All Statuses</option>
+        <option value="requested">Requested (Pending)</option>
+        <option value="approved">Approved</option>
+        <option value="received">Processing</option>
+        <option value="completed">Completed</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card p-0 table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Return ID</th>
+          <th>Order</th>
+          <th>Customer</th>
+          <th>Reason</th>
+          <th>Date Requested</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-circle" style="width: 60px; height: 24px; border-radius: 4px"></div></td>
+              <td><div class="skeleton skeleton-circle" style="width: 32px; height: 32px"></div></td>
+            </tr>
+          }
+        } @else {
+          @for (ret of filteredReturns; track ret.id) {
+            <tr class="clickable-row" [routerLink]="[ret.id]" [class.row-attention]="ret.status === 'requested'">
+              <td class="td-primary">
+                {{ displayReturnRef(ret) }}
+                @if (ret.status === 'requested') {
+                  <span class="pulse-indicator"></span>
+                }
+              </td>
+              <td class="td-secondary">{{ ret.orderNumber }}</td>
+              <td>{{ ret.customerName }}</td>
+              <td class="td-secondary">{{ formatReasonDisplay(ret.reason) }}</td>
+              <td class="td-secondary">{{ ret.requestedAt | date: 'MMM d, y' }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-warning]="ret.status === 'requested'"
+                  [class.badge-info]="ret.status === 'approved' || ret.status === 'received'"
+                  [class.badge-success]="ret.status === 'completed'"
+                  [class.badge-danger]="ret.status === 'rejected'"
+                >
+                  {{ statusLabel(ret.status) }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button type="button" class="btn-icon" tabindex="-1">
+                  <span class="material-symbols-rounded">chevron_right</span>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">
+                <div class="empty-state py-8">
+                  <span class="material-symbols-rounded empty-icon">assignment_return</span>
+                  <p class="empty-title">No return requests found</p>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

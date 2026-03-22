@@ -1,0 +1,11 @@
+<div class="presence-row">
+  <div class="avatar-stack">
+    @for (user of collab.activeUsers(); track user.id; let i = $index) {
+      <div class="avatar-dot" [style.background]="user.color" [style.z-index]="10 - i" [title]="user.name + ' — ' + (user.currentPage || 'Idle')">
+        {{ collab.getInitials(user.name) }}
+        <span class="online-dot"></span>
+      </div>
+    }
+  </div>
+  <span class="presence-label">{{ collab.activeUsers().length }} online</span>
+</div>

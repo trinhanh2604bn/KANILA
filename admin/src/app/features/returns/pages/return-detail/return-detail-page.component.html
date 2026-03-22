@@ -1,0 +1,295 @@
+<section class="return-detail">
+  <div class="return-detail__inner">
+    <a routerLink="/returns" class="return-back">
+      <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
+      Back to returns
+    </a>
+
+    @if (loading()) {
+      <div class="return-skeleton" aria-busy="true">
+        <div class="sk sk-title"></div>
+        <div class="sk sk-line"></div>
+        <div class="sk sk-card"></div>
+        <div class="sk sk-card sk-card--short"></div>
+      </div>
+    } @else if (request(); as r) {
+      <!-- Hero -->
+      <header class="return-hero">
+        <div class="return-hero__main">
+          <p class="return-hero__eyebrow">Return request</p>
+          <div class="return-hero__title-row">
+            <h1 class="return-hero__title">{{ displayReturnRef(r) }}</h1>
+            <span
+              class="return-status-pill"
+              [class.return-status-pill--warning]="r.status === 'requested'"
+              [class.return-status-pill--info]="r.status === 'approved' || r.status === 'received'"
+              [class.return-status-pill--success]="r.status === 'completed'"
+              [class.return-status-pill--danger]="r.status === 'rejected'"
+            >
+              {{ statusLabel(r.status) }}
+            </span>
+          </div>
+          <p class="return-hero__meta">
+            Requested
+            @if (r.requestedAt) {
+              <time [attr.datetime]="r.requestedAt">{{ r.requestedAt | date: 'MMM d, y · h:mm a' }}</time>
+            } @else {
+              <span class="return-hero__dash">—</span>
+            }
+          </p>
+        </div>
+        @if (actionSuccess()) {
+          <div class="return-toast return-toast--ok fade-in">
+            <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
+            {{ actionSuccess() }}
+          </div>
+        }
+      </header>
+
+      <!-- Stepper -->
+      <div class="return-stepper card-elevated" [class.return-stepper--rejected]="r.status === 'rejected'">
+        <div class="return-stepper__track">
+          @for (step of workflowSteps; track step; let i = $index; let last = $last) {
+            <div
+              class="return-step"
+              [class.return-step--done]="showStepCheck(step, r.status)"
+              [class.return-step--active]="r.status === step && !showStepCheck(step, r.status)"
+              [class.return-step--rejected]="r.status === 'rejected' && step === 'requested'"
+            >
+              <div class="return-step__node">
+                @if (r.status === 'rejected' && step === 'requested') {
+                  <span class="material-symbols-rounded return-step__x" aria-hidden="true">close</span>
+                } @else if (showStepCheck(step, r.status)) {
+                  <span class="material-symbols-rounded return-step__check" aria-hidden="true">check</span>
+                } @else if (r.status === step) {
+                  <span class="return-step__dot"></span>
+                } @else {
+                  <span class="return-step__ring"></span>
+                }
+              </div>
+              <span class="return-step__label">{{ stepLabel(step) }}</span>
+              @if (r.status === step && r.updatedAt) {
+                <time class="return-step__time" [attr.datetime]="r.updatedAt">{{ r.updatedAt | date: 'MMM d' }}</time>
+              }
+            </div>
+            @if (!last) {
+              <div
+                class="return-stepper__connector"
+                [class.return-stepper__connector--on]="isConnectorFilled(i, r.status)"
+              ></div>
+            }
+          }
+        </div>
+      </div>
+
+      @if (actionError()) {
+        <div class="return-alert return-alert--err">
+          <span class="material-symbols-rounded" aria-hidden="true">error</span>
+          {{ actionError() }}
+        </div>
+      }
+
+      <div class="return-layout">
+        <div class="return-layout__main">
+          @if (r.status === 'requested') {
+            <div class="decision-panel card-elevated">
+              <div class="decision-panel__head">
+                <span class="decision-panel__icon material-symbols-rounded" aria-hidden="true">gavel</span>
+                <div>
+                  <h2 class="decision-panel__title">Decision required</h2>
+                  <p class="decision-panel__lead">
+                    Review the reason and any evidence below. Approving tells the customer they may ship items back.
+                  </p>
+                </div>
+              </div>
+              <div class="decision-panel__body">
+                @if (!activeActionContext()) {
+                  <div class="decision-actions">
+                    <button type="button" class="btn-approve" (click)="startAction('approve')">
+                      <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
+                      Approve return
+                    </button>
+                    <button type="button" class="btn-reject" (click)="startAction('reject')">
+                      <span class="material-symbols-rounded" aria-hidden="true">cancel</span>
+                      Reject return
+                    </button>
+                  </div>
+                } @else if (activeActionContext() === 'approve') {
+                  <div class="confirm-panel confirm-panel--approve">
+                    <h3 class="confirm-panel__title">
+                      <span class="material-symbols-rounded" aria-hidden="true">verified</span>
+                      Confirm approval
+                    </h3>
+                    <p class="confirm-panel__text">
+                      The customer will be able to send items back. Continue?
+                    </p>
+                    <div class="confirm-panel__actions">
+                      <button type="button" class="btn-muted" (click)="cancelAction()" [disabled]="isProcessing()">
+                        Cancel
+                      </button>
+                      <button type="button" class="btn-approve" (click)="confirmAction()" [disabled]="isProcessing()">
+                        @if (isProcessing()) {
+                          <span class="inline-spinner"></span>
+                          Please wait
+                        } @else {
+                          Yes, approve
+                        }
+                      </button>
+                    </div>
+                  </div>
+                } @else if (activeActionContext() === 'reject') {
+                  <div class="confirm-panel confirm-panel--reject">
+                    <h3 class="confirm-panel__title">
+                      <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+                      Confirm rejection
+                    </h3>
+                    <p class="confirm-panel__text">
+                      This decline is final for this request. The customer should be notified outside this flow if needed.
+                    </p>
+                    <div class="confirm-panel__actions">
+                      <button type="button" class="btn-muted" (click)="cancelAction()" [disabled]="isProcessing()">
+                        Go back
+                      </button>
+                      <button type="button" class="btn-reject-solid" (click)="confirmAction()" [disabled]="isProcessing()">
+                        @if (isProcessing()) {
+                          <span class="inline-spinner"></span>
+                          Please wait
+                        } @else {
+                          Yes, reject
+                        }
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else if (r.status === 'approved') {
+            <div class="next-action card-elevated">
+              <div class="next-action__text">
+                <h3 class="next-action__title">Items received?</h3>
+                <p class="next-action__desc">When warehouse scans the return, mark it as processing.</p>
+              </div>
+              <button type="button" class="btn-primary-soft" [disabled]="isProcessing()" (click)="fastForward('received')">
+                @if (isProcessing()) {
+                  <span class="inline-spinner"></span>
+                } @else {
+                  Mark processing
+                }
+              </button>
+            </div>
+          } @else if (r.status === 'received') {
+            <div class="next-action card-elevated">
+              <div class="next-action__text">
+                <h3 class="next-action__title">Finalize return</h3>
+                <p class="next-action__desc">Complete once restock and refund are confirmed.</p>
+              </div>
+              <button type="button" class="btn-primary-soft" [disabled]="isProcessing()" (click)="fastForward('completed')">
+                @if (isProcessing()) {
+                  <span class="inline-spinner"></span>
+                } @else {
+                  Complete return
+                }
+              </button>
+            </div>
+          }
+
+          <section class="reason-block card-elevated">
+            <h2 class="section-heading">Reason & notes</h2>
+            <blockquote class="reason-quote" [class.reason-quote--empty]="formatReasonDisplay(r.reason) === '—'">
+              {{ formatReasonDisplay(r.reason) === '—' ? 'No reason provided' : formatReasonDisplay(r.reason) }}
+            </blockquote>
+            <p class="reason-notes">{{ r.reasonText?.trim() || 'No additional notes from the customer.' }}</p>
+
+            @if (r.images && r.images.length > 0) {
+              <h3 class="subsection-heading">Photos</h3>
+              <div class="media-grid">
+                @for (img of r.images; track img) {
+                  <div class="media-item">
+                    <img [src]="img" alt="Return evidence" loading="lazy" />
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-inline">
+                <span class="material-symbols-rounded" aria-hidden="true">hide_image</span>
+                <span>No photos attached</span>
+              </div>
+            }
+          </section>
+
+          <section class="items-block card-elevated">
+            <h2 class="section-heading">Returned items</h2>
+            @if (r.items.length === 0) {
+              <div class="empty-block">
+                <span class="material-symbols-rounded empty-block__icon" aria-hidden="true">inventory_2</span>
+                <p class="empty-block__title">No line items</p>
+                <p class="empty-block__text">Items aren’t loaded for this return yet. They may be added when the API returns return lines.</p>
+              </div>
+            } @else {
+              <div class="table-wrap">
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>SKU</th>
+                      <th class="th-num">Qty</th>
+                      <th class="th-num">Unit</th>
+                      <th class="th-num">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of r.items; track item.id) {
+                      <tr>
+                        <td class="td-strong">{{ item.productName }}</td>
+                        <td class="td-mono">{{ item.sku }}</td>
+                        <td class="td-num">{{ item.quantity }}</td>
+                        <td class="td-num">{{ formatPrice(item.price) }}</td>
+                        <td class="td-num td-strong">{{ formatPrice(item.price * item.quantity) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="items-total">
+                <span class="items-total__label">Total return value</span>
+                <span class="items-total__value">{{ formatPrice(returnTotal) }}</span>
+              </div>
+            }
+          </section>
+        </div>
+
+        <aside class="return-layout__aside">
+          <div class="customer-card card-elevated">
+            <h2 class="customer-card__title">Customer</h2>
+            <div class="customer-card__profile">
+              <div class="customer-avatar" aria-hidden="true">{{ customerInitial(r.customerName) }}</div>
+              <div class="customer-card__info">
+                <p class="customer-name">{{ r.customerName !== '—' ? r.customerName : 'Not linked' }}</p>
+                @if (r.customerEmail) {
+                  <a class="customer-email" [href]="'mailto:' + r.customerEmail">{{ r.customerEmail }}</a>
+                } @else {
+                  <p class="customer-email customer-email--muted">No email on file</p>
+                }
+              </div>
+            </div>
+            <div class="customer-divider"></div>
+            <div class="order-link-block">
+              <span class="order-link-block__label">Original order</span>
+              <a [routerLink]="['/orders', r.orderId]" class="order-link-block__value">
+                {{ r.orderNumber }}
+                <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    } @else {
+      <div class="not-found card-elevated">
+        <span class="material-symbols-rounded not-found__icon" aria-hidden="true">search_off</span>
+        <h2 class="not-found__title">Return not found</h2>
+        <p class="not-found__text">It may have been removed or the link is incorrect.</p>
+        <a routerLink="/returns" class="btn-primary-soft">Back to list</a>
+      </div>
+    }
+  </div>
+</section>

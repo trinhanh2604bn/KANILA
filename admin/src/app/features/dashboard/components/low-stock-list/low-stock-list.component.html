@@ -1,0 +1,35 @@
+<div class="stock-card card">
+  <div class="stock-header">
+    <div class="stock-title-wrap">
+      <span class="material-symbols-rounded stock-title-icon">warning</span>
+      <h3 class="stock-title">Low Stock Alerts</h3>
+    </div>
+    @if (items().length > 0) {
+      <span class="badge badge-warning">{{ items().length }} items</span>
+    }
+  </div>
+  @if (items().length === 0) {
+    <div class="empty-state">
+      <span class="material-symbols-rounded empty-icon">check_circle</span>
+      <p class="empty-title">Everything looks good</p>
+      <p class="empty-hint">No products are running low on stock right now</p>
+    </div>
+  } @else {
+    <div class="stock-items">
+      @for (item of items(); track item.sku) {
+        <div class="stock-item" [class.critical]="item.stock <= 5">
+          <div class="stock-indicator" [class.critical]="item.stock <= 5"></div>
+          <div class="stock-info">
+            <span class="stock-name">{{ item.name }}</span>
+            <span class="stock-sku">SKU: {{ item.sku }}</span>
+          </div>
+          <div class="stock-qty">
+            <span class="badge" [class]="item.stock <= 5 ? 'badge-danger' : 'badge-warning'">
+              {{ item.stock }} left
+            </span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

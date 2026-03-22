@@ -1,0 +1,88 @@
+<!-- Floating Trigger Button -->
+<button class="ai-fab" (click)="toggle()" [class.is-open]="isOpen()" title="AI Assistant">
+  @if (isOpen()) {
+    <span class="material-symbols-rounded">close</span>
+  } @else {
+    <span class="material-symbols-rounded">auto_awesome</span>
+  }
+</button>
+
+<!-- Chat Panel -->
+@if (isOpen()) {
+  <div class="ai-panel card shadow-xl border fade-in">
+    <!-- Panel Header -->
+    <div class="panel-header">
+      <div class="header-info">
+        <div class="ai-avatar"><span class="material-symbols-rounded">auto_awesome</span></div>
+        <div>
+          <h3 class="ai-title">KANILA AI</h3>
+          <span class="ai-status">Ready to help</span>
+        </div>
+      </div>
+      <button class="btn-minimize" (click)="toggle()"><span class="material-symbols-rounded">remove</span></button>
+    </div>
+
+    <!-- Chat Body -->
+    <div class="panel-body" #chatBody>
+      @if (messages().length === 0) {
+        <!-- Welcome State with Suggestions -->
+        <div class="welcome-state">
+          <div class="welcome-icon"><span class="material-symbols-rounded">psychology</span></div>
+          <h4 class="welcome-title">How can I help?</h4>
+          <p class="welcome-desc">Ask me about your store performance, inventory, or get quick insights.</p>
+          
+          <div class="suggestions">
+            @for (prompt of suggestedPrompts; track prompt) {
+              <button class="suggestion-chip" (click)="useSuggestion(prompt)">
+                <span class="material-symbols-rounded chip-icon">arrow_forward</span>
+                {{ prompt }}
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
+        <!-- Message Thread -->
+        @for (msg of messages(); track $index) {
+          <div class="chat-msg" [class.user-msg]="msg.role === 'user'" [class.ai-msg]="msg.role === 'ai'">
+            @if (msg.role === 'ai') {
+              <div class="msg-avatar"><span class="material-symbols-rounded">auto_awesome</span></div>
+            }
+            <div class="msg-bubble">
+              <div class="msg-content" [innerHTML]="formatContent(msg.content)"></div>
+              @if (msg.actions?.length) {
+                <div class="msg-actions">
+                  @for (action of msg.actions; track action.label) {
+                    <button class="action-link" (click)="navigateAction(action.route)">
+                      {{ action.label }} <span class="material-symbols-rounded">arrow_forward</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+        
+        @if (isTyping()) {
+          <div class="chat-msg ai-msg">
+            <div class="msg-avatar"><span class="material-symbols-rounded">auto_awesome</span></div>
+            <div class="msg-bubble typing-indicator">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Input Bar -->
+    <div class="panel-footer">
+      <div class="input-row">
+        <input type="text" class="chat-input" placeholder="Ask anything..." 
+          [ngModel]="query()" (ngModelChange)="query.set($event)"
+          (keydown.enter)="sendMessage()" autocomplete="off" />
+        <button class="send-btn" (click)="sendMessage()" [disabled]="!query().trim()">
+          <span class="material-symbols-rounded">send</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}

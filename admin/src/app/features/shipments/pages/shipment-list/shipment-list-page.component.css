@@ -1,0 +1,41 @@
+:host { display: block; }
+.page { animation: pageIn 0.3s ease; }
+
+.page-header { margin-bottom: var(--space-8); }
+
+.filter-bar { padding: var(--space-4); margin-bottom: var(--space-6); }
+.filter-group { display: flex; gap: var(--space-4); align-items: center; justify-content: space-between; }
+.filter-left { display: flex; align-items: center; gap: var(--space-2); }
+.filter-label-icon { color: var(--text-muted); font-size: 20px; }
+.filter-count { font-size: var(--font-sm); color: var(--text-muted); font-weight: 500; }
+.filter-right { display: flex; gap: var(--space-3); align-items: center; }
+.filter-select { width: auto; min-width: 140px; }
+
+.btn-reset { font-size: var(--font-sm); color: var(--text-muted); }
+
+.clickable-row { cursor: pointer; transition: background 0.15s; }
+.clickable-row:hover { background: var(--muted-surface); }
+
+/* Delayed — soft warning, not aggressive */
+.delayed-row { background: var(--warning-soft); }
+.delayed-row:hover { background: #fff3de; }
+.delayed-tag { font-size: var(--font-xs); color: var(--warning); font-weight: 600; margin-left: var(--space-2); }
+
+/* Failed — soft danger */
+.failed-row { background: var(--danger-soft); }
+.failed-row:hover { background: #fce8e8; }
+
+.shipment-number { font-family: monospace; font-weight: 600; color: var(--primary); }
+.order-ref { font-family: monospace; font-size: var(--font-sm); color: var(--text-secondary); max-width: 140px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tracking-number { font-family: monospace; font-size: var(--font-sm); color: var(--text-secondary); max-width: 130px; display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-secondary { color: var(--text-secondary); font-size: var(--font-sm); }
+.text-muted { color: var(--text-muted); }
+
+.btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: none; background: transparent; color: var(--text-muted); border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-fast); }
+.btn-icon:hover { background: var(--muted-surface); color: var(--text-primary); }
+
+.empty-icon { font-size: 48px; color: var(--text-muted); margin-bottom: var(--space-4); }
+.empty-title { font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-2); }
+.empty-hint { font-size: var(--font-sm); color: var(--text-muted); }
+.mt-4 { margin-top: var(--space-4); }
+.py-8 { padding: var(--space-16) var(--space-6); }

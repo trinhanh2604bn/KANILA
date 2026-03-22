@@ -1,0 +1,120 @@
+<section class="page role-page fade-in">
+  <div class="page-header flex items-center justify-between mb-8">
+     <div class="header-left">
+       <button class="btn btn-ghost btn-back p-0 mb-2 text-muted hover-text-dark transition-colors flex items-center" routerLink="/roles">
+         <span class="material-symbols-rounded text-sm mr-1">arrow_back</span> Back to Roles
+       </button>
+       <h1 class="page-title text-3xl font-bold tracking-tight m-0">
+         {{ isEdit() ? 'Edit Role' : 'Create Role' }}
+       </h1>
+       <p class="page-subtitle text-muted mt-1 m-0">Configure advanced module permissions securely.</p>
+     </div>
+     
+     <div class="header-right flex items-center gap-3">
+        <button class="btn btn-secondary border shadow-xs bg-surface hover-bg-surface-hover transition-colors rounded-pill px-5" routerLink="/roles">Cancel</button>
+        <button class="btn btn-primary shadow-sm rounded-pill px-6 flex items-center gap-2" (click)="onSubmit()" [disabled]="saving()">
+           @if(saving()) { <div class="spinner"></div> Saving... } @else { <span class="material-symbols-rounded text-sm">save</span> {{ isEdit() ? 'Save Changes' : 'Create Role' }} }
+        </button>
+     </div>
+  </div>
+
+  @if(successMessage()) {
+     <div class="toast-success card mb-6 border border-success-subtle bg-success-subtle p-4 flex items-center gap-3 fade-in">
+        <span class="material-symbols-rounded text-success">check_circle</span>
+        <span class="font-medium" style="color: #15803d;">{{ successMessage() }}</span>
+     </div>
+  }
+
+  <div class="form-container">
+     <div class="card p-6 shadow-sm border mb-8">
+        <h2 class="text-lg font-bold text-dark m-0 mb-4 border-b border-light pb-4">Role Settings</h2>
+        <div class="form-grid" [formGroup]="form">
+           <div class="form-group mb-5">
+              <label class="font-medium text-dark text-sm mb-2 block">Role Name</label>
+              <input type="text" formControlName="name" class="form-input form-input-lg w-full" placeholder="e.g. Content Manager" />
+              @if (form.controls.name.touched && form.controls.name.invalid) {
+                <span class="text-danger text-xs mt-1 block">Role name requires at least 2 characters.</span>
+              }
+           </div>
+           
+           <div class="form-group mb-5">
+              <label class="font-medium text-dark text-sm mb-2 block">Internal Description</label>
+              <textarea formControlName="description" class="form-input w-full" rows="3" placeholder="Briefly describe the responsibilities..."></textarea>
+           </div>
+           
+           <!-- Role Summary UX -->
+           <div class="role-impact-hint bg-muted-surface p-5 rounded-lg border border-light flex gap-4 mt-2">
+              <span class="material-symbols-rounded text-primary text-2xl mt-1">admin_panel_settings</span>
+              <div>
+                 <h4 class="font-bold text-sm text-dark m-0 mb-1">Standard Role Impacts</h4>
+                 <p class="text-sm text-muted m-0" style="line-height: 1.6;">
+                   <strong class="text-dark">Admin:</strong> Full system mutation access across operations and user accounts.<br/>
+                   <strong class="text-dark">Staff:</strong> Focus heavily on Catalogs, Inventory, and Order fulfillment.<br/>
+                   <strong class="text-dark">Viewer:</strong> Read-only traversal explicitly removing write and deletion capabilities.
+                 </p>
+              </div>
+           </div>
+        </div>
+     </div>
+
+     <div class="permissions-section">
+        <div class="flex items-center justify-between mb-5">
+           <h2 class="text-xl font-bold text-dark m-0">Permission Matrix</h2>
+           <div class="flex gap-2">
+             <button class="btn btn-ghost text-sm font-medium border" (click)="deselectAll()">Clear</button>
+             <button class="btn btn-soft text-primary text-sm font-medium border-primary-light" (click)="selectAll()">Select All</button>
+           </div>
+        </div>
+        
+        <div class="permission-matrix grid-2-col gap-6">
+           @for (group of permissionGroups; track group.module) {
+             <div class="card p-0 shadow-sm border permission-card transition-colors" [class.has-selection]="isGroupFullySelected(group) || isGroupPartiallySelected(group)">
+               <!-- Group Header -->
+               <div class="card-header border-b px-5 py-4 flex justify-between items-center transition-colors hover-bg-surface-hover cursor-pointer" (click)="toggleGroup(group)">
+                 <div>
+                    <div class="flex items-center">
+                      <h3 class="font-bold text-md text-dark m-0 capitalize">{{ group.module }} Module</h3>
+                      @if (isGroupFullySelected(group)) {
+                        <span class="badge badge-primary text-xs ml-3 font-bold px-2">Full Access</span>
+                      } @else if (isGroupPartiallySelected(group)) {
+                        <span class="badge badge-warning text-xs ml-3 font-bold px-2">Partial</span>
+                      }
+                    </div>
+                 </div>
+                 
+                 <div class="checkbox-wrapper" (click)="$event.stopPropagation()">
+                    <input 
+                      type="checkbox" 
+                      class="custom-checkbox select-all-cbx" 
+                      [checked]="isGroupFullySelected(group)" 
+                      [indeterminate]="isGroupPartiallySelected(group)"
+                      (change)="toggleGroup(group)" 
+                    />
+                 </div>
+               </div>
+
+               <!-- Action Items Rows -->
+               <div class="card-body p-0">
+                 <ul class="action-list m-0 p-0 list-none">
+                   @for (perm of group.permissions; track perm.key) {
+                     <li class="action-row flex justify-between items-center px-5 py-3 border-b border-light transition-colors hover-bg-muted" [class.active-row]="isSelected(perm.key)" (click)="togglePermission(perm.key)">
+                        <span class="font-medium text-dark text-sm">{{ perm.label }}</span>
+                        
+                        <div class="checkbox-wrapper" (click)="$event.stopPropagation()">
+                          <input 
+                            type="checkbox" 
+                            class="custom-checkbox action-cbx" 
+                            [checked]="isSelected(perm.key)"
+                            (change)="togglePermission(perm.key)"
+                          />
+                        </div>
+                     </li>
+                   }
+                 </ul>
+               </div>
+             </div>
+           }
+        </div>
+     </div>
+  </div>
+</section>

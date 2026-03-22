@@ -1,0 +1,173 @@
+<section class="page detail-page">
+  <div class="page-header">
+    <a routerLink="/promotions" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Promotions
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading promotion...</p>
+    </div>
+  } @else if (promotion(); as p) {
+    <!-- Action Bar -->
+    <div class="sticky-action-bar card">
+      <div class="action-bar-left">
+        <h1 class="detail-title">{{ p.name }}</h1>
+        <span class="badge" [ngClass]="getStatusBadgeClass(p.status)">{{ p.status | titlecase }}</span>
+      </div>
+      <div class="action-bar-right">
+        @if (p.status !== 'expired') {
+          <button class="btn btn-soft" (click)="toggleStatus()">
+            <span class="material-symbols-rounded">{{ p.status === 'active' ? 'pause_circle' : 'play_circle' }}</span>
+            {{ p.status === 'active' ? 'Deactivate' : 'Activate' }}
+          </button>
+        }
+        <a [routerLink]="['/promotions', p.id, 'edit']" class="btn btn-primary">
+          <span class="material-symbols-rounded">edit</span>
+          Edit
+        </a>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <!-- Main Column -->
+      <div class="main-column">
+        <!-- Summary -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Summary</h2>
+          </div>
+          <div class="card-body">
+            @if (p.description) {
+              <p class="description-text">{{ p.description }}</p>
+            }
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Type</span>
+                <span class="badge badge-primary">{{ getTypeLabel(p.type) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Discount</span>
+                <span class="info-value highlight">{{ formatDiscount(p) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Valid Period</span>
+                <span class="info-value">{{ p.startDate | date:'MMM d' }} — {{ p.endDate | date:'MMM d, y' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Scope</span>
+                <span class="info-value">{{ getScopeLabel(p.applicableScope) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Usage Stats -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Usage</h2>
+          </div>
+          <div class="card-body">
+            <div class="usage-stats">
+              <div class="usage-count">
+                <span class="usage-number">{{ p.usageCount }}</span>
+                <span class="usage-label">times used{{ p.usageLimit > 0 ? ' / ' + p.usageLimit + ' limit' : '' }}</span>
+              </div>
+              @if (p.usageLimit > 0) {
+                <div class="usage-bar-bg">
+                  <div class="usage-bar-fill" [style.width.%]="usagePercentage()"></div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Conditions -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Conditions</h2>
+          </div>
+          <div class="card-body">
+            <div class="conditions-list">
+              <div class="condition-item">
+                <span class="material-symbols-rounded condition-icon">shopping_cart</span>
+                <div>
+                  <span class="condition-label">Minimum order value</span>
+                  <span class="condition-value">{{ p.minOrderValue > 0 ? formatPrice(p.minOrderValue) : 'No minimum' }}</span>
+                </div>
+              </div>
+              <div class="condition-item">
+                <span class="material-symbols-rounded condition-icon">category</span>
+                <div>
+                  <span class="condition-label">Applicable to</span>
+                  <span class="condition-value">{{ getScopeLabel(p.applicableScope) }}</span>
+                </div>
+              </div>
+              <div class="condition-item">
+                <span class="material-symbols-rounded condition-icon">group</span>
+                <div>
+                  <span class="condition-label">Per-customer limit</span>
+                  <span class="condition-value">{{ p.perCustomerLimit > 0 ? p.perCustomerLimit + ' uses per customer' : 'Unlimited' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="side-column">
+        <!-- Discount Preview -->
+        <div class="card preview-card">
+          <div class="preview-header">
+            <span class="material-symbols-rounded">visibility</span>
+            Discount Preview
+          </div>
+          <div class="preview-body">
+            <div class="preview-example">
+              <div class="preview-row">
+                <span class="preview-key">Order total</span>
+                <span class="preview-val">{{ formatPrice(previewOriginal) }}</span>
+              </div>
+              @if (p.type !== 'free_shipping') {
+                <div class="preview-row discount-row">
+                  <span class="preview-key">Discount</span>
+                  <span class="preview-val">-{{ formatPrice(previewDiscount()) }}</span>
+                </div>
+                <div class="preview-row final-row">
+                  <span class="preview-key">Final price</span>
+                  <span class="preview-val primary-val">{{ formatPrice(previewFinal()) }}</span>
+                </div>
+              } @else {
+                <div class="preview-row discount-row">
+                  <span class="preview-key">Shipping</span>
+                  <span class="preview-val">Free</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Details</h2>
+          </div>
+          <div class="card-body">
+            <p class="meta-line"><span class="meta-label">Created</span> {{ p.createdAt | date:'MMM d, y' }}</p>
+            <p class="meta-line"><span class="meta-label">Updated</span> {{ p.updatedAt | date:'MMM d, y' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">error</span>
+      <p class="empty-title">Promotion not found</p>
+      <a routerLink="/promotions" class="btn btn-soft">Back to list</a>
+    </div>
+  }
+</section>

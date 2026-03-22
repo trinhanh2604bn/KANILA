@@ -1,0 +1,145 @@
+<section class="form-page">
+  <header class="form-hero">
+    <a routerLink="/categories" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Categories
+    </a>
+    <div class="hero-main">
+      <div class="hero-icon" aria-hidden="true">
+        <span class="material-symbols-rounded">category</span>
+      </div>
+      <div class="hero-copy">
+        <h1 class="page-title">{{ isEdit() ? 'Edit Category' : 'Create Category' }}</h1>
+        <p class="page-subtitle">Group your products with meaningful categories and a clear hierarchy.</p>
+      </div>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading category details…</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-shell">
+      <div class="form-card">
+        <div class="form-card-inner">
+          <section class="form-section" aria-labelledby="section-basic">
+            <h2 id="section-basic" class="form-section-title">
+              <span class="section-icon material-symbols-rounded">edit_note</span>
+              Basic information
+            </h2>
+            <p class="form-section-hint">Visible to customers in navigation and filters when applicable.</p>
+
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label class="field-label" for="cat-name">Category name</label>
+                <input
+                  id="cat-name"
+                  type="text"
+                  class="field-input"
+                  formControlName="categoryName"
+                  placeholder="e.g. Skin Care"
+                  autocomplete="off"
+                />
+                @if (form.get('categoryName')?.touched && form.get('categoryName')?.errors?.['required']) {
+                  <span class="field-error">Name is required</span>
+                }
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="cat-code">Category code</label>
+                <input
+                  id="cat-code"
+                  type="text"
+                  class="field-input field-input-mono"
+                  formControlName="categoryCode"
+                  placeholder="e.g. SKIN_CARE"
+                  autocomplete="off"
+                />
+                @if (form.get('categoryCode')?.touched && form.get('categoryCode')?.errors?.['required']) {
+                  <span class="field-error">Code is required</span>
+                }
+              </div>
+            </div>
+
+            <div class="field field-full">
+              <label class="field-label" for="cat-desc">Description</label>
+              <textarea
+                id="cat-desc"
+                class="field-input field-textarea"
+                formControlName="description"
+                rows="4"
+                placeholder="Brief overview of this category…"
+              ></textarea>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="section-hierarchy">
+            <h2 id="section-hierarchy" class="form-section-title">
+              <span class="section-icon material-symbols-rounded">account_tree</span>
+              Hierarchy &amp; order
+            </h2>
+            <p class="form-section-hint">Choose a parent to nest under, or leave as top level.</p>
+
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label class="field-label" for="cat-parent">Parent category</label>
+                <div class="select-wrap">
+                  <select id="cat-parent" class="field-input field-select" formControlName="parentCategoryId">
+                    <option [ngValue]="null">Top level (none)</option>
+                    @for (c of categories(); track c.id) {
+                      <option [ngValue]="c.id">{{ c.categoryName }}</option>
+                    }
+                  </select>
+                  <span class="select-chevron material-symbols-rounded" aria-hidden="true">expand_more</span>
+                </div>
+                <span class="field-hint">One level of nesting under a parent category.</span>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="cat-order">Display order</label>
+                <input
+                  id="cat-order"
+                  type="number"
+                  class="field-input field-input-number"
+                  formControlName="displayOrder"
+                  min="0"
+                />
+                <span class="field-hint">Lower numbers appear first in lists.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="status-panel" aria-labelledby="section-status">
+            <div class="status-panel-copy">
+              <h2 id="section-status" class="status-title">Visibility</h2>
+              <p class="status-desc">Inactive categories stay hidden from storefront navigation.</p>
+            </div>
+            <label class="toggle-modern">
+              <input type="checkbox" formControlName="isActive" />
+              <span class="toggle-ui" aria-hidden="true"></span>
+              <span class="toggle-text">
+                <span class="toggle-text-strong">{{ form.get('isActive')?.value ? 'Active' : 'Inactive' }}</span>
+                <span class="toggle-text-sub">{{ form.get('isActive')?.value ? 'Shown in catalog' : 'Hidden from catalog' }}</span>
+              </span>
+            </label>
+          </section>
+        </div>
+
+        <footer class="form-footer">
+          <button type="button" class="btn btn-ghost btn-footer-cancel" routerLink="/categories">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-footer-save" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner spinner-xs"></span>
+              Saving…
+            } @else {
+              <span class="material-symbols-rounded">save</span>
+              {{ isEdit() ? 'Update category' : 'Save category' }}
+            }
+          </button>
+        </footer>
+      </div>
+    </form>
+  }
+</section>

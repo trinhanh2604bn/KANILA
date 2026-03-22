@@ -65,5 +65,20 @@ const deleteShipment = async (req, res) => {
     res.status(200).json({ success: true, message: "Shipment deleted successfully", data: shipment });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
+// PATCH /api/shipments/:id
+const patchShipment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid ID" });
+    const allowed = ["shipmentStatus", "trackingNumber", "carrierCode", "estimatedDelivery", "actualDelivery"];
+    const updates = {};
+    for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
+    const shipment = await Shipment.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+      .populate("orderId", "orderNumber").populate("warehouseId", "warehouseCode warehouseName");
+    if (!shipment) return res.status(404).json({ success: false, message: "Shipment not found" });
+    res.status(200).json({ success: true, message: "Shipment patched successfully", data: shipment });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
 
-module.exports = { getAllShipments, getShipmentById, getShipmentsByOrderId, createShipment, updateShipment, deleteShipment };
+module.exports = { getAllShipments, getShipmentById, getShipmentsByOrderId, createShipment, updateShipment, patchShipment, deleteShipment };

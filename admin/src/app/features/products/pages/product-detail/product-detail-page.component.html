@@ -1,0 +1,206 @@
+<section class="product-detail-page">
+  <div class="detail-topbar">
+    <a routerLink="/products" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Products
+    </a>
+    @if (product(); as prod) {
+      <div class="topbar-actions">
+        <a [routerLink]="['/products', prod.id, 'edit']" class="btn btn-primary">
+          <span class="material-symbols-rounded">edit</span>
+          Edit product
+        </a>
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading product…</p>
+    </div>
+  } @else if (product(); as p) {
+    @if (p.stock <= 5) {
+      <div class="stock-banner" role="status">
+        <span class="material-symbols-rounded banner-icon">inventory_2</span>
+        <div class="banner-copy">
+          <strong>Low stock</strong>
+          <span>Only {{ p.stock }} unit(s) left — consider restocking.</span>
+        </div>
+        <a [routerLink]="['/products', p.id, 'edit']" class="btn btn-soft btn-sm banner-cta">Update stock</a>
+      </div>
+    }
+
+    <div class="hero-grid">
+      <div class="card hero-gallery">
+        <div class="main-visual">
+          @if (activeImage()) {
+            <img [src]="activeImage()" [alt]="p.productName" />
+          } @else {
+            <div class="visual-placeholder">
+              <span class="material-symbols-rounded">hide_image</span>
+              <span>No image</span>
+            </div>
+          }
+        </div>
+        @if (p.images && p.images.length > 1) {
+          <div class="thumb-strip">
+            @for (img of p.images; track img) {
+              <button
+                type="button"
+                class="thumb"
+                [class.thumb-active]="activeImage() === thumbUrl(img)"
+                (click)="activeImage.set(thumbUrl(img))"
+              >
+                <img [src]="thumbUrl(img)" alt="" />
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="card hero-facts">
+        <div class="facts-header">
+          <span class="badge status-pill" [class.badge-success]="p.status === 'published'" [class.badge-muted]="p.status === 'draft'">
+            {{ p.status }}
+          </span>
+          <span class="badge stock-pill" [ngClass]="stockToneClass(p.stock)">
+            {{ p.stock }} in stock
+          </span>
+        </div>
+        <h1 class="facts-title">{{ p.productName }}</h1>
+        <p class="facts-sku">{{ p.productCode }}</p>
+        @if (p.slug) {
+          <p class="facts-slug mono">/{{ p.slug }}</p>
+        }
+        @if (p.shortDescription) {
+          <p class="facts-lead">{{ p.shortDescription }}</p>
+        } @else {
+          <p class="facts-lead muted">No short description</p>
+        }
+
+        <div class="facts-price">
+          <span class="price-label">Selling price</span>
+          <span class="price-value">{{ formatPrice(p.price) }}</span>
+        </div>
+
+        <div class="facts-chips">
+          <span class="chip"><span class="chip-lbl">Brand</span>{{ p.brandName || '—' }}</span>
+          <span class="chip chip-alt"><span class="chip-lbl">Category</span>{{ p.categoryName || '—' }}</span>
+        </div>
+
+        <div class="facts-mini-grid">
+          <div class="mini-cell">
+            <span class="mini-icon material-symbols-rounded">shopping_cart</span>
+            <span class="mini-val">{{ p.bought }}</span>
+            <span class="mini-lbl">Sold</span>
+          </div>
+          <div class="mini-cell">
+            <span class="mini-icon material-symbols-rounded">star</span>
+            <span class="mini-val">{{ p.averageRating | number: '1.1-1' }}</span>
+            <span class="mini-lbl">Avg. rating</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lower-grid">
+      <div class="card body-card">
+        <h2 class="section-title">Description</h2>
+        @if (p.longDescription) {
+          <div class="prose" [innerHTML]="p.longDescription"></div>
+        } @else {
+          <p class="muted-block">No detailed description for this product yet.</p>
+        }
+
+        @if (p.ingredientText) {
+          <h3 class="sub-section-title">Ingredients</h3>
+          <div class="prose plain-text">{{ p.ingredientText }}</div>
+        }
+
+        @if (p.usageInstruction) {
+          <h3 class="sub-section-title">Usage</h3>
+          <div class="prose plain-text">{{ p.usageInstruction }}</div>
+        }
+      </div>
+
+      <div class="card side-meta">
+        <h3 class="side-title">Catalog record</h3>
+        <dl class="meta-dl">
+          <div class="meta-row">
+            <dt>Product ID</dt>
+            <dd class="mono">{{ p.id }}</dd>
+          </div>
+          <div class="meta-row">
+            <dt>API status</dt>
+            <dd>{{ p.productStatus }}</dd>
+          </div>
+          @if (p.createdByEmail) {
+            <div class="meta-row">
+              <dt>Created by</dt>
+              <dd>{{ p.createdByEmail }}</dd>
+            </div>
+          }
+          @if (p.updatedByEmail) {
+            <div class="meta-row">
+              <dt>Updated by</dt>
+              <dd>{{ p.updatedByEmail }}</dd>
+            </div>
+          }
+          <div class="meta-row">
+            <dt>Created</dt>
+            <dd>{{ p.createdAt | date: 'MMM d, y · h:mm a' }}</dd>
+          </div>
+          <div class="meta-row">
+            <dt>Last updated</dt>
+            <dd>{{ p.updatedAt | date: 'MMM d, y · h:mm a' }}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    @if (variants().length > 0) {
+      <div class="card variants-card">
+        <h2 class="section-title">Variants</h2>
+        <div class="table-wrap-inner">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>SKU</th>
+                <th>Barcode</th>
+                <th>Weight (g)</th>
+                <th>Vol. (ml)</th>
+                <th>Cost</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of variants(); track v.id) {
+                <tr>
+                  <td>{{ v.variantName }}</td>
+                  <td class="mono">{{ v.sku }}</td>
+                  <td>{{ v.barcode || '—' }}</td>
+                  <td>{{ v.weightGrams }}</td>
+                  <td>{{ v.volumeMl }}</td>
+                  <td>{{ formatPrice(v.costAmount) }}</td>
+                  <td>
+                    <span class="badge" [class.badge-success]="v.variantStatus === 'active'" [class.badge-muted]="v.variantStatus === 'inactive'">
+                      {{ v.variantStatus }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  } @else {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">inventory_2</span>
+      <p class="empty-title">Product not found</p>
+      <a routerLink="/products" class="btn btn-soft">Back to products</a>
+    </div>
+  }
+</section>

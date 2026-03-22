@@ -85,5 +85,21 @@ const deleteReview = async (req, res) => {
     res.status(200).json({ success: true, message: "Review deleted successfully", data: review });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
+// PATCH /api/reviews/:id
+const patchReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid ID" });
+    const allowed = ["reviewStatus", "adminNote"];
+    const updates = {};
+    for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
+    const review = await Review.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+      .populate("customerId", "customerCode fullName").populate("productId", "productName");
+    if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+    await recalcReviewSummary(review.productId);
+    res.status(200).json({ success: true, message: "Review patched successfully", data: review });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
 
-module.exports = { getAllReviews, getReviewById, getReviewsByProductId, createReview, updateReview, deleteReview };
+module.exports = { getAllReviews, getReviewById, getReviewsByProductId, createReview, updateReview, patchReview, deleteReview };

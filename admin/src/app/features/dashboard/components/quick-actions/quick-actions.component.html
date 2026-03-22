@@ -1,0 +1,16 @@
+<div class="actions-card card">
+  <div class="actions-header">
+    <h3 class="actions-title">Quick Actions</h3>
+    <span class="actions-subtitle">Common tasks</span>
+  </div>
+  <div class="actions-grid">
+    @for (action of actions; track action.label) {
+      <a class="action-item" [attr.data-color]="action.color">
+        <div class="action-icon-wrap" [attr.data-color]="action.color">
+          <span class="material-symbols-rounded">{{ action.icon }}</span>
+        </div>
+        <span class="action-label">{{ action.label }}</span>
+      </a>
+    }
+  </div>
+</div>

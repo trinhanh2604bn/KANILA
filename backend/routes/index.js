@@ -5,6 +5,7 @@ const router = express.Router();
 const brandRoutes = require("./brand.route");
 const categoryRoutes = require("./category.route");
 const productRoutes = require("./product.route");
+const productCategoryRoutes = require("./productCategory.route");
 
 // Phase 2 routes
 const authRoutes = require("./auth.route");
@@ -69,10 +70,13 @@ const reviewSummaryRoutes = require("./reviewSummary.route");
 const loyaltyTierRoutes = require("./loyaltyTier.route");
 const loyaltyAccountRoutes = require("./loyaltyAccount.route");
 const loyaltyPointLedgerRoutes = require("./loyaltyPointLedger.route");
+const adminRoutes = require("./admin.route");
+const setupRoutes = require("./setup.route");
 
 router.use("/brands", brandRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
+router.use("/product-categories", productCategoryRoutes);
 
 router.use("/auth", authRoutes);
 router.use("/accounts", accountRoutes);
@@ -131,6 +135,12 @@ router.use("/review-summary", reviewSummaryRoutes);
 router.use("/loyalty-tiers", loyaltyTierRoutes);
 router.use("/loyalty-accounts", loyaltyAccountRoutes);
 router.use("/loyalty-point-ledger", loyaltyPointLedgerRoutes);
+router.use("/admin", adminRoutes);
+router.use("/setup", setupRoutes);
+
+// One-time migration route (remove after running)
+const migrateRoute = require("./migrate.route");
+router.use("/migrate-fields", migrateRoute);
 
 module.exports = router;
 

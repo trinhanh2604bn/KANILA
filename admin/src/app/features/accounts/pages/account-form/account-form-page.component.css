@@ -1,0 +1,67 @@
+:host { display: block; }
+.form-page { max-width: 720px; animation: pageIn 0.3s ease; }
+@keyframes pageIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.form-page-header { margin-bottom: var(--space-6); }
+.back-link {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  font-size: var(--font-sm); color: var(--text-muted); font-weight: 500;
+  margin-bottom: var(--space-3); transition: color var(--transition-fast);
+}
+.back-link:hover { color: var(--primary); }
+.back-link .material-symbols-rounded { font-size: 18px; }
+
+/* Success */
+.success-banner {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--success-soft); border: 1px solid var(--success-border);
+  border-radius: var(--radius-md); color: var(--success);
+  font-size: var(--font-sm); font-weight: 500;
+  margin-bottom: var(--space-6);
+  animation: slideDown 0.3s ease;
+}
+.success-banner .material-symbols-rounded { font-size: 20px; }
+@keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+/* Loading */
+.form-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--space-3); padding: var(--space-16);
+  color: var(--text-secondary); font-size: var(--font-sm);
+}
+
+/* Form Card */
+.form-card { padding: 0; overflow: hidden; }
+
+.form-section {
+  padding: var(--space-6) var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+.form-section:last-of-type { border-bottom: none; }
+
+.form-section-title {
+  font-size: var(--font-md); font-weight: 600; color: var(--text-primary);
+  margin-bottom: var(--space-5);
+}
+
+.form-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: var(--space-5); margin-bottom: var(--space-3);
+}
+.form-grid:last-child { margin-bottom: 0; }
+
+.form-group { display: flex; flex-direction: column; }
+
+/* Actions */
+.form-actions {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: var(--space-3); padding: var(--space-5) var(--space-8);
+  background: var(--muted-surface); border-top: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-section { padding: var(--space-5) var(--space-5); }
+  .form-actions { padding: var(--space-4) var(--space-5); }
+}

@@ -1,0 +1,160 @@
+<section class="page detail-page">
+  <div class="page-header">
+    <a routerLink="/coupons" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Coupons
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading coupon...</p>
+    </div>
+  } @else if (coupon(); as c) {
+    <!-- Action Bar -->
+    <div class="sticky-action-bar card">
+      <div class="action-bar-left">
+        <div class="code-display">
+          <h1 class="coupon-code-lg">{{ c.couponCode }}</h1>
+          <button class="btn-copy" (click)="copyCode()" [title]="copied() ? 'Copied!' : 'Copy code'">
+            <span class="material-symbols-rounded">{{ copied() ? 'check' : 'content_copy' }}</span>
+          </button>
+        </div>
+        <span class="badge" [ngClass]="getStatusBadgeClass(c.status)">{{ getStatusLabel(c.status) }}</span>
+      </div>
+      <div class="action-bar-right">
+        <a [routerLink]="['/coupons', c.id, 'edit']" class="btn btn-soft">
+          <span class="material-symbols-rounded">edit</span> Edit
+        </a>
+        <button class="btn" [class.btn-primary]="c.couponStatus !== 'active'" [class.btn-soft]="c.couponStatus === 'active'" (click)="toggleStatus()">
+          <span class="material-symbols-rounded">{{ c.couponStatus === 'active' ? 'toggle_off' : 'toggle_on' }}</span>
+          {{ c.couponStatus === 'active' ? 'Deactivate' : 'Activate' }}
+        </button>
+        <button class="btn btn-danger-soft" (click)="deleteCoupon()">
+          <span class="material-symbols-rounded">delete</span> Delete
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <!-- Main Column -->
+      <div class="main-column">
+        <!-- Summary -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Coupon Summary</h2>
+          </div>
+          <div class="card-body">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Promotion</span>
+                <span class="info-value">{{ c.promotionName || c.promotionCode || '—' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Discount Type</span>
+                <span class="info-value font-medium">{{ c.discountType === 'percentage' ? 'Percentage' : 'Fixed Amount' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Discount</span>
+                <span class="info-value font-medium highlight">{{ formatDiscount(c) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Min Order</span>
+                <span class="info-value">{{ c.minOrderAmount > 0 ? formatPrice(c.minOrderAmount) : 'No minimum' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Usage Stats -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Usage</h2>
+          </div>
+          <div class="card-body">
+            <div class="usage-stat">
+              <div class="usage-header">
+                <span class="usage-label">Total Redemptions</span>
+                <span class="usage-count">{{ formatUsage(c) }}</span>
+              </div>
+              @if (c.usageLimitTotal > 0) {
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="usagePercentage()"></div>
+                </div>
+                <span class="usage-percent">{{ usagePercentage() }}% used</span>
+              }
+            </div>
+            <div class="usage-stat mt-4">
+              <span class="usage-label">Per Customer Limit</span>
+              <span class="usage-count">{{ c.usageLimitPerCustomer === 0 ? 'Unlimited' : c.usageLimitPerCustomer }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Discount Preview -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Discount Preview</h2>
+          </div>
+          <div class="card-body">
+            <div class="preview-card">
+              <div class="preview-row">
+                <span>Order Total</span>
+                <span class="font-medium">{{ formatPrice(previewOriginal) }}</span>
+              </div>
+              <div class="preview-row discount-row">
+                <span>
+                  <span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle;">local_offer</span>
+                  {{ c.couponCode }} ({{ formatDiscount(c) }} off)
+                </span>
+                <span class="discount-value">-{{ formatPrice(previewDiscount()) }}</span>
+              </div>
+              <div class="preview-divider"></div>
+              <div class="preview-row total-row">
+                <span class="font-medium">Customer Pays</span>
+                <span class="total-value">{{ formatPrice(previewFinal()) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="side-column">
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Validity</h2>
+          </div>
+          <div class="card-body">
+            <p class="meta-line">
+              <span class="meta-label">Start</span>
+              {{ c.validFrom ? (c.validFrom | date:'MMM d, y') : 'No start date' }}
+            </p>
+            <p class="meta-line">
+              <span class="meta-label">End</span>
+              {{ c.validTo ? (c.validTo | date:'MMM d, y') : 'No end date' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Details</h2>
+          </div>
+          <div class="card-body">
+            <p class="meta-line"><span class="meta-label">Created</span> {{ c.createdAt | date:'MMM d, y' }}</p>
+            <p class="meta-line"><span class="meta-label">Updated</span> {{ c.updatedAt | date:'MMM d, y' }}</p>
+            <p class="meta-line"><span class="meta-label">ID</span> <span class="text-muted text-mono">{{ c.id }}</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">error</span>
+      <p class="empty-title">Coupon not found</p>
+      <a routerLink="/coupons" class="btn btn-soft">Back to list</a>
+    </div>
+  }
+</section>

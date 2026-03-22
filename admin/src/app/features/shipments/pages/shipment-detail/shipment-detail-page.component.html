@@ -1,0 +1,164 @@
+<section class="page detail-page">
+  <div class="page-header">
+    <a routerLink="/shipments" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Shipments
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading shipment...</p>
+    </div>
+  } @else if (shipment(); as s) {
+    <!-- Action Bar -->
+    <div class="sticky-action-bar card">
+      <div class="action-bar-left">
+        <h1 class="shipment-id">{{ s.shipmentNumber }}</h1>
+        <span class="badge" [ngClass]="getStatusBadgeClass(s.status)">{{ getStatusLabel(s.status) }}</span>
+      </div>
+      <div class="action-bar-right">
+        @for (action of nextActions(); track action.status) {
+          <button
+            class="btn"
+            [class.btn-primary]="!action.isDestructive && !action.isRetry"
+            [class.btn-soft]="action.isRetry"
+            [class.btn-danger-soft]="action.isDestructive"
+            [disabled]="updating()"
+            (click)="updateStatus(action.status)">
+            @if (updating()) {
+              <div class="spinner"></div>
+            } @else {
+              <span class="material-symbols-rounded">{{ action.icon }}</span>
+            }
+            {{ action.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Workflow Stepper -->
+    <div class="card stepper-card">
+      <div class="stepper-wrapper">
+        @for (step of workflowSteps; track step; let last = $last) {
+          <div class="step-item"
+            [class.completed]="isStepCompleted(step, s.status)"
+            [class.active]="isStepCurrent(step, s.status)"
+            [class.failed-state]="s.status === 'failed'">
+            <div class="step-circle">
+              @if (isStepCompleted(step, s.status) && !isStepCurrent(step, s.status)) {
+                <span class="material-symbols-rounded">check</span>
+              }
+            </div>
+            <span class="step-label">{{ getStatusLabel(step) }}</span>
+          </div>
+          @if (!last) {
+            <div class="step-line" [class.active-line]="isStepCompleted(step, s.status)"></div>
+          }
+        }
+      </div>
+      @if (s.status === 'failed') {
+        <div class="failed-banner">
+          <span class="material-symbols-rounded">error</span>
+          <div class="failed-info">
+            <span class="failed-title">Delivery Failed</span>
+            <span class="failed-reason">{{ s.failureReason }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="detail-grid">
+      <!-- Main Column -->
+      <div class="main-column">
+        <!-- Shipment Info -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Shipment Information</h2>
+          </div>
+          <div class="card-body">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Carrier</span>
+                <span class="info-value">{{ s.carrier }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Tracking Number</span>
+                <div class="tracking-wrap">
+                  <span class="tracking-value">{{ s.trackingNumber }}</span>
+                  <button class="btn-copy" (click)="copyTracking()" [title]="copied() ? 'Copied!' : 'Copy tracking number'">
+                    <span class="material-symbols-rounded">{{ copied() ? 'check' : 'content_copy' }}</span>
+                  </button>
+                </div>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Estimated Delivery</span>
+                <span class="info-value">{{ s.estimatedDelivery | date:'MMM d, y' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Order</span>
+                <a class="info-value link" [routerLink]="['/orders', s.orderId]">{{ s.orderNumber }}</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Timeline -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Tracking Timeline</h2>
+          </div>
+          <div class="card-body">
+            @if (s.events.length > 0) {
+              <div class="event-timeline">
+                @for (event of s.events; track event.id; let last = $last; let first = $first) {
+                  <div class="event-item" [class.event-last]="last" [class.event-current]="first">
+                    <div class="event-icon-wrap" [class.event-icon-success]="event.status === 'delivered'" [class.event-icon-danger]="event.status === 'failed'" [class.event-icon-primary]="first && event.status !== 'delivered' && event.status !== 'failed'">
+                      <span class="material-symbols-rounded event-icon">{{ event.eventCode }}</span>
+                    </div>
+                    <div class="event-content">
+                      <p class="event-status">{{ getStatusLabel(event.status) }}</p>
+                      <p class="event-desc">{{ event.eventDescription }}</p>
+                      <p class="event-time">{{ event.eventTime | date:'MMM d, y · h:mm a' }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state-sm">
+                <span class="material-symbols-rounded">timeline</span>
+                <p>No tracking events yet</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Column -->
+      <div class="side-column">
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Details</h2>
+          </div>
+          <div class="card-body">
+            <p class="meta-line"><span class="meta-label">Created</span> {{ s.createdAt | date:'MMM d, y' }}</p>
+            <p class="meta-line"><span class="meta-label">Updated</span> {{ s.updatedAt | date:'MMM d, y' }}</p>
+            @if (s.shippedAt) {
+              <p class="meta-line"><span class="meta-label">Shipped</span> {{ s.shippedAt | date:'MMM d, y' }}</p>
+            }
+            @if (s.deliveredAt) {
+              <p class="meta-line"><span class="meta-label">Delivered</span> {{ s.deliveredAt | date:'MMM d, y' }}</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">error</span>
+      <p class="empty-title">Shipment not found</p>
+      <a routerLink="/shipments" class="btn btn-soft">Back to list</a>
+    </div>
+  }
+</section>

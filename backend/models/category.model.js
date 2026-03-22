@@ -27,6 +27,12 @@ const categorySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    /** Catalog visibility (aligns with category_status in relational designs). */
+    categoryStatus: {
+      type: String,
+      enum: ["active", "inactive", "draft"],
+      default: "active",
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -34,5 +40,14 @@ const categorySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+categorySchema.pre("save", function syncCategoryStatus(next) {
+  if (this.isModified("categoryStatus") && !this.isModified("isActive")) {
+    this.isActive = this.categoryStatus === "active" || this.categoryStatus === "draft";
+  } else if (this.isModified("isActive") && !this.isModified("categoryStatus")) {
+    this.categoryStatus = this.isActive ? "active" : "inactive";
+  }
+  next();
+});
 
 module.exports = mongoose.model("Category", categorySchema);

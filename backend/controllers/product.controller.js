@@ -1,7 +1,28 @@
+const mongoose = require("mongoose");
 const Product = require("../models/product.model");
+const ProductMedia = require("../models/productMedia.model");
 const Brand = require("../models/brand.model");
 const Category = require("../models/category.model");
+const Account = require("../models/account.model");
 const validateObjectId = require("../utils/validateObjectId");
+
+/** Attach `{ email }` from Account without `.populate()` (avoids strictPopulate when paths/cache disagree). */
+async function attachAuditAccountEmails(data, productDoc) {
+  let raw = null;
+  try {
+    raw = await Product.collection.findOne({ _id: new mongoose.Types.ObjectId(String(productDoc._id)) });
+  } catch {
+    raw = null;
+  }
+  for (const field of ["createdByAccountId", "updatedByAccountId"]) {
+    const cur = data[field];
+    if (cur && typeof cur === "object" && cur.email) continue;
+    const idVal = cur ?? raw?.[field];
+    if (!idVal) continue;
+    const acc = await Account.findById(idVal).select("email").lean();
+    if (acc) data[field] = acc;
+  }
+}
 
 // GET /api/products
 const getAllProducts = async (req, res) => {
@@ -11,11 +32,32 @@ const getAllProducts = async (req, res) => {
       .populate("categoryId", "categoryName categoryCode")
       .sort({ createdAt: -1 });
 
+    const ids = products.map((p) => p._id);
+    let firstMediaByProduct = new Map();
+    if (ids.length) {
+      const mediaRows = await ProductMedia.find({ productId: { $in: ids } })
+        .sort({ isPrimary: -1, sortOrder: 1, createdAt: 1 })
+        .lean();
+      for (const m of mediaRows) {
+        const key = String(m.productId);
+        if (!firstMediaByProduct.has(key)) firstMediaByProduct.set(key, m.mediaUrl);
+      }
+    }
+
+    const data = products.map((p) => {
+      const o = p.toObject ? p.toObject() : { ...p };
+      const id = String(p._id);
+      if (!o.imageUrl && firstMediaByProduct.has(id)) {
+        o.imageUrl = firstMediaByProduct.get(id);
+      }
+      return o;
+    });
+
     res.status(200).json({
       success: true,
       message: "Get all products successfully",
-      count: products.length,
-      data: products,
+      count: data.length,
+      data,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -39,10 +81,19 @@ const getProductById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
+    const data = product.toObject ? product.toObject() : product;
+    await attachAuditAccountEmails(data, product);
+    if (!data.imageUrl) {
+      const m = await ProductMedia.findOne({ productId: product._id })
+        .sort({ isPrimary: -1, sortOrder: 1, createdAt: 1 })
+        .lean();
+      if (m?.mediaUrl) data.imageUrl = m.mediaUrl;
+    }
+
     res.status(200).json({
       success: true,
       message: "Get product successfully",
-      data: product,
+      data,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -201,11 +252,27 @@ const deleteProduct = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// PATCH /api/products/:id
+const patchProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid product ID" });
+    const allowed = ["productStatus", "productName", "basePrice", "compareAtPrice", "categoryId", "brandId", "description", "shortDescription"];
+    const updates = {};
+    for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
+    const product = await Product.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+      .populate("categoryId", "categoryName").populate("brandId", "brandName");
+    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+    res.status(200).json({ success: true, message: "Product patched successfully", data: product });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
 
 module.exports = {
   getAllProducts,
   getProductById,
   createProduct,
   updateProduct,
+  patchProduct,
   deleteProduct,
 };

@@ -4,9 +4,14 @@ const validateObjectId = require("../utils/validateObjectId");
 
 const getAllReturns = async (req, res) => {
   try {
-    const returns = await Return.find().populate("orderId", "orderNumber").sort({ createdAt: -1 });
+    const returns = await Return.find()
+      .populate("orderId", "orderNumber")
+      .populate("requestedByCustomerId", "fullName customerCode")
+      .sort({ createdAt: -1 });
     res.status(200).json({ success: true, message: "Get all returns successfully", count: returns.length, data: returns });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 const getReturnById = async (req, res) => {
@@ -47,7 +52,9 @@ const updateReturn = async (req, res) => {
   try {
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid ID" });
-    const ret = await Return.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const ret = await Return.findByIdAndUpdate(id, req.body, { new: true, runValidators: true })
+      .populate("orderId", "orderNumber")
+      .populate("requestedByCustomerId", "fullName customerCode");
     if (!ret) return res.status(404).json({ success: false, message: "Return not found" });
     res.status(200).json({ success: true, message: "Return updated successfully", data: ret });
   } catch (error) {

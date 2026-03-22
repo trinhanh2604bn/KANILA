@@ -1,0 +1,178 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Inventory Balance</h1>
+      <p class="page-subtitle">Manage product stock levels and manual adjustments</p>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="search-input-wrap">
+      <span class="material-symbols-rounded search-icon">search</span>
+      <input type="text" class="form-input search-input" placeholder="Search by SKU or Product Name..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
+  </div>
+
+  <div class="card p-0 table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Product / Variant</th>
+          <th>SKU</th>
+          <th class="text-right">Current Stock</th>
+          <th>Status</th>
+          <th class="text-right">Quick Adjust</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short text-muted"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+            </tr>
+          }
+        } @else {
+          @for (item of filteredInventory(); track item.id) {
+            <tr [class.row-warning]="item.status === 'low_stock'" [class.row-danger]="item.status === 'out_of_stock'">
+              <td>
+                <div class="product-cell">
+                  <div class="product-thumb">
+                    <span class="material-symbols-rounded">category</span>
+                  </div>
+                  <div class="product-meta">
+                    <span class="product-name">{{ item.productName }}</span>
+                    @if (item.optionValues) {
+                      <span class="product-options">
+                        <ng-container *ngFor="let opt of item.optionValues | keyvalue">
+                          {{ opt.key }}: {{ opt.value }}
+                        </ng-container>
+                      </span>
+                    }
+                  </div>
+                </div>
+              </td>
+              <td><span class="sku-text">{{ item.sku }}</span></td>
+              <td class="text-right font-medium" [class.text-danger]="item.status === 'out_of_stock'">
+                {{ item.stockQuantity }}
+              </td>
+              <td>
+                 <span class="badge" 
+                  [class.badge-success]="item.status === 'in_stock'"
+                  [class.badge-warning]="item.status === 'low_stock'"
+                  [class.badge-danger]="item.status === 'out_of_stock'">
+                  @if (item.status === 'in_stock') { In Stock }
+                  @if (item.status === 'low_stock') { Low Stock }
+                  @if (item.status === 'out_of_stock') { Out of Stock }
+                 </span>
+                 @if (item.status === 'low_stock') {
+                   <span class="badge badge-warning ml-2">Reorder Soon</span>
+                 }
+              </td>
+              <td class="text-right adjust-cell">
+                <button class="btn-icon" title="View History" (click)="toggleHistory(item.id)">
+                   <span class="material-symbols-rounded">history</span>
+                </button>
+                <div class="btn-group ml-3">
+                   <button class="btn btn-soft btn-xs adjust-btn-minus" (click)="openAdjustment(item, -1)">- Remove</button>
+                   <button class="btn btn-soft btn-xs adjust-btn-plus" (click)="openAdjustment(item, +10)">+ Add</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Adjustment Popover/Row -->
+            @if (isAdjusting() === item.id) {
+              <tr class="adjustment-row">
+                 <td colspan="5">
+                    <div class="adjust-panel">
+                       <h4 class="adjust-title">Adjust Stock for {{ item.sku }}</h4>
+                       <div class="adjust-form">
+                          <div class="form-group qty-group">
+                             <label class="form-label">Delta (Qty)</label>
+                             <input type="number" class="form-input" [ngModel]="adjustDelta()" (ngModelChange)="adjustDelta.set($event)" />
+                          </div>
+                          <div class="form-group reason-group">
+                             <label class="form-label">Reason</label>
+                             <select class="form-input" [ngModel]="adjustReason()" (ngModelChange)="adjustReason.set($event)">
+                                <option value="restock">Restock</option>
+                                <option value="damage">Damage / Loss</option>
+                                <option value="return">Customer Return</option>
+                                <option value="manual">Manual Count</option>
+                             </select>
+                          </div>
+                          <div class="form-group notes-group">
+                             <label class="form-label">Notes (Optional)</label>
+                             <input type="text" class="form-input" placeholder="e.g. PO-1200" [ngModel]="adjustNotes()" (ngModelChange)="adjustNotes.set($event)" />
+                          </div>
+                          <div class="adjust-actions">
+                             <button class="btn btn-ghost" (click)="closeAdjustment()">Cancel</button>
+                             <button class="btn btn-primary" [disabled]="isSaving()" (click)="confirmAdjustment(item.id)">
+                               @if(isSaving()) {
+                                 <div class="spinner"></div> Confirming...
+                               } @else {
+                                 Confirm Adjustment
+                               }
+                             </button>
+                          </div>
+                       </div>
+                    </div>
+                 </td>
+              </tr>
+            }
+
+            <!-- History Drawer Row -->
+            @if (historyOpen() === item.id) {
+              <tr class="history-row">
+                 <td colspan="5">
+                   <div class="history-panel">
+                      <div class="history-header">
+                        <span class="material-symbols-rounded">history</span>
+                        <h4>Recent Stock History</h4>
+                        <button class="btn-icon ml-auto" (click)="toggleHistory(item.id)"><span class="material-symbols-rounded">close</span></button>
+                      </div>
+                      
+                      @if (historyLoading()) {
+                        <div class="skeleton-text skeleton-text-short mt-4"></div>
+                      } @else if (historyLogs().length === 0) {
+                        <p class="text-muted mt-2 text-sm">No adjustments found.</p>
+                      } @else {
+                        <ul class="history-list">
+                           @for(log of historyLogs(); track log.id) {
+                             <li class="history-list-item">
+                               <div class="log-meta">
+                                 <strong [class.text-success]="log.delta > 0" [class.text-danger]="log.delta < 0">
+                                   {{ log.delta > 0 ? '+' : '' }}{{ log.delta }}
+                                 </strong>
+                                 <span class="log-reason">{{ log.reason | titlecase }}</span>
+                                 <span class="log-newstock">Result: {{ log.newStock }} units</span>
+                               </div>
+                               <div class="log-timestamp">
+                                 <span>{{ log.createdAt | date:'MMM d, hh:mm a' }} by {{ log.createdBy }}</span>
+                                 @if (log.notes) { <span class="log-note"> - {{ log.notes }}</span> }
+                               </div>
+                             </li>
+                           }
+                        </ul>
+                      }
+                   </div>
+                 </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="5">
+                <div class="empty-state py-8">
+                  <span class="material-symbols-rounded empty-icon">inventory_2</span>
+                  <p class="empty-title">No inventory found</p>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

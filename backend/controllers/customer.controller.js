@@ -1,6 +1,7 @@
 const Customer = require("../models/customer.model");
 const Account = require("../models/account.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { isCustomerListable } = require("../utils/customerListable");
 
 // GET /api/customers
 const getAllCustomers = async (req, res) => {
@@ -9,11 +10,13 @@ const getAllCustomers = async (req, res) => {
       .populate("accountId", "email phone accountType accountStatus")
       .sort({ createdAt: -1 });
 
+    const data = customers.filter((c) => isCustomerListable(c));
+
     res.status(200).json({
       success: true,
       message: "Get all customers successfully",
-      count: customers.length,
-      data: customers,
+      count: data.length,
+      data,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -132,11 +135,27 @@ const deleteCustomer = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// PATCH /api/customers/:id
+const patchCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid customer ID" });
+    const allowed = ["fullName", "phone", "gender", "dateOfBirth", "avatarUrl"];
+    const updates = {};
+    for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
+    const customer = await Customer.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+      .populate("accountId", "email accountType accountStatus");
+    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+    res.status(200).json({ success: true, message: "Customer patched successfully", data: customer });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
 
 module.exports = {
   getAllCustomers,
   getCustomerById,
   getCustomerByAccountId,
   updateCustomer,
+  patchCustomer,
   deleteCustomer,
 };

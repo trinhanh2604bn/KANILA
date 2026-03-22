@@ -6,10 +6,35 @@ const validateObjectId = require("../utils/validateObjectId");
 // GET /api/orders
 const getAllOrders = async (req, res) => {
   try {
+    const OrderTotal = require("../models/orderTotal.model");
+
     const orders = await Order.find()
-      .populate("customerId", "customerCode fullName")
+      .populate({
+        path: "customerId",
+        select: "customerCode fullName accountId",
+        populate: { path: "accountId", select: "email" },
+      })
       .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, message: "Get all orders successfully", count: orders.length, data: orders });
+
+    // Fetch all order totals in one query
+    const orderIds = orders.map(o => o._id);
+    const totals = await OrderTotal.find({ orderId: { $in: orderIds } });
+    const totalsMap = {};
+    totals.forEach(t => { totalsMap[t.orderId.toString()] = t; });
+
+    // Merge totals into orders
+    const data = orders.map(o => {
+      const obj = o.toObject();
+      const t = totalsMap[o._id.toString()];
+      obj.subtotalAmount = t?.subtotalAmount || 0;
+      obj.shippingFeeAmount = t?.shippingFeeAmount || 0;
+      obj.grandTotalAmount = t?.grandTotalAmount || 0;
+      obj.itemDiscountAmount = t?.itemDiscountAmount || 0;
+      obj.orderDiscountAmount = t?.orderDiscountAmount || 0;
+      return obj;
+    });
+
+    res.status(200).json({ success: true, message: "Get all orders successfully", count: data.length, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -110,5 +135,30 @@ const deleteOrder = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// PATCH /api/orders/:id
+const patchOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid order ID" });
+    }
+    const allowed = ["orderStatus", "paymentStatus", "fulfillmentStatus", "shippingAddress"];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: "No valid fields to update" });
+    }
+    const order = await Order.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+      .populate("customerId", "customerCode fullName");
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+    res.status(200).json({ success: true, message: "Order patched successfully", data: order });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-module.exports = { getAllOrders, getOrderById, getOrdersByCustomerId, createOrder, updateOrder, deleteOrder };
+module.exports = { getAllOrders, getOrderById, getOrdersByCustomerId, createOrder, updateOrder, patchOrder, deleteOrder };

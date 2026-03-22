@@ -1,0 +1,10 @@
+<div class="shell" [class.collapsed]="collapsed()">
+  <app-sidebar [collapsed]="collapsed()" (toggleCollapse)="toggleSidebar()" />
+  <div class="shell-main">
+    <app-header [collapsed]="collapsed()" (toggleCollapse)="toggleSidebar()" />
+    <main id="main-content" class="shell-content" role="main">
+      <router-outlet />
+    </main>
+  </div>
+  <app-ai-assistant></app-ai-assistant>
+</div>

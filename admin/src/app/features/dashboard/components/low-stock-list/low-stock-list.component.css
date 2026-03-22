@@ -1,0 +1,116 @@
+.stock-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.stock-header {
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stock-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stock-title-icon {
+  font-size: 18px;
+  color: var(--warning);
+}
+
+.stock-title {
+  font-size: var(--font-md);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stock-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition-fast);
+  position: relative;
+}
+
+.stock-item:last-child { border-bottom: none; }
+.stock-item:hover { background: var(--muted-surface); }
+
+.stock-item.critical {
+  background: var(--danger-soft);
+}
+.stock-item.critical:hover {
+  background: #fce8e8;
+}
+
+/* Urgency indicator */
+.stock-indicator {
+  width: 3px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--warning);
+  flex-shrink: 0;
+}
+.stock-indicator.critical {
+  background: var(--danger);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.stock-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stock-name {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.stock-sku {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Empty state */
+.empty-state {
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: var(--success);
+  opacity: 0.5;
+  margin-bottom: var(--space-4);
+}
+
+.empty-title {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.empty-hint {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+}

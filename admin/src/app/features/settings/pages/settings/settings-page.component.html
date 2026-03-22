@@ -1,0 +1,156 @@
+<section class="page settings-page fade-in">
+  <div class="page-header">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">Manage your store configuration and preferences</p>
+  </div>
+
+  <div class="settings-layout">
+    <!-- Left Sidebar Tabs -->
+    <div class="settings-sidebar card border">
+      <nav class="settings-nav">
+        @for (tab of tabs; track tab.id) {
+          <button class="nav-tab" [class.active]="activeTab() === tab.id" (click)="switchTab(tab.id)">
+            <span class="material-symbols-rounded tab-icon">{{ tab.icon }}</span>
+            <span class="tab-label">{{ tab.label }}</span>
+          </button>
+        }
+      </nav>
+    </div>
+
+    <!-- Right Content Panel -->
+    <div class="settings-content card border">
+      <!-- General -->
+      @if (activeTab() === 'general') {
+        <div class="settings-section">
+          <div class="section-header">
+            <h2 class="section-title">General Settings</h2>
+            <p class="section-desc">Core configuration for your store.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Store Name</label>
+              <input type="text" class="form-input" [ngModel]="storeName()" (ngModelChange)="storeName.set($event); markDirty()" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Email</label>
+              <input type="email" class="form-input" [ngModel]="storeEmail()" (ngModelChange)="storeEmail.set($event); markDirty()" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Default Currency</label>
+              <select class="form-input" [ngModel]="storeCurrency()" (ngModelChange)="storeCurrency.set($event); markDirty()">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="VND">VND (₫)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Timezone</label>
+              <select class="form-input" [ngModel]="storeTimezone()" (ngModelChange)="storeTimezone.set($event); markDirty()">
+                <option value="Asia/Ho_Chi_Minh">Asia/Ho Chi Minh (UTC+7)</option>
+                <option value="America/New_York">America/New York (UTC-5)</option>
+                <option value="Europe/London">Europe/London (UTC+0)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Notifications -->
+      @if (activeTab() === 'notifications') {
+        <div class="settings-section">
+          <div class="section-header">
+            <h2 class="section-title">Notification Preferences</h2>
+            <p class="section-desc">Control how you receive alerts and updates.</p>
+          </div>
+
+          <div class="toggle-group">
+            <h3 class="group-label">Email Notifications</h3>
+            <div class="toggle-row" (click)="emailOrderUpdates.set(!emailOrderUpdates()); markDirty()">
+              <div class="toggle-info">
+                <span class="toggle-title">Order Updates</span>
+                <span class="toggle-desc">Receive emails for new orders and status changes</span>
+              </div>
+              <div class="toggle-switch" [class.active]="emailOrderUpdates()"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="toggle-row" (click)="emailLowStock.set(!emailLowStock()); markDirty()">
+              <div class="toggle-info">
+                <span class="toggle-title">Low Stock Alerts</span>
+                <span class="toggle-desc">Get notified when products are running low</span>
+              </div>
+              <div class="toggle-switch" [class.active]="emailLowStock()"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="toggle-row" (click)="emailPaymentAlerts.set(!emailPaymentAlerts()); markDirty()">
+              <div class="toggle-info">
+                <span class="toggle-title">Payment Alerts</span>
+                <span class="toggle-desc">Email notifications for failed or disputed payments</span>
+              </div>
+              <div class="toggle-switch" [class.active]="emailPaymentAlerts()"><div class="toggle-knob"></div></div>
+            </div>
+
+            <h3 class="group-label mt-6">Push Notifications</h3>
+            <div class="toggle-row" (click)="pushEnabled.set(!pushEnabled()); markDirty()">
+              <div class="toggle-info">
+                <span class="toggle-title">Browser Push Notifications</span>
+                <span class="toggle-desc">Receive real-time browser notifications</span>
+              </div>
+              <div class="toggle-switch" [class.active]="pushEnabled()"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Preferences -->
+      @if (activeTab() === 'preferences') {
+        <div class="settings-section">
+          <div class="section-header">
+            <h2 class="section-title">System Preferences</h2>
+            <p class="section-desc">Customize your interface experience.</p>
+          </div>
+
+          <div class="toggle-group">
+            <div class="toggle-row" (click)="darkMode.set(!darkMode()); markDirty()">
+              <div class="toggle-info">
+                <span class="toggle-title">Dark Mode</span>
+                <span class="toggle-desc">Switch to a darker interface theme</span>
+              </div>
+              <div class="toggle-switch" [class.active]="darkMode()"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="toggle-row" (click)="compactTables.set(!compactTables()); markDirty()">
+              <div class="toggle-info">
+                <span class="toggle-title">Compact Tables</span>
+                <span class="toggle-desc">Reduce row spacing for denser data views</span>
+              </div>
+              <div class="toggle-switch" [class.active]="compactTables()"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+
+          <div class="form-grid mt-6">
+            <div class="form-group">
+              <label class="form-label">Language</label>
+              <select class="form-input" [ngModel]="language()" (ngModelChange)="language.set($event); markDirty()">
+                <option value="en">English</option>
+                <option value="vi">Tiếng Việt</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Save Bar -->
+      <div class="save-bar" [class.visible]="isDirty() || saved()">
+        @if (saved()) {
+          <div class="save-feedback">
+            <span class="material-symbols-rounded text-success">check_circle</span>
+            <span class="save-text text-success">Settings saved successfully</span>
+          </div>
+        } @else {
+          <span class="save-text text-muted">You have unsaved changes</span>
+          <button class="btn btn-primary save-btn" (click)="save()" [disabled]="saving()">
+            @if (saving()) { <div class="spinner"></div> Saving… } @else { Save Changes }
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</section>

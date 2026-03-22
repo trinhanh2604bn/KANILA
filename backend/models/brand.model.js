@@ -22,6 +22,12 @@ const brandSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    /** Catalog lifecycle (aligns with brand_status in relational designs). */
+    brandStatus: {
+      type: String,
+      enum: ["active", "inactive", "draft"],
+      default: "active",
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -29,5 +35,14 @@ const brandSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+brandSchema.pre("save", function syncBrandStatus(next) {
+  if (this.isModified("brandStatus") && !this.isModified("isActive")) {
+    this.isActive = this.brandStatus === "active" || this.brandStatus === "draft";
+  } else if (this.isModified("isActive") && !this.isModified("brandStatus")) {
+    this.brandStatus = this.isActive ? "active" : "inactive";
+  }
+  next();
+});
 
 module.exports = mongoose.model("Brand", brandSchema);
