@@ -10,6 +10,30 @@ const generateCustomerCode = async () => {
   return `CUS${String(nextNum).padStart(4, "0")}`;
 };
 
+// Some legacy/migrated accounts have date fields persisted as `{}` objects.
+// Mongoose will then fail `cast`/`validate` on `account.save()` during login.
+const normalizeDateField = (value) => {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value;
+
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // e.g. legacy `{}` or other non-date objects.
+  return null;
+};
+
+const sanitizeAccountDatesForSave = (account) => {
+  account.email_verified_at = normalizeDateField(account.email_verified_at);
+  account.phone_verified_at = normalizeDateField(account.phone_verified_at);
+  account.last_login_at = normalizeDateField(account.last_login_at);
+  // These are set by mongoose timestamps; if they are persisted as `{}`, casting fails.
+  account.created_at = normalizeDateField(account.created_at);
+  account.updated_at = normalizeDateField(account.updated_at);
+};
+
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
@@ -139,6 +163,7 @@ const login = async (req, res) => {
     if (!isMatch) {
       // Increment failed login count
       account.failed_login_count += 1;
+      sanitizeAccountDatesForSave(account);
       await account.save();
 
       return res.status(401).json({
@@ -150,6 +175,7 @@ const login = async (req, res) => {
     // Successful login — update tracking fields
     account.last_login_at = new Date();
     account.failed_login_count = 0;
+    sanitizeAccountDatesForSave(account);
     await account.save();
 
     // Get customer info
