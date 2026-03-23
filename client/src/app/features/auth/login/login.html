@@ -1,0 +1,44 @@
+<div class="auth-page-wrapper">
+  <div class="auth-card">
+    <h4 class="text-center mb-4 fw-bold" style="color: var(--kanila-red)">Đăng Nhập</h4>
+    
+    <div *ngIf="showError" class="text-center mb-3">
+        <small class="text-danger-kanila">Email hoặc Mật khẩu đã sai! Vui lòng nhập lại</small>
+      </div>
+    
+      <div class="mb-3">
+        <input type="email" [(ngModel)]="loginData.email" (ngModelChange)="showError = false"
+        placeholder="Email" class="form-control" [class.input-error]="showError">
+      </div>
+      <div class="mb-2">
+        <input type="password" [(ngModel)]="loginData.password" (ngModelChange)="showError = false"
+        placeholder="Mật khẩu" class="form-control" [class.input-error]="showError">
+      </div>
+      
+      <div class="text-end mb-3" style="color: var(--kanila-red)">
+        <a routerLink="/auth/forgot-password" class="h6" >Quên mật khẩu?</a>
+      </div>
+
+      <button type="submit" class="btn btn-kanila w-100 mb-3 py-2 fw-bold" style="height: 50px; font-size: 1rem; background-color: var(--kanila-pink)" (click)="onLogin()" >ĐĂNG NHẬP</button>
+
+      <div class="d-flex align-items-center my-3">
+        <hr class="flex-grow-1 border-secondary m-0" style="opacity: 0.5;">
+        <span class="mx-3 h6 mb-0 login-text-main">Hoặc</span>
+        <hr class="flex-grow-1 border-secondary m-0" style="opacity: 0.5;">
+      </div>
+
+      <button type="button" class="btn btn-social w-100 mb-3" (click)="goTo('google')">
+        <img src="https://img.icons8.com/color/48/000000/google-logo.png" width="24" class="me-2"> 
+        Đăng nhập với Google
+      </button>
+      
+      <button type="button" class="btn btn-social w-100 mb-4" (click)="goTo('facebook')">
+        <img src="https://img.icons8.com/color/48/000000/facebook-new.png" width="24" class="me-2"> 
+        Đăng nhập với Facebook
+      </button>
+
+      <p class="text-center h6 mb-0" >
+        Bạn chưa có Tài khoản? Đăng ký <a routerLink="/auth/register" class="h6"  style="color: var(--kanila-red)">tại đây</a>
+      </p>
+  </div>
+</div>

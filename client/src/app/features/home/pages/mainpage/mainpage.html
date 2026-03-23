@@ -1,0 +1,224 @@
+<app-header></app-header>
+
+<!-- Full-bleed hero (not inside container) -->
+<app-slider></app-slider>
+
+<!-- Same horizontal margins as client layout: <main class="container py-2"> -->
+<main class="container py-2 mainpage-content">
+  <div class="mt-3">
+    <app-divider title="BEST SELLER" buttonText="Xem tất cả"></app-divider>
+  </div>
+  <div class="mt-3 my-5">
+    <app-product-slider></app-product-slider>
+  </div>
+
+  <div class="mt-5">
+    <app-divider title="SẢN PHẨM MỚI" buttonText="Xem tất cả"></app-divider>
+  </div>
+  <div class="mt-3 my-5">
+    <app-product-slider categoryName="Sản phẩm mới"></app-product-slider>
+  </div>
+
+  <div class="my-5">
+    <h2 class="mainpage-layout-title text-center mb-4">THE SUMMER 2026 MAKEUP LAYOUT</h2>
+    <div class="anhbg" aria-busy="{{ featuredLoading }}">
+      <div class="anhbg__stage" *ngIf="!featuredLoading && !featuredError; else anhbgStatus">
+        <div class="anhbg__visual">
+          <img
+            class="anhbg__visual-image"
+            src="assets/images/home/before.png"
+            alt="Gương mặt trang điểm"
+          />
+
+          <button
+            type="button"
+            class="anhbg__pin anhbg__pin--1"
+            aria-label="Sản phẩm 1"
+            (click)="selectFeaturedProduct(0)"
+            (mouseenter)="setHoveredFeaturedProduct(0)"
+            (mouseleave)="setHoveredFeaturedProduct(null)"
+          >
+            <img class="anhbg__pin-icon" src="assets/images/home/plus.png" alt="" />
+          </button>
+          <button
+            type="button"
+            class="anhbg__pin anhbg__pin--2"
+            aria-label="Sản phẩm 2"
+            (click)="selectFeaturedProduct(1)"
+            (mouseenter)="setHoveredFeaturedProduct(1)"
+            (mouseleave)="setHoveredFeaturedProduct(null)"
+          >
+            <img class="anhbg__pin-icon" src="assets/images/home/plus.png" alt="" />
+          </button>
+          <button
+            type="button"
+            class="anhbg__pin anhbg__pin--3"
+            aria-label="Sản phẩm 3"
+            (click)="selectFeaturedProduct(2)"
+            (mouseenter)="setHoveredFeaturedProduct(2)"
+            (mouseleave)="setHoveredFeaturedProduct(null)"
+          >
+            <img class="anhbg__pin-icon" src="assets/images/home/plus.png" alt="" />
+          </button>
+        </div>
+
+        <div class="anhbg__products">
+          <article
+            *ngFor="let p of featuredProducts; let i = index; trackBy: trackById"
+            class="anhbg__product-card"
+            [id]="'anhbg-product-' + i"
+            [class.anhbg__product-card--selected]="i === selectedFeaturedIndex || i === hoveredFeaturedIndex"
+            (click)="goToDetail(p, $event)"
+          >
+            <div class="anhbg__product-card-media">
+              <img
+                class="anhbg__product-card-image"
+                [src]="getFeaturedImage(p)"
+                [alt]="p.productName"
+              />
+            </div>
+
+            <div class="anhbg__product-card-body">
+              <h3 class="anhbg__product-card-name">{{ p.productName }}</h3>
+              <p class="anhbg__product-card-variant">Phân loại: {{ getVariantLabel(p, i) }}</p>
+              <div class="anhbg__product-card-price">{{ p.price | number: '1.0-0' }} đ</div>
+            </div>
+
+            <div class="anhbg__product-card-hover-actions" aria-hidden="false">
+              <button
+                type="button"
+                class="anhbg__action anhbg__action--icon"
+                aria-label="Xem nhanh"
+                (click)="openPreview(p, $event)"
+              >
+                <i class="bi bi-search" aria-hidden="true"></i>
+              </button>
+
+              <button
+                type="button"
+                class="anhbg__action anhbg__action--buy"
+                (click)="goToDetail(p, $event)"
+              >
+                Mua ngay
+              </button>
+
+              <button
+                type="button"
+                class="anhbg__action anhbg__action--icon"
+                aria-label="Thêm vào giỏ"
+                (click)="addToCart(p, $event)"
+              >
+                <i class="bi bi-cart3" aria-hidden="true"></i>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <!-- Preview modal (mimics the product-card preview UI) -->
+        <div class="anhbg__overlay" *ngIf="previewProduct as pp" (click)="closePreview()">
+          <div class="anhbg__overlay-panel" (click)="$event.stopPropagation()">
+            <button
+              type="button"
+              class="anhbg__overlay-close"
+              (click)="closePreview()"
+              aria-label="Đóng"
+            >
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+
+            <div class="anhbg__overlay-body">
+              <div class="anhbg__overlay-left">
+                <img
+                  class="anhbg__overlay-img"
+                  [src]="getFeaturedImage(pp)"
+                  [alt]="pp.productName"
+                />
+
+                <div class="anhbg__overlay-stars" aria-hidden="true">
+                  <ng-container *ngFor="let s of [1, 2, 3, 4, 5]">
+                    <i class="bi bi-star-fill" *ngIf="s <= (pp.averageRating || 0)"></i>
+                    <i class="bi bi-star" *ngIf="s > (pp.averageRating || 0)"></i>
+                  </ng-container>
+                </div>
+              </div>
+
+              <div class="anhbg__overlay-right">
+                <h2 class="anhbg__overlay-title">{{ pp.productName }}</h2>
+
+                <div class="anhbg__overlay-meta">
+                  <span>Đã bán {{ pp.bought | number: '1.0-0' }}</span>
+                  <span>
+                    Trạng thái:
+                    <strong [class.text-danger]="stockStatus(pp) === 'Hết hàng'">{{ stockStatus(pp) }}</strong>
+                  </span>
+                </div>
+
+                <p class="anhbg__overlay-desc">{{ pp.shortDescription }}</p>
+
+                <a
+                  class="anhbg__overlay-link"
+                  (click)="goToDetail(pp, $event)"
+                >
+                  Xem chi tiết sản phẩm
+                </a>
+
+                <div class="anhbg__overlay-progress" role="progressbar" aria-valuenow="{{ soldProgressPercent(pp) }}">
+                  <div class="anhbg__overlay-progress-fill" [style.width.%]="soldProgressPercent(pp)"></div>
+                </div>
+
+                <div class="anhbg__overlay-price-block">
+                  <span class="anhbg__overlay-price-label">Giá</span>
+                  <span class="anhbg__overlay-price-value">{{ pp.price | number: '1.0-0' }}đ</span>
+                </div>
+
+                <div class="anhbg__overlay-actions">
+                  <button
+                    type="button"
+                    class="btn-soft"
+                    (click)="$event.stopPropagation()"
+                  >
+                    Thêm vào giỏ
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-primary"
+                    (click)="$event.stopPropagation()"
+                  >
+                    Mua ngay
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #anhbgStatus>
+        <div class="anhbg__status" *ngIf="featuredLoading">Đang tải sản phẩm...</div>
+        <div class="anhbg__status anhbg__status--error" *ngIf="featuredError">{{ featuredError }}</div>
+      </ng-template>
+
+      <div class="anhbg__cta">
+        <button type="button" class="anhbg__cta-btn" (click)="goCategory()">
+          <span class="anhbg__cta-icon" aria-hidden="true"><i class="bi bi-send-fill"></i></span>
+          <span class="anhbg__cta-text">Khám phá thêm</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-5 section1">
+    <div class="section-item">
+      <app-bfslider></app-bfslider>
+    </div>
+  </div>
+
+  <div class="brand-section">
+    <app-brand></app-brand>
+  </div>
+
+  <app-roya></app-roya>
+</main>
+
+
+<app-footer></app-footer>

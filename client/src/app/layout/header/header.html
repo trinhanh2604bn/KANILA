@@ -16,7 +16,7 @@
             <li><a routerLink="/sale" class="nav-link-header">Sale</a></li>
 
             <li class="nav-item-mega position-static">
-              <a routerLink="/catalog" class="nav-link-header d-flex align-items-center">
+              <a routerLink="/shop" class="nav-link-header d-flex align-items-center">
                 Sản phẩm 
               </a>
 
@@ -25,116 +25,105 @@
                   <div class="row">
                     
                     <div class="col-md-2">
-                      <a [routerLink]="['/catalog']" [queryParams]="{category: 'face'}" class="text-decoration-none mega-title-link">
-                        <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Khuôn mặt</h6>
-                      </a>
+                      <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Khuôn mặt</h6>
                       <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'face', sub: 'c1_1'}" class="mega-link">Kem nền</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'face', sub: 'c1_2'}" class="mega-link">Phấn phủ</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'face', sub: 'c1_3'}" class="mega-link">Kem lót</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Cushion</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Kem nền</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Kem lót</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Phấn phủ</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Che khuyết điểm</a></li>
+                      </ul>
+                    </div>
+
+                  
+                    <div class="col-md-2">
+                      <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Đôi môi</h6>
+                      <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
+                        <li><a routerLink="/shop" class="mega-link">Son bùn</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Son tint</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Son bóng</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Chì kẻ môi</a></li>
                       </ul>
                     </div>
 
                     <div class="col-md-2">
-                      <a [routerLink]="['/catalog']" [queryParams]="{category: 'lips'}" class="text-decoration-none mega-title-link">
-                        <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Đôi môi</h6>
-                      </a>
+                      <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Đôi mắt</h6>
                       <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'lips', sub: 'c2_1'}" class="mega-link">Son thỏi</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'lips', sub: 'c2_2'}" class="mega-link">Son kem</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'lips', sub: 'c2_3'}" class="mega-link">Son dưỡng</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Mascara</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Kẻ mắt</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Phấn mắt</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Chân mày</a></li>
                       </ul>
                     </div>
 
                     <div class="col-md-2">
-                      <a [routerLink]="['/catalog']" [queryParams]="{category: 'eyes'}" class="text-decoration-none mega-title-link">
-                        <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Đôi mắt</h6>
-                      </a>
+                      <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Đôi má</h6>
                       <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'eyes', sub: 'c3_1'}" class="mega-link">Phấn mắt</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'eyes', sub: 'c3_2'}" class="mega-link">Kẻ mắt</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'eyes', sub: 'c3_3'}" class="mega-link">Mascara</a></li>
-                      </ul>
-                    </div>
-
-                    <div class="col-md-2">
-                      <a [routerLink]="['/catalog']" [queryParams]="{category: 'cheeks'}" class="text-decoration-none mega-title-link">
-                        <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Đôi má</h6>
-                      </a>
-                      <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'cheeks', sub: 'c4_1'}" class="mega-link">Phấn má</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'cheeks', sub: 'c4_2'}" class="mega-link">Tạo khối</a></li>
-                        <li><a [routerLink]="['/catalog']" [queryParams]="{category: 'cheeks', sub: 'c4_3'}" class="mega-link">Highlight</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Phấn má</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Kem nền</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Hightlight</a></li>
                       </ul>
                     </div>
 
                     <div class="col-md-2">
                       <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">New & Trending</h6>
                       <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                        <li><a routerLink="/catalog" class="mega-link">Sản phẩm mới</a></li>
-                        <li><a routerLink="/sale" class="mega-link">Hot</a></li>
-                        <li><a routerLink="/catalog" class="mega-link">Bán chạy</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Sản phẩm mới</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Hot</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Bán chạy</a></li>
                       </ul>
                     </div>
 
                     <div class="col-md-2">
                       <h6 class="mb-3 h6-style text-uppercase border-bottom pb-2" style="color: var(--kanila-red);">Thương hiệu</h6>
                       <ul class="list-unstyled d-flex flex-column gap-2 mb-0">
-                        <li><a routerLink="/catalog" class="mega-link">3CE</a></li>
-                        <li><a routerLink="/catalog" class="mega-link">Romand</a></li>
-                        <li><a routerLink="/catalog" class="mega-link">Dior</a></li>
-                        <li><a routerLink="/catalog" class="mega-link">MAC</a></li>
-                        <li><a routerLink="/catalog" class="mega-link">Gucci</a></li>
-                        <li><a routerLink="/catalog" class="mega-link">Maybelline</a></li>
+                        <li><a routerLink="/shop" class="mega-link">3CE</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Romand</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Clio</a></li>
+                        <li><a routerLink="/shop" class="mega-link">MAC</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Black Rouge</a></li>
+                        <li><a routerLink="/shop" class="mega-link">Maybelline</a></li>
                       </ul>
                     </div>
 
-                    <div class="col-md-3 mt-4">
-                      <a [routerLink]="['/catalog']" [queryParams]="{category: 'gifts'}" class="text-decoration-none">
-                        <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
-                             style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover; cursor: pointer;">
-                          <div class="text-white">
-                            <p class="mb-1 fw-bold">Set quà</p>
-                            <small>Khám phá ngay</small>
-                          </div>
+                    <div class="col-md-3">
+                      <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
+                           style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover;">
+                        <div class="text-white">
+                          <p class="mb-1 fw-bold">Set quà</p>
+                          <small>Khám phá ngay</small>
                         </div>
-                      </a>
+                      </div>
                     </div>
 
-                    <div class="col-md-3 mt-4">
-                      <a routerLink="/catalog" class="text-decoration-none">
-                        <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
-                             style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover; cursor: pointer;">
-                          <div class="text-white">
-                            <p class="mb-1 fw-bold">Sản phẩm Hot</p>
-                            <small>Khám phá ngay</small>
-                          </div>
+                    <div class="col-md-3">
+                      <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
+                           style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover;">
+                        <div class="text-white">
+                          <p class="mb-1 fw-bold">Sản phẩm Hot</p>
+                          <small>Khám phá ngay</small>
                         </div>
-                      </a>
+                      </div>
                     </div>
 
-                    <div class="col-md-3 mt-4">
-                      <a routerLink="/sale" class="text-decoration-none">
-                        <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
-                             style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover; cursor: pointer;">
-                          <div class="text-white">
-                            <p class="mb-1 fw-bold">Deal Hot</p>
-                            <small>Khám phá ngay</small>
-                          </div>
+                    <div class="col-md-3">
+                      <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
+                           style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover;">
+                        <div class="text-white">
+                          <p class="mb-1 fw-bold">Deal Hot</p>
+                          <small>Khám phá ngay</small>
                         </div>
-                      </a>
+                      </div>
                     </div>
 
-                    <div class="col-md-3 mt-4">
-                      <a routerLink="/community" class="text-decoration-none">
-                        <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
-                             style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover; cursor: pointer;">
-                          <div class="text-white">
-                            <p class="mb-1 fw-bold">Cộng đồng Kanila</p>
-                            <small>Khám phá ngay</small>
-                          </div>
+                    <div class="col-md-3">
+                      <div class="mega-banner rounded-3 h-100 d-flex align-items-end p-3" 
+                           style="background-color: var(--kanila-pink); min-height: 200px; background-image: url('assets/images/mega-promo.jpg'); background-size: cover;">
+                        <div class="text-white">
+                          <p class="mb-1 fw-bold">Cộng đồng Kanila</p>
+                          <small>Khám phá ngay</small>
                         </div>
-                      </a>
+                      </div>
                     </div>
 
                   </div>

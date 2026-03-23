@@ -4,10 +4,20 @@
     --kanila-text: #372B2B;
     --kanila-red: #6B1E2E;
     --kanila-white: #ffffff;
+    /* Single UI font (loaded in index.html) */
+    --font-family-base: 'Nunito', sans-serif;
+  }
+
+  html {
+    font-family: var(--font-family-base);
+  }
+
+  app-root {
+    font-family: var(--font-family-base);
   }
 
   body {
-    font-family: 'Nunito', sans-serif;
+    font-family: var(--font-family-base);
     background-color: var(--kanila-bg);
     color: var(--kanila-text);
     margin: 0;

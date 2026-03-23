@@ -1,0 +1,128 @@
+<article
+  *ngIf="product"
+  class="product-card"
+  (click)="onCardClick()"
+  (keyup.enter)="onCardClick()"
+  tabindex="0"
+  role="link"
+  [attr.aria-label]="'Sản phẩm: ' + product.productName"
+>
+  <div class="product-card__media">
+    <div class="product-card__image-row">
+      <div class="product-card__image-wrap">
+        <img
+          class="product-card__img"
+          [src]="primaryImageUrl"
+          [alt]="product.productName"
+          loading="lazy"
+        />
+      </div>
+
+  
+    </div>
+
+    <div class="product-card__hover-actions" aria-hidden="true">
+      <button
+        type="button"
+        class="product-card__action product-card__action--icon"
+        title="Xem nhanh"
+        (click)="openPreview($event)"
+      >
+        <i class="bi bi-search"></i>
+      </button>
+      <button type="button" class="product-card__action product-card__action--buy" (click)="buyNow($event)">
+        Mua ngay
+      </button>
+      <button
+        type="button"
+        class="product-card__action product-card__action--icon"
+        title="Thêm giỏ hàng"
+        (click)="addToCart($event)"
+      >
+        <i class="bi bi-cart3"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="product-card__body">
+    <p class="product-card__brand">{{ product.brandId?.brandName }}</p>
+
+    <h3 class="product-card__title">{{ product.productName }}</h3>
+
+    <div class="product-card__price-row">
+      <div class="product-card__price-main">
+        <span class="product-card__price-old" *ngIf="hasDiscount">
+          {{ product.compareAtPrice | number: '1.0-0' }}đ
+        </span>
+        <span class="product-card__price-current">{{ product.price | number: '1.0-0' }}đ</span>
+        <span class="product-card__discount-pill" *ngIf="hasDiscount">-{{ discountPercent }}%</span>
+      </div>
+      <div class="product-card__ship-badge" title="Miễn phí vận chuyển">
+        <i class="bi bi-truck"></i>
+        <span>FREE</span>
+      </div>
+    </div>
+
+    <div class="product-card__meta-row">
+      <span class="product-card__rating-pill">
+        {{ displayRating }}
+        <i class="bi bi-star-fill product-card__star"></i>
+      </span>
+      <span class="product-card__sold">
+        Đã bán {{ product.bought | number: '1.0-0' }}
+        <i class="bi bi-fire"></i>
+      </span>
+    </div>
+
+    <div class="product-card__progress-track" role="progressbar" [attr.aria-valuenow]="soldProgressPercent" aria-valuemin="0" aria-valuemax="100">
+      <div class="product-card__progress-fill" [style.width.%]="soldProgressPercent"></div>
+    </div>
+  </div>
+</article>
+
+<!-- Quick view modal -->
+<div class="product-card__overlay" *ngIf="showPreview && product" (click)="closePreview()">
+  <div class="overlay-panel" (click)="$event.stopPropagation()">
+    <button type="button" class="overlay-close" (click)="closePreview()" aria-label="Đóng">
+      <i class="bi bi-x-lg"></i>
+    </button>
+
+    <div class="overlay-body">
+      <div class="overlay-left">
+        <img [src]="primaryImageUrl" [alt]="product.productName" class="overlay-img" />
+        <div class="overlay-stars">
+          <ng-container *ngFor="let s of [1, 2, 3, 4, 5]">
+            <i class="bi bi-star-fill" *ngIf="s <= (product.averageRating || 0)"></i>
+            <i class="bi bi-star" *ngIf="s > (product.averageRating || 0)"></i>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="overlay-right">
+        <h2 class="overlay-title">{{ product.productName }}</h2>
+
+        <div class="overlay-meta">
+          <span>Đã bán {{ product.bought || 0 }}</span>
+          <span>
+            Trạng thái:
+            <strong [class.text-danger]="stockStatus === 'Hết hàng'">{{ stockStatus }}</strong>
+          </span>
+        </div>
+
+        <p class="overlay-desc">{{ product.shortDescription }}</p>
+
+        <a class="overlay-link" (click)="goToDetail($event)">Xem chi tiết sản phẩm</a>
+
+        <div class="overlay-price-block">
+          <span class="overlay-price-label">Giá</span>
+          <span class="overlay-price-value">{{ product.price | number: '1.0-0' }}đ</span>
+        </div>
+
+        <div class="overlay-actions">
+          <button type="button" class="btn-soft" (click)="addToCart($event)">Thêm vào giỏ</button>
+          <button type="button" class="btn-primary" (click)="buyNow($event)">Mua ngay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

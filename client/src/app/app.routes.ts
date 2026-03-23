@@ -1,43 +1,28 @@
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { ClientLayout } from './layout/client-layout/client-layout';
-import { NgModule } from '@angular/core';
-import { Home } from './features/home/home';
-import { Introduction } from './features/about/introduction/introduction';
-import { Contact } from './features/about/contact/contact';
-import { Agent } from './features/about/agent/agent';
-import { Cookie } from './features/policy/cookie/cookie';
-import { Faq } from './features/policy/faq/faq';
-import { Feedback } from './features/policy/feedback/feedback';
-import { Payment } from './features/policy/payment/payment';
-import { Security } from './features/policy/security/security';
-import { Shipping } from './features/policy/shipping/shipping';
-import { Return } from './features/policy/return/return';
-import { Catalog } from './features/catalog/catalog';
-
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'home' },
+  { path: 'home', loadChildren: () => import('./features/home/home.routes').then((m) => m.HOME_ROUTES) },
   {
     path: '',
     component: ClientLayout,
     children: [
-      { path: '', component: Home},
-      { path: 'about/introduction', component: Introduction},
-      { path: 'about/contact', component: Contact},
-      { path: 'about/agent', component: Agent},
-      { path: 'policy/cookie', component: Cookie},
-      { path: 'policy/faq', component: Faq},
-      { path: 'policy/feedback', component: Feedback},
-      { path: 'policy/payment', component: Payment},
-      { path: 'policy/security', component: Security},
-      { path: 'policy/shipping', component: Shipping},
-      { path: 'policy/return', component: Return},
-      { path: 'catalog', component: Catalog},
-      { path: 'sale', component: Catalog},
-    ]
-  }
+      // { path: '', pathMatch: 'full', redirectTo: 'home' },
+      // { path: 'home', loadChildren: () => import('./features/home/home.routes').then((m) => m.HOME_ROUTES) },
+      { path: 'auth', loadChildren: () => import('./features/auth').then((m) => m.AUTH_ROUTES) },
+      { path: 'catalog', loadChildren: () => import('./features/catalog').then((m) => m.CATALOG_ROUTES) },
+      { path: 'community', loadChildren: () => import('./features/community/community.routes').then((m) => m.COMMUNITY_ROUTES) },
+      { path: 'content', loadChildren: () => import('./features/content/content.routes').then((m) => m.CONTENT_ROUTES) },
+      { path: 'help-center', loadChildren: () => import('./features/help-center/help-center.routes').then((m) => m.HELP_CENTER_ROUTES) },
+      { path: 'account', loadChildren: () => import('./features/account/account.routes').then((m) => m.ACCOUNT_ROUTES) },
+      { path: 'orders', loadChildren: () => import('./features/orders/orders.routes').then((m) => m.ORDERS_ROUTES) },
+      { path: 'wishlist', loadChildren: () => import('./features/wishlist/wishlist.routes').then((m) => m.WISHLIST_ROUTES) },
+      { path: 'cart', loadChildren: () => import('./features/cart/cart.routes').then((m) => m.CART_ROUTES) },
+      { path: 'checkout', loadChildren: () => import('./features/checkout/checkout.routes').then((m) => m.CHECKOUT_ROUTES) },
+      { path: 'payment', loadChildren: () => import('./features/payment/payment.routes').then((m) => m.PAYMENT_ROUTES) },
+      { path: 'search', loadChildren: () => import('./features/search/search.routes').then((m) => m.SEARCH_ROUTES) },
+      { path: 'loyalty', loadChildren: () => import('./features/loyalty/loyalty.routes').then((m) => m.LOYALTY_ROUTES) },
+    ],
+  },
+  { path: '**', redirectTo: 'home' },
 ];
-
-@NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
-})
-export class AppRoutingModule { }

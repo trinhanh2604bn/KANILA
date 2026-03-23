@@ -1,0 +1,73 @@
+.roya-wrapper {
+    background-color: transparent;
+    padding: 50px 0;
+  }
+
+/* Match the font styling used for “BEST SELLER” title */
+.mainpage-layout-title {
+  font-family: var(--font-family-base);
+  font-size: clamp(1.06rem, 2.25vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #2d1f3d;
+  text-align: center;
+  line-height: 1.25;
+}
+  
+  .container-glass {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 250px;
+  }
+  
+  .container-glass .glass {
+    position: relative;
+    width: 220px; /* Tăng kích thước một chút cho sang */
+    height: 240px;
+    background: linear-gradient(rgba(255, 235, 238, 0.4), transparent); /* Dùng FFEBEE */
+    border: 1px solid rgba(245, 163, 183, 0.2); /* Dùng F5A3B7 */
+    box-shadow: 0 25px 25px rgba(245, 163, 183, 0.15);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 20px;
+    margin: 0 -30px;
+    backdrop-filter: blur(15px);
+    transform: rotate(calc(var(--r) * 1deg));
+    cursor: pointer;
+  }
+  
+  .container-glass:hover .glass {
+    transform: rotate(0deg);
+    margin: 0 15px;
+  }
+  
+  .container-glass .glass::before {
+    content: attr(data-text);
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 50px;
+    background: rgba(245, 163, 183, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--kanila-red); /* Màu đỏ Kanila */
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+  }
+  
+  .container-glass .glass svg {
+    color: var(--kanila-red);
+    transition: 0.5s;
+  }
+  
+  .container-glass .glass:hover svg {
+    transform: scale(1.2) translateY(-10px);
+    color: var(--kanila-pink);
+  }

@@ -1,0 +1,13 @@
+<section class="catalog-page">
+  <aside class="catalog-filter">
+    <p class="filter-placeholder">Bộ lọc danh mục (sắp có)</p>
+  </aside>
+
+  <div class="catalog-products">
+    <div class="product-grid">
+      <div *ngFor="let product of products">
+        <app-product-card [product]="product"></app-product-card>
+      </div>
+    </div>
+  </div>
+</section>
