@@ -2,11 +2,19 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { HeaderCategoryItem } from '../../core/models/header.model';
 import { Product } from '../../core/models/product.model';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
+import {
+  CatalogFacetService,
+  InventoryBalanceRow,
+  ProductOptionRow,
+  ProductOptionValueRow,
+  ProductVariantRow,
+  ReviewSummaryRow,
+} from '../../core/services/catalog-facet.service';
 import { ProductAttributeRow, ProductAttributeService } from '../../core/services/product-attribute.service';
 import { ProductService } from '../../core/services/product.service';
 import {
@@ -26,6 +34,14 @@ interface CatalogProductRow {
   parentSlug: string;
   subSlug?: string;
   skinTypes: string[];
+  productType: string;
+  shades: string[];
+  finishes: string[];
+  benefits: string[];
+  hasPromotion: boolean;
+  rating: number;
+  inStock: boolean;
+  sizes: string[];
   price: number;
   oldPrice: number | null;
   isSale: boolean;
@@ -48,7 +64,15 @@ export class Catalog implements OnInit {
   categories: CatalogCategoryItem[] = [];
 
   brands: string[] = [];
+  productTypes: string[] = [];
   skinTypes: string[] = [];
+  shadeOptions: string[] = [];
+  finishOptions: string[] = [];
+  benefitOptions: string[] = [];
+  promotionOptions: string[] = ['Đang giảm giá'];
+  ratingOptions: number[] = [5, 4, 3];
+  stockOptions: string[] = ['Còn hàng', 'Hết hàng'];
+  sizeOptions: string[] = [];
   private brandItems: CatalogBrandFilterItem[] = [];
   private brandSlugMap = new Map<string, string>();
 
@@ -60,6 +84,14 @@ export class Catalog implements OnInit {
   selectedSubCategory: string | null = null;
   selectedBrands: string[] = [];
   selectedSkinTypes: string[] = [];
+  selectedProductTypes: string[] = [];
+  selectedShades: string[] = [];
+  selectedFinishes: string[] = [];
+  selectedBenefits: string[] = [];
+  selectedPromotions: string[] = [];
+  selectedRatings: number[] = [];
+  selectedStockStatuses: string[] = [];
+  selectedSizes: string[] = [];
   selectedPrice: { label: string, min: number, max: number } | null = null;
   activeSort: CatalogSortOption = 'popular';
   openDropdown: string | null = null;
@@ -74,7 +106,15 @@ export class Catalog implements OnInit {
     categorySlug: null,
     subCategorySlug: null,
     brandSlugs: [],
+    productTypes: [],
     skinTypes: [],
+    shades: [],
+    finishes: [],
+    benefits: [],
+    promotions: [],
+    ratings: [],
+    stockStatuses: [],
+    sizes: [],
     minPrice: 0,
     maxPrice: 5000000,
     sort: 'popular',
@@ -86,7 +126,8 @@ export class Catalog implements OnInit {
     private readonly categoryService: CategoryService,
     private readonly brandService: BrandService,
     private readonly productService: ProductService,
-    private readonly productAttributeService: ProductAttributeService
+    private readonly productAttributeService: ProductAttributeService,
+    private readonly facetService: CatalogFacetService
   ) {}
 
   ngOnInit() {
@@ -101,9 +142,15 @@ export class Catalog implements OnInit {
       categoryTree: this.categoryService.getHeaderCategories(),
       brandItems: this.brandService.getHeaderBrands(),
       products: this.productService.getProducts(),
-      attributes: this.productAttributeService.getAll(),
+      attributes: this.productAttributeService.getAll().pipe(catchError(() => of([]))),
+      options: this.facetService.getProductOptions().pipe(catchError(() => of([]))),
+      optionValues: this.facetService.getProductOptionValues().pipe(catchError(() => of([]))),
+      variants: this.facetService.getProductVariants().pipe(catchError(() => of([]))),
+      reviewSummaries: this.facetService.getReviewSummaries().pipe(catchError(() => of([]))),
+      inventoryBalances: this.facetService.getInventoryBalances().pipe(catchError(() => of([]))),
+      activePromotions: this.facetService.getActivePromotions().pipe(catchError(() => of([]))),
     }).subscribe({
-      next: ({ categoryTree, brandItems, products, attributes }) => {
+      next: ({ categoryTree, brandItems, products, attributes, options, optionValues, variants, reviewSummaries, inventoryBalances, activePromotions }) => {
         this.categories = categoryTree.map((c) => ({
           id: c.id,
           slug: c.slug,
@@ -115,8 +162,22 @@ export class Catalog implements OnInit {
         this.brands = this.brandItems.map((b) => b.name);
         this.brandSlugMap = new Map(this.brandItems.map((b) => [b.slug, b.name]));
 
-        this.allProducts = this.mapProducts(products, attributes);
+        this.allProducts = this.mapProducts(
+          products,
+          attributes,
+          options,
+          optionValues,
+          variants,
+          reviewSummaries,
+          inventoryBalances,
+          activePromotions.length > 0
+        );
+        this.productTypes = this.extractProductTypes(this.allProducts);
         this.skinTypes = this.extractSkinTypes(this.allProducts);
+        this.shadeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.shades));
+        this.finishOptions = this.extractUnique(this.allProducts.flatMap((p) => p.finishes));
+        this.benefitOptions = this.extractUnique(this.allProducts.flatMap((p) => p.benefits));
+        this.sizeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.sizes));
         this.suggestedSkinType = this.resolveSuggestedSkinType(this.skinTypes);
         this.maxLimit = this.computeMaxPrice(this.allProducts);
         this.route.queryParams.subscribe((params) => {
@@ -160,7 +221,15 @@ export class Catalog implements OnInit {
       category: null,
       sub: null,
       brand: null,
+      productType: null,
       skin: null,
+      shade: null,
+      finish: null,
+      benefit: null,
+      promotion: null,
+      rating: null,
+      stock: null,
+      size: null,
       minPrice: null,
       maxPrice: null,
       sort: null,
@@ -192,6 +261,31 @@ export class Catalog implements OnInit {
 
     if (this.selectedSkinTypes.length > 0) {
       temp = temp.filter((p) => p.skinTypes.some((s) => this.selectedSkinTypes.includes(s)));
+    }
+    if (this.selectedProductTypes.length > 0) {
+      temp = temp.filter((p) => this.selectedProductTypes.includes(p.productType));
+    }
+    if (this.selectedShades.length > 0) {
+      temp = temp.filter((p) => p.shades.some((s) => this.selectedShades.includes(s)));
+    }
+    if (this.selectedFinishes.length > 0) {
+      temp = temp.filter((p) => p.finishes.some((s) => this.selectedFinishes.includes(s)));
+    }
+    if (this.selectedBenefits.length > 0) {
+      temp = temp.filter((p) => p.benefits.some((s) => this.selectedBenefits.includes(s)));
+    }
+    if (this.selectedPromotions.length > 0) {
+      temp = temp.filter((p) => p.hasPromotion);
+    }
+    if (this.selectedRatings.length > 0) {
+      const minRating = Math.min(...this.selectedRatings);
+      temp = temp.filter((p) => p.rating >= minRating);
+    }
+    if (this.selectedStockStatuses.length > 0) {
+      temp = temp.filter((p) => (this.selectedStockStatuses.includes('Còn hàng') && p.inStock) || (this.selectedStockStatuses.includes('Hết hàng') && !p.inStock));
+    }
+    if (this.selectedSizes.length > 0) {
+      temp = temp.filter((p) => p.sizes.some((s) => this.selectedSizes.includes(s)));
     }
 
     temp = temp.filter((p) => p.price >= this.minPriceInput && p.price <= this.maxPriceInput);
@@ -247,6 +341,39 @@ export class Catalog implements OnInit {
     else next.push(type);
     this.updateRouteState({ skin: next.length ? next.join(',') : null });
   }
+  toggleProductType(type: string) {
+    const next = this.toggleStringSelection(this.selectedProductTypes, type);
+    this.updateRouteState({ productType: next.length ? next.join(',') : null });
+  }
+  toggleShade(value: string) {
+    const next = this.toggleStringSelection(this.selectedShades, value);
+    this.updateRouteState({ shade: next.length ? next.join(',') : null });
+  }
+  toggleFinish(value: string) {
+    const next = this.toggleStringSelection(this.selectedFinishes, value);
+    this.updateRouteState({ finish: next.length ? next.join(',') : null });
+  }
+  toggleBenefit(value: string) {
+    const next = this.toggleStringSelection(this.selectedBenefits, value);
+    this.updateRouteState({ benefit: next.length ? next.join(',') : null });
+  }
+  togglePromotion(value: string) {
+    const next = this.toggleStringSelection(this.selectedPromotions, value);
+    this.updateRouteState({ promotion: next.length ? next.join(',') : null });
+  }
+  toggleRating(value: number) {
+    const exists = this.selectedRatings.includes(value);
+    const next = exists ? this.selectedRatings.filter((r) => r !== value) : [...this.selectedRatings, value];
+    this.updateRouteState({ rating: next.length ? next.join(',') : null });
+  }
+  toggleStock(value: string) {
+    const next = this.toggleStringSelection(this.selectedStockStatuses, value);
+    this.updateRouteState({ stock: next.length ? next.join(',') : null });
+  }
+  toggleSize(value: string) {
+    const next = this.toggleStringSelection(this.selectedSizes, value);
+    this.updateRouteState({ size: next.length ? next.join(',') : null });
+  }
   selectSort(sortType: CatalogSortOption) {
     this.updateRouteState({ sort: sortType });
   }
@@ -257,11 +384,41 @@ export class Catalog implements OnInit {
       this.updateRouteState({ skin: this.selectedSkinTypes.filter((s) => s !== value).join(',') || null });
     } else if (type === 'price') {
       this.updateRouteState({ minPrice: null, maxPrice: null });
+    } else if (type === 'productType' && value) {
+      this.updateRouteState({ productType: this.selectedProductTypes.filter((x) => x !== value).join(',') || null });
+    } else if (type === 'shade' && value) {
+      this.updateRouteState({ shade: this.selectedShades.filter((x) => x !== value).join(',') || null });
+    } else if (type === 'finish' && value) {
+      this.updateRouteState({ finish: this.selectedFinishes.filter((x) => x !== value).join(',') || null });
+    } else if (type === 'benefit' && value) {
+      this.updateRouteState({ benefit: this.selectedBenefits.filter((x) => x !== value).join(',') || null });
+    } else if (type === 'promotion' && value) {
+      this.updateRouteState({ promotion: this.selectedPromotions.filter((x) => x !== value).join(',') || null });
+    } else if (type === 'rating' && value) {
+      const rating = Number(value);
+      this.updateRouteState({ rating: this.selectedRatings.filter((x) => x !== rating).join(',') || null });
+    } else if (type === 'stock' && value) {
+      this.updateRouteState({ stock: this.selectedStockStatuses.filter((x) => x !== value).join(',') || null });
+    } else if (type === 'size' && value) {
+      this.updateRouteState({ size: this.selectedSizes.filter((x) => x !== value).join(',') || null });
     }
   }
 
   clearAllFilters() {
-    this.updateRouteState({ skin: null, minPrice: null, maxPrice: null, brand: null });
+    this.updateRouteState({
+      skin: null,
+      minPrice: null,
+      maxPrice: null,
+      brand: null,
+      productType: null,
+      shade: null,
+      finish: null,
+      benefit: null,
+      promotion: null,
+      rating: null,
+      stock: null,
+      size: null,
+    });
   }
 
   hasActiveFilters(): boolean {
@@ -269,6 +426,14 @@ export class Catalog implements OnInit {
       this.selectedBrands.length > 0 ||
       this.selectedSkinTypes.length > 0 ||
       this.selectedPrice !== null ||
+      this.selectedProductTypes.length > 0 ||
+      this.selectedShades.length > 0 ||
+      this.selectedFinishes.length > 0 ||
+      this.selectedBenefits.length > 0 ||
+      this.selectedPromotions.length > 0 ||
+      this.selectedRatings.length > 0 ||
+      this.selectedStockStatuses.length > 0 ||
+      this.selectedSizes.length > 0 ||
       !!this.selectedBrandFromHeader ||
       !!this.selectedParentCategory ||
       !!this.selectedSubCategory
@@ -289,7 +454,15 @@ export class Catalog implements OnInit {
     const categorySlug = (params['category'] ?? '').trim() || null;
     const subSlug = (params['sub'] ?? '').trim() || null;
     const brandParam = (params['brand'] ?? '').trim();
+    const productTypeParam = (params['productType'] ?? '').trim();
     const skinParam = (params['skin'] ?? '').trim();
+    const shadeParam = (params['shade'] ?? '').trim();
+    const finishParam = (params['finish'] ?? '').trim();
+    const benefitParam = (params['benefit'] ?? '').trim();
+    const promotionParam = (params['promotion'] ?? '').trim();
+    const ratingParam = (params['rating'] ?? '').trim();
+    const stockParam = (params['stock'] ?? '').trim();
+    const sizeParam = (params['size'] ?? '').trim();
     const sortParam = (params['sort'] ?? '').trim() as CatalogSortOption;
     const minPriceParam = Number(params['minPrice']);
     const maxPriceParam = Number(params['maxPrice']);
@@ -308,11 +481,27 @@ export class Catalog implements OnInit {
           .map((s) => decodeURIComponent(s.trim()))
           .filter(Boolean)
       : [];
+    const productTypes = this.splitParam(productTypeParam);
+    const shades = this.splitParam(shadeParam);
+    const finishes = this.splitParam(finishParam);
+    const benefits = this.splitParam(benefitParam);
+    const promotions = this.splitParam(promotionParam);
+    const ratings = this.splitParam(ratingParam).map((v) => Number(v)).filter((v) => Number.isFinite(v));
+    const stockStatuses = this.splitParam(stockParam);
+    const sizes = this.splitParam(sizeParam);
 
     this.filterState.categorySlug = categorySlug;
     this.filterState.subCategorySlug = subSlug;
     this.filterState.brandSlugs = brandSlugs;
+    this.filterState.productTypes = productTypes;
     this.filterState.skinTypes = skinTypes;
+    this.filterState.shades = shades;
+    this.filterState.finishes = finishes;
+    this.filterState.benefits = benefits;
+    this.filterState.promotions = promotions;
+    this.filterState.ratings = ratings;
+    this.filterState.stockStatuses = stockStatuses;
+    this.filterState.sizes = sizes;
     this.filterState.minPrice = Number.isFinite(minPriceParam) && minPriceParam > 0 ? minPriceParam : 0;
     this.filterState.maxPrice = Number.isFinite(maxPriceParam) && maxPriceParam > 0 ? maxPriceParam : this.maxLimit;
     this.filterState.sort = this.isValidSort(sortParam) ? sortParam : 'popular';
@@ -321,7 +510,15 @@ export class Catalog implements OnInit {
     this.selectedSubCategory = this.filterState.subCategorySlug;
     this.selectedBrands = brandNames;
     this.selectedBrandFromHeader = brandNames.length === 1 ? brandNames[0] : null;
+    this.selectedProductTypes = this.filterState.productTypes;
     this.selectedSkinTypes = this.filterState.skinTypes;
+    this.selectedShades = this.filterState.shades;
+    this.selectedFinishes = this.filterState.finishes;
+    this.selectedBenefits = this.filterState.benefits;
+    this.selectedPromotions = this.filterState.promotions;
+    this.selectedRatings = this.filterState.ratings;
+    this.selectedStockStatuses = this.filterState.stockStatuses;
+    this.selectedSizes = this.filterState.sizes;
     this.minPriceInput = this.filterState.minPrice;
     this.maxPriceInput = this.filterState.maxPrice;
     this.activeSort = this.filterState.sort;
@@ -354,13 +551,32 @@ export class Catalog implements OnInit {
     return byName?.name ?? value;
   }
 
-  private mapProducts(products: Product[], attributes: ProductAttributeRow[]): CatalogProductRow[] {
+  private mapProducts(
+    products: Product[],
+    attributes: ProductAttributeRow[],
+    options: ProductOptionRow[],
+    optionValues: ProductOptionValueRow[],
+    variants: ProductVariantRow[],
+    reviewSummaries: ReviewSummaryRow[],
+    inventoryBalances: InventoryBalanceRow[],
+    hasActiveSystemPromotion: boolean
+  ): CatalogProductRow[] {
     const skinTypeMap = this.buildSkinTypeMap(attributes);
+    const finishBenefitMap = this.buildFinishBenefitMap(attributes);
+    const optionMap = this.buildOptionValueMap(options, optionValues);
+    const variantFacetMap = this.buildVariantFacetMap(variants, inventoryBalances);
+    const ratingMap = new Map<string, number>(
+      reviewSummaries.map((r) => [this.refId(r.productId), r.averageRating ?? 0])
+    );
     return products
       .filter((p) => p.productStatus !== 'inactive' && p.isActive !== false)
       .map((p) => {
         const categoryRef = p.categoryId?._id ?? '';
         const categoryCtx = this.findCategoryContext(categoryRef);
+        const optionFacet = optionMap.get(p._id) ?? { shades: [] };
+        const variantFacet = variantFacetMap.get(p._id) ?? { inStock: (p.stock ?? 0) > 0, sizes: [] };
+        const finishBenefit = finishBenefitMap.get(p._id) ?? { finishes: [], benefits: [] };
+        const isDiscount = !!(p.compareAtPrice && p.compareAtPrice > (p.price ?? 0));
         const brandName = p.brandId?.brandName ?? '';
         return {
           id: p._id,
@@ -370,23 +586,31 @@ export class Catalog implements OnInit {
           brandSlug: this.slugify(brandName),
           parentSlug: categoryCtx.parentSlug,
           subSlug: categoryCtx.subSlug,
+          productType: categoryCtx.parentName,
           skinTypes: skinTypeMap.get(p._id) ?? [],
+          shades: optionFacet.shades,
+          finishes: finishBenefit.finishes,
+          benefits: finishBenefit.benefits,
+          hasPromotion: isDiscount || hasActiveSystemPromotion,
+          rating: ratingMap.get(p._id) ?? p.averageRating ?? 0,
+          inStock: variantFacet.inStock,
+          sizes: variantFacet.sizes,
           price: p.price ?? 0,
           oldPrice: p.compareAtPrice ?? null,
-          isSale: !!(p.compareAtPrice && p.compareAtPrice > (p.price ?? 0)),
+          isSale: isDiscount,
           sold: p.bought ?? 0,
           imageUrl: this.resolveImage(p),
         };
       });
   }
 
-  private findCategoryContext(categoryId: string): { parentSlug: string; subSlug?: string } {
+  private findCategoryContext(categoryId: string): { parentSlug: string; parentName: string; subSlug?: string } {
     for (const top of this.categories) {
-      if (top.id === categoryId) return { parentSlug: top.slug };
+      if (top.id === categoryId) return { parentSlug: top.slug, parentName: top.name };
       const sub = top.subCategories.find((s) => s.id === categoryId);
-      if (sub) return { parentSlug: top.slug, subSlug: sub.slug };
+      if (sub) return { parentSlug: top.slug, parentName: top.name, subSlug: sub.slug };
     }
-    return { parentSlug: '' };
+    return { parentSlug: '', parentName: '' };
   }
 
   private buildSkinTypeMap(attributes: ProductAttributeRow[]): Map<string, string[]> {
@@ -406,6 +630,14 @@ export class Catalog implements OnInit {
 
   private extractSkinTypes(products: CatalogProductRow[]): string[] {
     return Array.from(new Set(products.flatMap((p) => p.skinTypes))).sort((a, b) => a.localeCompare(b));
+  }
+
+  private extractProductTypes(products: CatalogProductRow[]): string[] {
+    return this.extractUnique(products.map((p) => p.productType).filter(Boolean));
+  }
+
+  private extractUnique(values: string[]): string[] {
+    return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
   }
 
   private computeMaxPrice(products: CatalogProductRow[]): number {
@@ -440,5 +672,108 @@ export class Catalog implements OnInit {
     if (!raw) return null;
     const match = available.find((s) => s.toLowerCase() === raw.toLowerCase());
     return match ?? null;
+  }
+
+  private splitParam(raw: string): string[] {
+    return raw
+      ? raw
+          .split(',')
+          .map((x) => decodeURIComponent(x.trim()))
+          .filter(Boolean)
+      : [];
+  }
+
+  private toggleStringSelection(source: string[], value: string): string[] {
+    const exists = source.includes(value);
+    return exists ? source.filter((x) => x !== value) : [...source, value];
+  }
+
+  private buildOptionValueMap(options: ProductOptionRow[], values: ProductOptionValueRow[]): Map<string, { shades: string[] }> {
+    const optionById = new Map<string, ProductOptionRow>();
+    for (const o of options) optionById.set(o._id, o);
+    const map = new Map<string, { shades: string[] }>();
+    for (const v of values) {
+      const optionId = this.refId(v.productOptionId);
+      const option = optionById.get(optionId);
+      if (!option) continue;
+      const productId = this.refId(option.productId);
+      if (!productId) continue;
+      const optionName = (option.optionName ?? '').toLowerCase();
+      const val = (v.optionValue ?? '').trim();
+      if (!val) continue;
+      const current = map.get(productId) ?? { shades: [] };
+      if (/(shade|color|mau|màu)/i.test(optionName) && !current.shades.includes(val)) current.shades.push(val);
+      map.set(productId, current);
+    }
+    return map;
+  }
+
+  private buildFinishBenefitMap(attributes: ProductAttributeRow[]): Map<string, { finishes: string[]; benefits: string[] }> {
+    const map = new Map<string, { finishes: string[]; benefits: string[] }>();
+    const finishRegex = /(finish|matte|glossy|shimmer|dewy|satin|velvet)/i;
+    const benefitRegex = /(benefit|waterproof|long|lasting|moisturiz|duong|dưỡng|ben mau|bền màu)/i;
+    for (const a of attributes) {
+      const productId = this.refId(a.productId);
+      if (!productId) continue;
+      const name = (a.attributeName ?? '').trim();
+      const value = (a.attributeValue ?? '').trim();
+      const current = map.get(productId) ?? { finishes: [], benefits: [] };
+      if (finishRegex.test(name) || finishRegex.test(value)) {
+        const normalized = value || name;
+        if (normalized && !current.finishes.includes(normalized)) current.finishes.push(normalized);
+      }
+      if (benefitRegex.test(name) || benefitRegex.test(value)) {
+        const normalized = value || name;
+        if (normalized && !current.benefits.includes(normalized)) current.benefits.push(normalized);
+      }
+      map.set(productId, current);
+    }
+    return map;
+  }
+
+  private buildVariantFacetMap(
+    variants: ProductVariantRow[],
+    inventoryBalances: InventoryBalanceRow[]
+  ): Map<string, { inStock: boolean; sizes: string[] }> {
+    const byVariantId = new Map<string, ProductVariantRow>();
+    for (const v of variants) byVariantId.set(v._id, v);
+    const map = new Map<string, { inStock: boolean; sizes: string[] }>();
+    for (const v of variants) {
+      const productId = this.refId(v.productId);
+      if (!productId) continue;
+      const current = map.get(productId) ?? { inStock: false, sizes: [] };
+      const size = this.formatVariantSize(v);
+      if (size && !current.sizes.includes(size)) current.sizes.push(size);
+      map.set(productId, current);
+    }
+    for (const b of inventoryBalances) {
+      const variantId = this.refId(b.variantId);
+      const variant = byVariantId.get(variantId);
+      if (!variant) continue;
+      const productId = this.refId(variant.productId);
+      if (!productId) continue;
+      const current = map.get(productId) ?? { inStock: false, sizes: [] };
+      if ((b.availableQty ?? 0) > 0) current.inStock = true;
+      map.set(productId, current);
+    }
+    return map;
+  }
+
+  private formatVariantSize(v: ProductVariantRow): string {
+    if ((v.volumeMl ?? 0) > 0) return `${v.volumeMl}ml`;
+    if ((v.weightGrams ?? 0) > 0) return `${v.weightGrams}g`;
+    return '';
+  }
+
+  private refId(value: string | { _id?: string; productId?: string | { _id?: string } } | undefined): string {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+      if (value._id) return String(value._id);
+      const pid = (value as { productId?: string | { _id?: string } }).productId;
+      if (typeof pid === 'string') return pid;
+      if (pid && typeof pid === 'object' && pid._id) return String(pid._id);
+    }
+    return '';
   }
 }
