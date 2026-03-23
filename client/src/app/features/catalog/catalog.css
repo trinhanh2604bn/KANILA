@@ -23,6 +23,14 @@
   box-shadow: 0 4px 10px rgba(107, 30, 46, 0.1);
 }
 
+.catalog-section + .catalog-section {
+  margin-top: 10px;
+}
+
+.section-title {
+  letter-spacing: 0.01em;
+}
+
 /* --- Các nút Lọc tiêu chí (Hàng 2) --- */
 .btn-filter {
   background-color: var(--kanila-white);
@@ -39,6 +47,16 @@
   color: var(--kanila-red);
 }
 
+.filter-chip {
+  box-shadow: 0 1px 0 rgba(107, 30, 46, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 30, 46, 0.1);
+}
+
 /* --- Bảng xổ xuống (Dropdown Panel) --- */
 .dropdown-panel {
   position: absolute;
@@ -49,6 +67,30 @@
   min-width: 220px;
   z-index: 1000;
   animation: fadeInDown 0.2s ease-out;
+}
+
+.skin-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(107, 30, 46, 0.2);
+  font-size: 0.85rem;
+  color: var(--kanila-text);
+}
+
+.skin-suggest-btn {
+  border: 1px solid rgba(107, 30, 46, 0.25);
+  border-radius: 20px;
+  color: var(--kanila-red);
+  background: #fff;
+}
+
+.skin-suggest-btn:hover {
+  border-color: var(--kanila-red);
+  color: var(--kanila-red);
 }
 
 .price-dropdown {
@@ -147,6 +189,7 @@
   border: 1px solid var(--kanila-red);
   color: var(--kanila-red);
   font-size: 0.9rem;
+  box-shadow: 0 1px 6px rgba(107, 30, 46, 0.08);
 }
 
 .filter-tag i {
@@ -170,6 +213,7 @@
 .btn-sort:hover, .btn-sort.active {
   border-color: var(--kanila-red);
   color: var(--kanila-red);
+  box-shadow: 0 3px 10px rgba(107, 30, 46, 0.12);
 }
 
 /* --- Animations --- */
@@ -221,6 +265,16 @@
   padding-left: 15px;
   padding-right: 15px;
   border-radius: 10px
+}
+
+.product-count-pill {
+  border: 1px solid rgba(107, 30, 46, 0.22);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--kanila-red);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
 }
 
 /* --- HIỆU ỨNG THU GỌN VÀ HOVER MA THUẬT --- */
