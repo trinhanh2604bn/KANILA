@@ -77,7 +77,14 @@ export class ProductsApiService {
 
     const imageList = Array.isArray(images) ? (images as string[]).filter(Boolean) : [];
     const existingUrl = typeof rest['imageUrl'] === 'string' ? (rest['imageUrl'] as string).trim() : '';
-    const imageUrl = existingUrl || imageList[0] || '';
+    let imageUrl = existingUrl || imageList[0] || '';
+
+    // Guard against huge base64 payloads that can exceed backend body limits.
+    // Backend only needs a single primary imageUrl; if it's too large, send empty instead.
+    const MAX_IMAGE_URL_CHARS = 3_500_000;
+    if (imageUrl.startsWith('data:') && imageUrl.length > MAX_IMAGE_URL_CHARS) {
+      imageUrl = '';
+    }
 
     let isActive: boolean;
     if (status === 'published') isActive = true;

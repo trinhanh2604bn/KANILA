@@ -1,8 +1,9 @@
 import { Component, ElementRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import { NotificationsApiService } from '../../../../features/notifications/services/notifications-api.service';
 import { AppNotification } from '../../../../features/notifications/models/notification.model';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-notification-bell',
@@ -19,12 +20,36 @@ export class NotificationBellComponent implements OnInit {
   notifications = signal<AppNotification[]>([]);
   isOpen = signal(false);
   loading = signal(true);
+  disablePanelClicks = signal(false);
+
+  private isProductFormRoute(url: string): boolean {
+    const path = (url || '').split('?')[0];
+    // Be tolerant to base paths (e.g. '/admin/products/create')
+    return (
+      path.endsWith('/products/create') ||
+      /^.*\/products\/[^\/]+\/edit$/.test(path)
+    );
+  }
 
   ngOnInit() {
     this.api.getAll().subscribe({
       next: (data) => { this.notifications.set(data); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
+
+    // On product create/edit screens, avoid the dropdown intercepting the "Save Product" click.
+    this.router.events.pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd)).subscribe((e) => {
+      const url = e.urlAfterRedirects ?? e.url;
+      const isForm = this.isProductFormRoute(url);
+      this.disablePanelClicks.set(isForm);
+      if (isForm) this.isOpen.set(false); // visually remove the overlay
+    });
+
+    // Also set initial state for the current page.
+    const initialUrl = this.router.url ?? '';
+    const isForm = this.isProductFormRoute(initialUrl);
+    this.disablePanelClicks.set(isForm);
+    if (isForm) this.isOpen.set(false);
   }
 
   toggle() {

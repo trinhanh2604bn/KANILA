@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators, FormsModule, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { forkJoin, switchMap } from 'rxjs';
@@ -14,6 +14,15 @@ import { Brand } from '../../../brands/models/brand.model';
 import { ProductOption, ProductVariant } from '../../models/variant.model';
 
 const NUMERIC_VARIANT_FIELDS = new Set(['weightGrams', 'volumeMl', 'costAmount']);
+
+function nonWhitespaceValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  if (value === null || value === undefined) return null; // let `required` handle empties
+  if (typeof value === 'string') {
+    return value.trim().length === 0 ? { nonWhitespace: true } : null;
+  }
+  return null;
+}
 
 @Component({
   selector: 'app-product-form-page',
@@ -50,7 +59,7 @@ export class ProductFormPageComponent implements OnInit {
 
   form = this.fb.nonNullable.group({
     productName: ['', [Validators.required]],
-    productCode: ['', [Validators.required]],
+    productCode: ['', [Validators.required, nonWhitespaceValidator]],
     slug: [''],
     brandId: ['', [Validators.required]],
     categoryId: ['', [Validators.required]],
@@ -138,27 +147,76 @@ export class ProductFormPageComponent implements OnInit {
     event.preventDefault();
     this.isDragging.set(false);
     if (event.dataTransfer?.files) {
-      this.handleFiles(Array.from(event.dataTransfer.files));
+      void this.handleFiles(Array.from(event.dataTransfer.files));
     }
   }
 
   onImageAdd(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []) as File[];
-    this.handleFiles(files);
+    void this.handleFiles(files);
     input.value = '';
   }
 
-  private handleFiles(files: File[]): void {
-    files.forEach((file) => {
-      if (!file.type.startsWith('image/')) return;
+  private async handleFiles(files: File[]): Promise<void> {
+    // Compress client-side to keep `imageUrl` base64 payload under backend limits.
+    const maxDim = 900;
+    const quality = 0.72;
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      const dataUrl = await this.readFileAsDataUrl(file);
+      let final = dataUrl;
+      try {
+        final = await this.compressImageDataUrl(dataUrl, maxDim, quality);
+      } catch (e) {
+        // If compression fails for any reason, fall back to original to avoid blocking product creation.
+        console.warn('Image compression failed; using original', e);
+      }
+      this.images.update((imgs) => [...imgs, final]);
+    }
+  }
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e: ProgressEvent<FileReader>) => {
         const r = e.target?.result;
-        if (typeof r === 'string') this.images.update((imgs) => [...imgs, r]);
+        if (typeof r === 'string') resolve(r);
+        else reject(new Error('Failed to read file'));
       };
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
     });
+  }
+
+  private async compressImageDataUrl(dataUrl: string, maxDim: number, quality: number): Promise<string> {
+    // If it isn't an image data URL or is already empty, just pass through.
+    if (!dataUrl.startsWith('data:image/')) return dataUrl;
+
+    const img = new Image();
+    img.src = dataUrl;
+    // `decode()` is supported in modern browsers; fall back to onload if needed.
+    await (img.decode?.() ?? new Promise<void>((resolve) => (img.onload = () => resolve())));
+
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return dataUrl;
+
+    const scale = Math.min(1, maxDim / Math.max(w, h));
+    const targetW = Math.max(1, Math.round(w * scale));
+    const targetH = Math.max(1, Math.round(h * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return dataUrl;
+
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+
+    // Re-encode to JPEG to reduce size; we still keep it as a data URL.
+    return canvas.toDataURL('image/jpeg', quality);
   }
 
   removeImage(index: number): void {
@@ -217,13 +275,14 @@ export class ProductFormPageComponent implements OnInit {
   }
 
   addVariantRow(): void {
-    const base = (this.form.controls.productCode.value || 'SKU').trim();
+    const rawBase = String(this.form.controls.productCode.value || '').trim();
+    const base = rawBase || 'SKU';
     const id = `temp-${Date.now()}`;
     this.variants.update((vs) => [
       ...vs,
       {
         id,
-        productId: this.productId || 'temp',
+        productId: this.productId,
         sku: `${base}-NEW`.toUpperCase(),
         barcode: '',
         variantName: 'New variant',
@@ -253,7 +312,8 @@ export class ProductFormPageComponent implements OnInit {
     }
 
     const combinations = this.cartesianProduct(activeOptions.map((o) => o.values));
-    const baseCode = (this.form.controls.productCode.value || 'SKU').trim();
+    const rawBaseCode = String(this.form.controls.productCode.value || '').trim();
+    const baseCode = rawBaseCode || 'SKU';
 
     const newVariants: ProductVariant[] = combinations.map((combo, idx) => {
       const optionValues: Record<string, string> = {};
@@ -393,13 +453,18 @@ export class ProductFormPageComponent implements OnInit {
 
     this.saving.set(true);
     const raw = this.form.getRawValue();
+    const normalizedProductCode = String(raw.productCode || '').trim().toUpperCase();
+    const normalizedProductName = String(raw.productName || '').trim();
     const payload = {
       ...raw,
+      productName: normalizedProductName,
+      productCode: normalizedProductCode,
       images: this.images(),
     };
 
-    const afterSave = (productId: string) =>
-      this.variantApi.syncForProduct(productId, this.variants(), this.serverVariants());
+    const afterSave = (productId: string) => {
+      return this.variantApi.syncForProduct(productId, this.variants(), this.serverVariants());
+    };
 
     const req = this.isEdit()
       ? this.api.update(this.productId, payload).pipe(switchMap(() => afterSave(this.productId)))
@@ -413,8 +478,28 @@ export class ProductFormPageComponent implements OnInit {
       },
       error: (err) => {
         this.saving.set(false);
-        const msg = err?.error?.message || 'Failed to save product. Please try again.';
-        this.toast.error(typeof msg === 'string' ? msg : 'Failed to save product. Please try again.');
+
+        const backendMessage = typeof err?.error?.message === 'string' ? err.error.message : undefined;
+        const errMessage = typeof err?.message === 'string' ? err.message : undefined;
+        const errStatus = typeof err?.status === 'number' ? err.status : undefined;
+        const errBody =
+          err?.error && typeof err.error === 'object' ? JSON.stringify(err.error).slice(0, 1000) : undefined;
+
+        // Network-level failures (offline / backend unreachable) often come through as status=0.
+        if (errStatus === 0) {
+          const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
+          const msg = `Network error: cannot reach backend (${online ? 'online' : 'offline'}). Check that the server is running at http://127.0.0.1:5000/api and try again.`;
+          this.toast.error(msg);
+          return;
+        }
+
+        const msg =
+          backendMessage ||
+          (errStatus ? `Request failed (${errStatus})${errBody ? ': ' + errBody : ''}` : undefined) ||
+          errMessage ||
+          'Failed to save product. Please try again.';
+
+        this.toast.error(msg);
       },
     });
   }

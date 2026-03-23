@@ -9,9 +9,9 @@ const app = express();
 // Common middlewares
 app.use(cors());
 // Allow larger payloads for base64 imageUrl submitted from the admin product form.
-// Default Express limit is ~100kb which breaks product creation when images are attached.
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// The product form sends base64 in JSON; large images can exceed Express' default limit.
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Direct POST handler for accounts (bypasses router chain)
 const { createAccount: createAccountHandler } = require("./controllers/account.controller");

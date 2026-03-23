@@ -98,7 +98,7 @@
 
 /* Step Indicator & Pinned Header */
 /* Keep below the global fixed header so notification dropdowns remain visible. */
-.form-header-pinned { position: sticky; top: var(--header-height); z-index: 20; background: rgba(255, 255, 255, 0.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); padding-top: 24px; margin-top: -24px; border-bottom: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-bottom: 24px; }
+.form-header-pinned { position: sticky; top: var(--header-height); z-index: 20; background: rgba(255, 255, 255, 0.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); padding-top: 24px; margin-top: 0; border-bottom: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.02); margin-bottom: 24px; }
 .form-header { margin-bottom: 16px; }
 .step-indicator { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .step-link { background: none; border: none; padding: 6px 12px; border-radius: 100px; color: var(--text-muted); font-weight: 500; cursor: pointer; transition: all 0.2s; outline: none; }

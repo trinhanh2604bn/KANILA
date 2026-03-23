@@ -151,12 +151,6 @@ const createProduct = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Product code already exists",
-      });
-    }
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -218,12 +212,6 @@ const updateProduct = async (req, res) => {
       data: product,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Product code already exists",
-      });
-    }
     res.status(500).json({ success: false, message: error.message });
   }
 };

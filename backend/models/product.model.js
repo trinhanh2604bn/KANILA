@@ -12,8 +12,6 @@ const productSchema = new mongoose.Schema(
     },
     productCode: {
       type: String,
-      required: [true, "Product code is required"],
-      unique: true,
       uppercase: true,
       trim: true,
     },

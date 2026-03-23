@@ -9,7 +9,7 @@
 
   <!-- Dropdown Panel -->
   @if (isOpen()) {
-    <div class="notification-panel card shadow-lg border fade-in">
+    <div class="notification-panel card shadow-lg border fade-in" [class.notification-panel--no-click]="disablePanelClicks()">
       <div class="panel-header border-b px-5 py-4 flex justify-between items-center">
         <h3 class="font-bold text-md text-dark m-0">Notifications</h3>
         @if (api.unreadCount() > 0) {
