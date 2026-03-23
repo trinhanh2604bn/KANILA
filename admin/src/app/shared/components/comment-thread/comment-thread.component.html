@@ -1,0 +1,70 @@
+<div class="comment-section">
+  <h3 class="section-title">
+    <span class="material-symbols-rounded section-icon">forum</span>
+    Comments
+    <span class="comment-count">{{ comments().length }}</span>
+  </h3>
+
+  <!-- Thread -->
+  <div class="thread">
+    @if (comments().length === 0) {
+      <div class="empty-comments">
+        <span class="material-symbols-rounded" style="font-size:32px;color:var(--text-muted);">chat_bubble_outline</span>
+        <p class="empty-title">No comments yet</p>
+        <p class="text-muted text-xs">Be the first to leave a note on this {{ entityType }}.</p>
+      </div>
+    } @else {
+      @for (comment of comments(); track comment.id) {
+        <div class="comment-item fade-in-msg">
+          <div class="comment-avatar" [style.background]="comment.userColor">{{ getInitials(comment.user) }}</div>
+          <div class="comment-body">
+            <div class="comment-meta">
+              <span class="comment-user">{{ comment.user }}</span>
+              <span class="comment-time">{{ timeAgo(comment.timestamp) }}</span>
+            </div>
+            <div class="comment-text" [innerHTML]="highlightMentions(comment.text)"></div>
+            <button class="btn-reply" (click)="startReply(comment.id)">
+              <span class="material-symbols-rounded" style="font-size:14px;">reply</span> Reply
+            </button>
+
+            <!-- Replies -->
+            @if (comment.replies?.length) {
+              <div class="replies">
+                @for (reply of comment.replies; track reply.id) {
+                  <div class="reply-item fade-in-msg">
+                    <div class="reply-avatar" [style.background]="reply.userColor">{{ getInitials(reply.user) }}</div>
+                    <div class="reply-body">
+                      <div class="comment-meta">
+                        <span class="comment-user">{{ reply.user }}</span>
+                        <span class="comment-time">{{ timeAgo(reply.timestamp) }}</span>
+                      </div>
+                      <div class="comment-text" [innerHTML]="highlightMentions(reply.text)"></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Reply Input -->
+            @if (replyingTo() === comment.id) {
+              <div class="reply-input-row fade-in-msg">
+                <input type="text" class="form-input reply-input" placeholder="Write a reply... Use @name to mention" [ngModel]="replyText()" (ngModelChange)="replyText.set($event)" (keydown.enter)="addReply(comment.id)" />
+                <button class="btn-send-sm" (click)="addReply(comment.id)"><span class="material-symbols-rounded">send</span></button>
+                <button class="btn-cancel-sm" (click)="cancelReply()"><span class="material-symbols-rounded">close</span></button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- New Comment Input -->
+  <div class="new-comment-bar">
+    <div class="comment-avatar self-avatar">YO</div>
+    <input type="text" class="form-input comment-input" placeholder="Add a comment... Use @name to mention" [ngModel]="newComment()" (ngModelChange)="newComment.set($event)" (keydown.enter)="addComment()" />
+    <button class="btn-send" (click)="addComment()" [disabled]="!newComment().trim()">
+      <span class="material-symbols-rounded">send</span>
+    </button>
+  </div>
+</div>

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const paymentTransactionSchema = new mongoose.Schema(
   {
     paymentIntentId: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentIntent", required: true },
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
+    order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
     transactionType: { type: String, required: true },
     providerTransactionId: { type: String, default: "" },
     transactionStatus: { type: String, enum: ["pending", "success", "failed"], default: "pending" },

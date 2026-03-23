@@ -12,7 +12,7 @@ const {
 
 router.get("/", getAllCouponRedemptions);
 router.get("/coupon/:couponId", getRedemptionsByCouponId);
-router.get("/customer/:customerId", getRedemptionsByCustomerId);
+router.get("/customer/:customer_id", getRedemptionsByCustomerId);
 router.get("/:id", getCouponRedemptionById);
 router.post("/", createCouponRedemption);
 router.put("/:id", updateCouponRedemption);

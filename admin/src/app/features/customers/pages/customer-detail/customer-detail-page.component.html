@@ -1,0 +1,165 @@
+<section class="page detail-page">
+  <div class="page-header">
+    <a routerLink="/customers" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Customers
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading customer...</p>
+    </div>
+  } @else if (customer(); as c) {
+    <div class="detail-grid">
+      <!-- Main Column -->
+      <div class="main-column">
+        <!-- Profile Card -->
+        <div class="card profile-card" [class.vip-accent]="c.segment === 'vip'">
+          <div class="profile-header">
+            <div class="profile-avatar">{{ c.name.charAt(0) }}</div>
+            <div class="profile-info">
+              <h1 class="profile-name">{{ c.name }}</h1>
+              <p class="profile-email">{{ c.email }}</p>
+              <p class="profile-phone">{{ c.phone }}</p>
+              <p class="profile-behavior">{{ c.behaviorLabel }}</p>
+            </div>
+            <div class="profile-badges">
+              <span class="badge" [ngClass]="getSegmentBadgeClass(c.segment)">{{ getSegmentLabel(c.segment) }}</span>
+              <span class="status-tag" [class.status-active]="c.status === 'active'" [class.status-inactive]="c.status === 'inactive'">
+                <span class="status-dot"></span>
+                {{ c.status | titlecase }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="insights-grid">
+          <div class="card insight-card">
+            <span class="material-symbols-rounded insight-icon">payments</span>
+            <div class="insight-value">{{ formatPrice(c.totalSpent) }}</div>
+            <div class="insight-label">Total Spent</div>
+          </div>
+          <div class="card insight-card">
+            <span class="material-symbols-rounded insight-icon">shopping_cart</span>
+            <div class="insight-value">{{ formatPrice(c.avgOrderValue) }}</div>
+            <div class="insight-label">Avg. Order Value</div>
+          </div>
+          <div class="card insight-card">
+            <span class="material-symbols-rounded insight-icon">receipt_long</span>
+            <div class="insight-value">{{ c.ordersCount }}</div>
+            <div class="insight-label">Total Orders</div>
+          </div>
+          <div class="card insight-card">
+            <span class="material-symbols-rounded insight-icon">calendar_today</span>
+            <div class="insight-value">{{ c.lastOrderDate | date:'MMM d, y' }}</div>
+            <div class="insight-label">Last Order</div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <a routerLink="/orders" class="btn btn-soft">
+            <span class="material-symbols-rounded">receipt_long</span>
+            View Orders
+          </a>
+          <a routerLink="/returns" class="btn btn-soft">
+            <span class="material-symbols-rounded">keyboard_return</span>
+            View Returns
+          </a>
+        </div>
+
+        <!-- Order History: table only when there are orders -->
+        @if (c.orders.length > 0) {
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Order History</h2>
+            </div>
+            <div class="card-body p-0">
+              <table class="data-table compact-table">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of c.orders; track order.id) {
+                    <tr class="clickable-row" [routerLink]="['/orders', order.id]">
+                      <td class="td-primary">{{ order.orderNumber }}</td>
+                      <td>{{ formatPrice(order.total) }}</td>
+                      <td>
+                        <span class="badge"
+                          [class.badge-warning]="order.status === 'pending'"
+                          [class.badge-info]="order.status === 'confirmed'"
+                          [class.badge-success]="order.status === 'delivered'">
+                          {{ order.status | titlecase }}
+                        </span>
+                      </td>
+                      <td class="text-muted">{{ order.createdAt | date:'MMM d, y' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Side Column -->
+      <div class="side-column">
+        <!-- Activity Timeline -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Recent Activity</h2>
+          </div>
+          <div class="card-body">
+            @if (c.activities.length > 0) {
+              <div class="activity-timeline">
+                @for (act of c.activities; track act.id; let last = $last) {
+                  <div class="timeline-item" [class.timeline-last]="last">
+                    <div class="timeline-icon-wrap">
+                      <span class="material-symbols-rounded timeline-icon">{{ act.icon }}</span>
+                    </div>
+                    <div class="timeline-content">
+                      <p class="timeline-desc">{{ act.description }}</p>
+                      <p class="timeline-time">{{ act.timestamp | date:'MMM d, y · h:mm a' }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state-sm">
+                <span class="material-symbols-rounded">history</span>
+                <p>No activity recorded</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Customer Details -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Details</h2>
+          </div>
+          <div class="card-body">
+            <p class="meta-line"><span class="meta-label">Registered</span> {{ c.registered_at | date:'MMM d, y' }}</p>
+            <p class="meta-line"><span class="meta-label">Segment</span>
+              <span class="badge" [ngClass]="getSegmentBadgeClass(c.segment)">{{ getSegmentLabel(c.segment) }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">error</span>
+      <p class="empty-title">Customer not found</p>
+      <a routerLink="/customers" class="btn btn-soft">Back to list</a>
+    </div>
+  }
+</section>

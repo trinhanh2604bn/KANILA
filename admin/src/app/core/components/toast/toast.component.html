@@ -1,0 +1,27 @@
+<div class="toast-container">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div class="toast" [class]="'toast-' + toast.type">
+      <div class="toast-icon">
+        @if (toast.type === 'success') {
+          <span class="material-symbols-rounded">check_circle</span>
+        } @else if (toast.type === 'error') {
+          <span class="material-symbols-rounded">error</span>
+        } @else {
+          <span class="material-symbols-rounded">info</span>
+        }
+      </div>
+      <div class="toast-content">
+        @if (toast.title) {
+          <h4 class="toast-title">{{ toast.title }}</h4>
+        }
+        <p class="toast-message">{{ toast.message }}</p>
+      </div>
+      @if (toast.undoAction) {
+        <button class="toast-undo-btn" (click)="toastService.triggerUndo(toast.id)">Undo</button>
+      }
+      <button class="toast-close" (click)="toastService.remove(toast.id)">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+  }
+</div>

@@ -1,0 +1,234 @@
+.chart-container {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  padding: 8px 0 0;
+}
+
+.premium-chart {
+  width: 100%;
+  height: 250px;
+  overflow: visible;
+  display: block;
+}
+
+.chart-line {
+  filter: drop-shadow(0 2px 8px rgba(15, 23, 42, 0.08));
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: draw 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.chart-area {
+  opacity: 0;
+  animation: fadeArea 1s ease 0.5s forwards;
+}
+
+.chart-dot {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.chart-dot.active-dot {
+  transform: scale(1.25);
+  filter: drop-shadow(0 2px 8px rgba(184, 85, 122, 0.35));
+  stroke: white;
+  fill: var(--primary);
+}
+
+.interactive-point {
+  cursor: crosshair;
+}
+
+.x-axis {
+  display: flex;
+  justify-content: flex-start;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 0 4px 4px;
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid var(--border-light);
+  padding-top: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.axis-label {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.invisible {
+  opacity: 0;
+}
+
+.chart-tooltip {
+  position: absolute;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tooltip-val {
+  color: var(--text-primary);
+  font-size: var(--font-lg);
+  letter-spacing: -0.5px;
+}
+
+.tooltip-label {
+  margin-top: 2px;
+}
+
+/* Loading skeleton */
+.chart-skeleton {
+  position: relative;
+  height: 260px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+.chart-skeleton__bar {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e8edf3 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.2s ease-in-out infinite;
+}
+
+.chart-skeleton__line {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 18%;
+  height: 42%;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+/* Empty state */
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 260px;
+  padding: 32px 20px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px dashed var(--border);
+}
+
+.chart-empty__icon {
+  font-size: 40px;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+
+.chart-empty__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.chart-empty__text {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #64748b;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+.chart-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.chart-empty__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.chart-empty__btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.chart-empty__btn--primary {
+  color: #fff;
+  background: var(--primary, #b8557a);
+  border-color: transparent;
+}
+
+.chart-empty__btn--primary:hover {
+  filter: brightness(1.05);
+  color: #fff;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fadeArea {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: translateX(-50%) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes skel-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

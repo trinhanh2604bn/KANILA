@@ -1,0 +1,136 @@
+<section class="account-list-page">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">Accounts</h1>
+      <p class="page-subtitle">Manage admin and staff accounts</p>
+    </div>
+    <a routerLink="create" class="btn btn-primary">
+      <span class="material-symbols-rounded" style="font-size:20px;">person_add</span>
+      Create Account
+    </a>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar card">
+    <div class="filter-group">
+      <div class="search-input-wrap">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input
+          type="text"
+          class="form-input search-input"
+          placeholder="Search by name or email..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="onSearch($event)"
+        />
+      </div>
+      <select class="form-input filter-select" [ngModel]="roleFilter()" (ngModelChange)="onRoleFilter($event)">
+        <option value="">All Roles</option>
+        @for (role of roles(); track role.id) {
+          <option [value]="role.id">{{ role.name }}</option>
+        }
+      </select>
+      <select class="form-input filter-select" [ngModel]="statusFilter()" (ngModelChange)="onStatusFilter($event)">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="locked">Locked</option>
+      </select>
+    </div>
+    @if (hasActiveFilters()) {
+      <button class="btn btn-ghost filter-reset" (click)="clearFilters()">
+        <span class="material-symbols-rounded" style="font-size:18px;">close</span>
+        Clear filters
+      </button>
+    }
+  </div>
+
+  <!-- Table -->
+  @if (loading()) {
+    <div class="table-loading">
+      <div class="spinner spinner-dark"></div>
+      <span>Loading accounts...</span>
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">people</span>
+      @if (hasActiveFilters()) {
+        <p class="empty-title">No accounts match your filters</p>
+        <p class="empty-hint">Try adjusting your search or filter criteria</p>
+        <button class="btn btn-soft" (click)="clearFilters()">Clear filters</button>
+      } @else {
+        <p class="empty-title">No accounts yet</p>
+        <p class="empty-hint">Create your first admin account to get started</p>
+        <a routerLink="create" class="btn btn-primary">
+          <span class="material-symbols-rounded" style="font-size:18px;">person_add</span>
+          Create Account
+        </a>
+      }
+    </div>
+  } @else {
+    <div class="table-wrap card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th class="th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (account of filtered(); track account.id) {
+            <tr class="table-row" [routerLink]="[account.id]">
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar">{{ account.username.charAt(0) }}</div>
+                  <span class="user-name">{{ account.username }}</span>
+                </div>
+              </td>
+              <td><span class="cell-email">{{ account.email }}</span></td>
+              <td>
+                <span class="badge badge-primary">{{ account.roleName || '—' }}</span>
+              </td>
+              <td>
+                <span class="badge"
+                  [class.badge-success]="account.account_status === 'active'"
+                  [class.badge-warning]="account.account_status === 'inactive'"
+                  [class.badge-danger]="account.account_status === 'locked'">
+                  {{ account.account_status }}
+                </span>
+              </td>
+              <td><span class="cell-date">{{ account.created_at | date:'MMM d, y' }}</span></td>
+              <td class="td-actions" (click)="$event.stopPropagation()">
+                <a class="action-btn" [routerLink]="[account.id]" title="View">
+                  <span class="material-symbols-rounded">visibility</span>
+                </a>
+                <a class="action-btn" [routerLink]="[account.id, 'edit']" title="Edit">
+                  <span class="material-symbols-rounded">edit</span>
+                </a>
+                <button
+                  class="action-btn"
+                  [class.toggling]="togglingId() === account.id"
+                  (click)="toggleStatus(account)"
+                  [title]="account.account_status === 'active' ? 'Deactivate' : 'Activate'"
+                >
+                  @if (togglingId() === account.id) {
+                    <div class="spinner spinner-dark" style="width:16px;height:16px;"></div>
+                  } @else {
+                    <span class="material-symbols-rounded">
+                      {{ account.account_status === 'active' ? 'toggle_on' : 'toggle_off' }}
+                    </span>
+                  }
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span class="table-count">{{ filtered().length }} account{{ filtered().length !== 1 ? 's' : '' }}</span>
+    </div>
+  }
+</section>

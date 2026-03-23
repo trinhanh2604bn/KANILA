@@ -11,6 +11,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Direct POST handler for accounts (bypasses router chain)
+const { createAccount: createAccountHandler } = require("./controllers/account.controller");
+app.post("/api/accounts", createAccountHandler);
+
 // Mount routes
 app.use("/api", routes);
 

@@ -1,0 +1,184 @@
+<section class="page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">Products</h1>
+      <p class="page-subtitle">Manage your product catalog</p>
+    </div>
+    <a routerLink="create" class="btn btn-primary">
+      <span class="material-symbols-rounded" style="font-size:20px;">add</span>
+      Add Product
+    </a>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar card">
+    <div class="filter-group">
+      <div class="search-input-wrap">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input type="text" class="form-input search-input" placeholder="Search products..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" (keyup)="page.set(1)" />
+      </div>
+      <select class="form-input filter-select" [ngModel]="categoryFilter()" (ngModelChange)="categoryFilter.set($event); page.set(1)">
+        <option value="">All Categories</option>
+        @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.categoryName }}</option> }
+      </select>
+      <select class="form-input filter-select" [ngModel]="brandFilter()" (ngModelChange)="brandFilter.set($event); page.set(1)">
+        <option value="">All Brands</option>
+        @for (b of brands(); track b.id) { <option [value]="b.id">{{ b.brandName }}</option> }
+      </select>
+      <select class="form-input filter-select filter-select-sm" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); page.set(1)">
+        <option value="">All Status</option>
+        <option value="published">Published</option>
+        <option value="draft">Draft</option>
+      </select>
+    </div>
+    @if (hasActiveFilters()) {
+      <button class="btn btn-ghost filter-reset" (click)="clearFilters()">
+        <span class="material-symbols-rounded" style="font-size:18px;">close</span> Clear
+      </button>
+    }
+  </div>
+
+  <!-- Bulk Actions Bar -->
+  @if (selectedIds().size > 0) {
+    <div class="bulk-actions-bar card anim-slide-up">
+      <div class="bulk-info">
+        <span class="bulk-count">{{ selectedIds().size }}</span> selected
+      </div>
+      <div class="bulk-actions">
+        <button class="btn btn-soft btn-sm" (click)="bulkUpdateStatus('published')">Set Published</button>
+        <button class="btn btn-soft btn-sm" (click)="bulkUpdateStatus('draft')">Set Draft</button>
+        <div class="divider"></div>
+        <button class="btn btn-danger btn-sm" (click)="bulkDelete()">
+          <span class="material-symbols-rounded">delete</span> Delete
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Content -->
+  @if (loading()) {
+    <div class="table-loading"><div class="spinner spinner-dark"></div><span>Loading products...</span></div>
+  } @else if (filteredAndSorted().length === 0) {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">inventory_2</span>
+      @if (hasActiveFilters()) {
+        <p class="empty-title">No products match your filters</p>
+        <p class="empty-hint">Try adjusting your search or filter criteria</p>
+        <button class="btn btn-soft" (click)="clearFilters()">Clear filters</button>
+      } @else {
+        <p class="empty-title">No products yet</p>
+        <p class="empty-hint">Start by creating your first product</p>
+        <a routerLink="create" class="btn btn-primary"><span class="material-symbols-rounded" style="font-size:18px;">add</span> Add Product</a>
+      }
+    </div>
+  } @else {
+    <div class="table-wrap card">
+      <table class="data-table product-table">
+        <thead>
+          <tr>
+            <th class="th-checkbox">
+              <input type="checkbox" class="kanila-checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll()" />
+            </th>
+            <th class="th-img"></th>
+            <th class="sortable" (click)="toggleSort('productName')">
+              Product
+              @if (sortBy() === 'productName') { <span class="material-symbols-rounded sort-icon">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span> }
+            </th>
+            <th>Category</th>
+            <th>Brand</th>
+            <th class="sortable" (click)="toggleSort('price')">
+              Price
+              @if (sortBy() === 'price') { <span class="material-symbols-rounded sort-icon">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span> }
+            </th>
+            <th class="sortable" (click)="toggleSort('stock')">
+              Stock
+              @if (sortBy() === 'stock') { <span class="material-symbols-rounded sort-icon">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span> }
+            </th>
+            <th class="sortable" (click)="toggleSort('status')">
+              Status
+              @if (sortBy() === 'status') { <span class="material-symbols-rounded sort-icon">{{ sortDirection() === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</span> }
+            </th>
+            <th class="th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of paginatedList(); track p.id) {
+            <tr class="table-row" [class.selected]="selectedIds().has(p.id)" (click)="toggleSelectRow(p.id)">
+              <td class="td-checkbox" (click)="$event.stopPropagation()">
+                <input type="checkbox" class="kanila-checkbox" [checked]="selectedIds().has(p.id)" (change)="toggleSelectRow(p.id)" />
+              </td>
+              <td class="td-img" (click)="$event.stopPropagation()">
+                <a [routerLink]="['/products', p.id]" class="product-thumb">
+                  @let thumb = primaryImageUrl(p);
+                  @if (thumb && !failedThumbIds().has(p.id)) {
+                    <img [src]="thumb" alt="" loading="lazy" (error)="onThumbError(p.id)" />
+                  } @else {
+                    <span class="material-symbols-rounded thumb-placeholder">image</span>
+                  }
+                </a>
+              </td>
+              <td (click)="$event.stopPropagation()">
+                <div class="product-cell">
+                  <a [routerLink]="['/products', p.id]" class="product-name-link"><span class="product-name">{{ p.productName }}</span></a>
+                  <span class="product-code">{{ p.productCode }}</span>
+                </div>
+              </td>
+              <td><span class="cell-text">{{ p.categoryName }}</span></td>
+              <td><span class="cell-text">{{ p.brandName }}</span></td>
+              <td><span class="cell-price">{{ formatPrice(p.price) }}</span></td>
+              <td><span class="badge" [class]="getStockClass(p.stock)">{{ p.stock }} in stock</span></td>
+              <td class="td-status" (click)="$event.stopPropagation()">
+                <span class="badge" [class.badge-success]="p.status==='published'" [class.badge-muted]="p.status==='draft'">
+                  {{ p.status }}
+                </span>
+              </td>
+              <td class="td-actions" (click)="$event.stopPropagation()">
+                <div class="action-group" role="group" aria-label="Product actions">
+                  <a
+                    class="action-btn"
+                    [routerLink]="['/products', p.id]"
+                    title="View"
+                    (click)="$event.stopPropagation()"
+                    ><span class="material-symbols-rounded">visibility</span></a
+                  >
+                  <a
+                    class="action-btn"
+                    [routerLink]="['/products', p.id, 'edit']"
+                    title="Edit"
+                    (click)="$event.stopPropagation()"
+                    ><span class="material-symbols-rounded">edit</span></a
+                  >
+                  <button
+                    type="button"
+                    class="action-btn"
+                    (click)="$event.stopPropagation(); toggleStatus(p)"
+                    [title]="p.status === 'published' ? 'Unpublish' : 'Publish'"
+                  >
+                    @if (togglingId() === p.id) { <div class="spinner spinner-dark" style="width:16px;height:16px;"></div> }
+                    @else { <span class="material-symbols-rounded">{{ p.status==='published' ? 'unpublished' : 'publish' }}</span> }
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="pagination-footer">
+      <div class="page-info">
+        Showing {{ (page() - 1) * pageSize() + 1 }} - {{ (page() * pageSize()) > totalItems() ? totalItems() : (page() * pageSize()) }} of {{ totalItems() }} products
+      </div>
+      <div class="page-controls">
+        <button class="btn-icon" [disabled]="page() === 1" (click)="changePage(-1)">
+          <span class="material-symbols-rounded">chevron_left</span>
+        </button>
+        <span class="page-current">Page {{ page() }} of {{ totalPages() }}</span>
+        <button class="btn-icon" [disabled]="page() === totalPages()" (click)="changePage(1)">
+          <span class="material-symbols-rounded">chevron_right</span>
+        </button>
+      </div>
+    </div>
+  }
+</section>

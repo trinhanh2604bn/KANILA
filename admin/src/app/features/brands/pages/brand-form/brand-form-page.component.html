@@ -1,0 +1,172 @@
+<section class="form-page">
+  <header class="form-hero">
+    <a routerLink="/brands" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Brands
+    </a>
+    <div class="hero-main">
+      <div class="hero-icon" aria-hidden="true">
+        <span class="material-symbols-rounded">storefront</span>
+      </div>
+      <div class="hero-copy">
+        <h1 class="page-title">{{ isEdit() ? 'Edit Brand' : 'Create Brand' }}</h1>
+        <p class="page-subtitle">Manage manufacturers, product lines, and how they appear in your catalog.</p>
+      </div>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading brand details…</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-shell">
+      <div class="form-card">
+        <div class="form-card-inner">
+          <section class="form-section" aria-labelledby="section-basic">
+            <h2 id="section-basic" class="form-section-title">
+              <span class="section-icon material-symbols-rounded">badge</span>
+              Brand identity
+            </h2>
+            <p class="form-section-hint">The name and code are used across products and filters.</p>
+
+            <div class="form-grid form-grid-2">
+              <div class="field">
+                <label class="field-label" for="brand-name">Brand name</label>
+                <input
+                  id="brand-name"
+                  type="text"
+                  class="field-input"
+                  formControlName="brandName"
+                  placeholder="e.g. Natasha Denona"
+                  autocomplete="organization"
+                />
+                @if (form.get('brandName')?.touched && form.get('brandName')?.errors?.['required']) {
+                  <span class="field-error">Name is required</span>
+                }
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="brand-code">Brand code</label>
+                <input
+                  id="brand-code"
+                  type="text"
+                  class="field-input field-input-mono"
+                  formControlName="brandCode"
+                  placeholder="e.g. NATASHA_DENONA"
+                  autocomplete="off"
+                />
+                @if (form.get('brandCode')?.touched && form.get('brandCode')?.errors?.['required']) {
+                  <span class="field-error">Code is required</span>
+                }
+                <span class="field-hint">Unique identifier, usually uppercase.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section" aria-labelledby="section-logo">
+            <h2 id="section-logo" class="form-section-title">
+              <span class="section-icon material-symbols-rounded">image</span>
+              Logo
+            </h2>
+            <p class="form-section-hint">URL of the brand logo image (HTTPS or a path starting with /). Shown on the brand list and wherever the brand appears.</p>
+
+            <div class="field field-full">
+              <label class="field-label" for="brand-logo-url">Logo URL</label>
+              <input
+                id="brand-logo-url"
+                type="text"
+                class="field-input"
+                formControlName="logoUrl"
+                placeholder="https://… or /uploads/brands/…"
+                autocomplete="off"
+                (input)="onLogoUrlInput()"
+              />
+              <span class="field-hint">Leave empty to use the default placeholder in the catalog.</span>
+            </div>
+
+            @if (form.get('logoUrl')?.value?.trim() && !logoPreviewErrored()) {
+              <div class="logo-preview-box">
+                <img
+                  class="logo-preview-img"
+                  [src]="resolveLogoUrl(form.get('logoUrl')?.value)"
+                  alt="Logo preview"
+                  (error)="logoPreviewErrored.set(true)"
+                />
+              </div>
+              <p class="logo-preview-caption">Preview</p>
+            }
+          </section>
+
+          <section class="form-section" aria-labelledby="section-desc">
+            <h2 id="section-desc" class="form-section-title">
+              <span class="section-icon material-symbols-rounded">edit_note</span>
+              Description
+            </h2>
+            <p class="form-section-hint">Optional short story or positioning for internal reference.</p>
+
+            <div class="field field-full">
+              <label class="field-label" for="brand-desc">Description</label>
+              <textarea
+                id="brand-desc"
+                class="field-input field-textarea"
+                formControlName="description"
+                rows="4"
+                placeholder="Brand story or information…"
+              ></textarea>
+            </div>
+          </section>
+
+          <section class="status-panel" aria-labelledby="section-status">
+            <div class="status-panel-copy">
+              <h2 id="section-status" class="status-title">Visibility</h2>
+              <p class="status-desc">Inactive brands stay available for historical data but won’t be offered for new assignments.</p>
+            </div>
+            <label class="toggle-modern">
+              <input type="checkbox" formControlName="isActive" />
+              <span class="toggle-ui" aria-hidden="true"></span>
+              <span class="toggle-text">
+                <span class="toggle-text-strong">{{ form.get('isActive')?.value ? 'Active' : 'Inactive' }}</span>
+                <span class="toggle-text-sub">{{ form.get('isActive')?.value ? 'Shown in catalog' : 'Hidden from catalog' }}</span>
+              </span>
+            </label>
+          </section>
+
+          @if (isEdit() && editMeta(); as meta) {
+            <section class="form-section form-section-meta" aria-labelledby="section-meta">
+              <h2 id="section-meta" class="form-section-title">
+                <span class="section-icon material-symbols-rounded">info</span>
+                Record details
+              </h2>
+              <p class="form-section-hint">Read-only information from the server.</p>
+              <dl class="meta-readonly">
+                <div class="meta-row">
+                  <dt>Products</dt>
+                  <dd>{{ meta.productCount }}</dd>
+                </div>
+                <div class="meta-row">
+                  <dt>Created</dt>
+                  <dd>{{ formatCreatedAt(meta.createdAt) }}</dd>
+                </div>
+              </dl>
+            </section>
+          }
+        </div>
+
+        <footer class="form-footer">
+          <button type="button" class="btn btn-ghost btn-footer-cancel" routerLink="/brands">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-footer-save" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner spinner-xs"></span>
+              Saving…
+            } @else {
+              <span class="material-symbols-rounded">save</span>
+              {{ isEdit() ? 'Update brand' : 'Save brand' }}
+            }
+          </button>
+        </footer>
+      </div>
+    </form>
+  }
+</section>

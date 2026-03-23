@@ -1,0 +1,409 @@
+<section class="form-page">
+  <div class="form-header-pinned">
+    <div class="form-header">
+      <div class="header-left">
+        <a routerLink="/products" class="back-link">
+          <span class="material-symbols-rounded">arrow_back</span>
+          Back
+        </a>
+        <h1 class="page-title">{{ isEdit() ? 'Edit Product' : 'Add New Product' }}</h1>
+      </div>
+
+      <div class="step-indicator">
+        <button type="button" class="step-link" [class.active]="activeSection() === 'section-basic'" (click)="scrollTo('section-basic')">Basic Info</button>
+        <span class="step-arrow material-symbols-rounded">chevron_right</span>
+        <button type="button" class="step-link" [class.active]="activeSection() === 'section-media'" (click)="scrollTo('section-media')">Media</button>
+        <span class="step-arrow material-symbols-rounded">chevron_right</span>
+        <button type="button" class="step-link" [class.active]="activeSection() === 'section-pricing'" (click)="scrollTo('section-pricing')">Pricing</button>
+        <span class="step-arrow material-symbols-rounded">chevron_right</span>
+        <button type="button" class="step-link" [class.active]="activeSection() === 'section-variants'" (click)="scrollTo('section-variants')">Variants</button>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn btn-ghost" routerLink="/products">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="onSubmit()" [disabled]="saving()">
+          @if (saving()) {
+            <span class="spinner spinner-xs"></span>
+          } @else {
+            <span class="material-symbols-rounded">save</span>
+          }
+          {{ isEdit() ? 'Update Product' : 'Save Product' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading product details...</p>
+    </div>
+  } @else {
+    <form [formGroup]="form" class="form-layout pt-custom">
+      <div class="form-main">
+        <div id="section-basic" class="form-card card scroll-mt">
+          <div class="card-header">
+            <h2 class="card-title">Basic Information</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Product Name</label>
+              <input type="text" class="form-input" formControlName="productName" placeholder="e.g. KANILA Rose Glow Serum" />
+              @if (form.get('productName')?.touched && form.get('productName')?.errors?.['required']) {
+                <span class="error-text">Product name is required</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">URL slug</label>
+              <input type="text" class="form-input" formControlName="slug" placeholder="rose-glow-serum (optional)" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Long description</label>
+              <textarea class="form-input" formControlName="longDescription" rows="5" placeholder="Detailed product description..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Short description</label>
+              <input type="text" class="form-input" formControlName="shortDescription" placeholder="One-line snippet" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Ingredients</label>
+              <textarea class="form-input" formControlName="ingredientText" rows="3" placeholder="Ingredient list"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Usage instructions</label>
+              <textarea class="form-input" formControlName="usageInstruction" rows="3" placeholder="How to use"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div id="section-media" class="form-card card scroll-mt">
+          <div class="card-header">
+            <h2 class="card-title">Product Media</h2>
+            <span class="card-subtitle">Upload multiple images. The first image is used as the primary thumbnail and main image URL.</span>
+          </div>
+          <div class="card-body">
+            <div
+              class="media-dropzone"
+              [class.is-dragging]="isDragging()"
+              (dragover)="onDragOver($event)"
+              (dragleave)="onDragLeave($event)"
+              (drop)="onDrop($event)"
+            >
+              @if (images().length === 0) {
+                <div class="media-empty-state">
+                  <span class="material-symbols-rounded empty-icon">cloud_upload</span>
+                  <p class="empty-title">Drag and drop images here</p>
+                  <p class="empty-hint">Or click the button below to browse files (JPEG, PNG, WEBP)</p>
+                  <label class="btn btn-soft mt-custom">
+                    Browse Files
+                    <input type="file" (change)="onImageAdd($event)" accept="image/*" multiple hidden />
+                  </label>
+                </div>
+              } @else {
+                <div class="media-grid">
+                  @for (img of images(); track $index; let i = $index) {
+                    <div class="media-item" [class.is-primary]="i === 0">
+                      @if (i === 0) {
+                        <span class="primary-badge">Primary</span>
+                      }
+                      <img [src]="img" alt="Product preview" />
+
+                      <div class="media-overlay">
+                        <div class="media-reorder">
+                          <button type="button" class="btn-icon-xs" (click)="moveImageUp(i)" [disabled]="i === 0" title="Move Up">
+                            <span class="material-symbols-rounded">arrow_upward</span>
+                          </button>
+                          <button type="button" class="btn-icon-xs" (click)="moveImageDown(i)" [disabled]="i === images().length - 1" title="Move Down">
+                            <span class="material-symbols-rounded">arrow_downward</span>
+                          </button>
+                        </div>
+                        <button type="button" class="media-remove" (click)="removeImage(i)" title="Remove Image">
+                          <span class="material-symbols-rounded">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  }
+
+                  <label class="media-upload-btn-small">
+                    <input type="file" (change)="onImageAdd($event)" accept="image/*" multiple hidden />
+                    <span class="material-symbols-rounded">add</span>
+                  </label>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div id="section-variants" class="form-card card scroll-mt">
+          <div class="card-header">
+            <div class="header-with-action">
+              <h2 class="card-title">Variants</h2>
+              <div class="variant-header-actions">
+                <button type="button" class="btn btn-soft btn-xs" (click)="addOption()">
+                  <span class="material-symbols-rounded">add</span>
+                  Add option
+                </button>
+                <button type="button" class="btn btn-soft btn-xs" (click)="addVariantRow()">
+                  <span class="material-symbols-rounded">add</span>
+                  Add variant
+                </button>
+              </div>
+            </div>
+            <span class="card-subtitle">Option matrix generates rows; you can also add variants manually. Price and stock are set on the product.</span>
+          </div>
+          <div class="card-body">
+            <div class="options-list">
+              @for (opt of options(); track $index; let i = $index) {
+                <div class="option-row">
+                  <div class="option-name-group">
+                    <input
+                      type="text"
+                      class="form-input input-sm"
+                      [(ngModel)]="opt.name"
+                      [ngModelOptions]="{ standalone: true }"
+                      (blur)="generateVariants()"
+                      placeholder="Option name (e.g. Size)"
+                    />
+                    <button type="button" class="btn-icon-remove" (click)="removeOption(i)">
+                      <span class="material-symbols-rounded">delete</span>
+                    </button>
+                  </div>
+
+                  <div class="tags-input-wrap card">
+                    @for (val of opt.values; track val; let vi = $index) {
+                      <div class="tag">
+                        {{ val }}
+                        <span class="material-symbols-rounded tag-remove" (click)="removeOptionValue(i, vi)">close</span>
+                      </div>
+                    }
+                    <input type="text" class="tag-input" placeholder="Add value..." (keydown.enter)="$event.preventDefault(); addOptionValue(i, $event)" />
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (variants().length > 0) {
+              <div class="variants-bulk-bar card">
+                <span class="bulk-label"><span class="material-symbols-rounded bulk-icon">library_add_check</span> Bulk apply cost:</span>
+                <div class="bulk-input-group">
+                  <input type="number" class="form-input input-sm" placeholder="Cost (₫)…" #bulkCost (keydown.enter)="$event.preventDefault(); bulkApplyCost(bulkCost)" />
+                  <button type="button" class="btn btn-soft btn-sm" (click)="bulkApplyCost(bulkCost)">Apply</button>
+                </div>
+              </div>
+
+              <div class="variants-table-wrap">
+                <table class="variants-table data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>SKU</th>
+                      <th>Barcode</th>
+                      <th>Weight (g)</th>
+                      <th>Vol. (ml)</th>
+                      <th>Cost (₫)</th>
+                      <th>Status</th>
+                      <th class="text-right">—</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (v of variants(); track v.id) {
+                      <tr class="variant-row" [class.dirty-row]="dirtyVariants().has(v.id)" [class.error-row]="!v.variantName.trim() || !v.sku.trim()">
+                        <td class="editable-cell" [class.is-editing]="editingCell()?.id === v.id && editingCell()?.field === 'variantName'" (click)="startEdit(v.id, 'variantName', $event)">
+                          <div class="variant-label-wrap">
+                            @if (v.optionValues) {
+                              @for (entry of v.optionValues | keyvalue; track entry.key) {
+                                <span class="variant-badge">{{ entry.value }}</span>
+                              }
+                            }
+                          </div>
+                          @if (editingCell()?.id === v.id && editingCell()?.field === 'variantName') {
+                            <input
+                              type="text"
+                              class="form-input input-xs"
+                              [ngModel]="v.variantName"
+                              (blur)="saveVariantCell(v, 'variantName', $any($event.target).value)"
+                              (keydown)="onVariantKeydown($event, v, 'variantName')"
+                            />
+                          } @else {
+                            <span class="cell-value">{{ v.variantName }}</span>
+                          }
+                        </td>
+
+                        <td class="editable-cell" [class.is-editing]="editingCell()?.id === v.id && editingCell()?.field === 'sku'" (click)="startEdit(v.id, 'sku', $event)">
+                          @if (editingCell()?.id === v.id && editingCell()?.field === 'sku') {
+                            <input
+                              type="text"
+                              class="form-input input-xs"
+                              [ngModel]="v.sku"
+                              (blur)="saveVariantCell(v, 'sku', $any($event.target).value)"
+                              (keydown)="onVariantKeydown($event, v, 'sku')"
+                            />
+                          } @else {
+                            <span class="cell-value">{{ v.sku }}</span>
+                          }
+                        </td>
+
+                        <td class="editable-cell" [class.is-editing]="editingCell()?.id === v.id && editingCell()?.field === 'barcode'" (click)="startEdit(v.id, 'barcode', $event)">
+                          @if (editingCell()?.id === v.id && editingCell()?.field === 'barcode') {
+                            <input
+                              type="text"
+                              class="form-input input-xs"
+                              [ngModel]="v.barcode"
+                              (blur)="saveVariantCell(v, 'barcode', $any($event.target).value)"
+                              (keydown)="onVariantKeydown($event, v, 'barcode')"
+                            />
+                          } @else {
+                            <span class="cell-value">{{ v.barcode || '—' }}</span>
+                          }
+                        </td>
+
+                        <td class="editable-cell" [class.is-editing]="editingCell()?.id === v.id && editingCell()?.field === 'weightGrams'" (click)="startEdit(v.id, 'weightGrams', $event)">
+                          @if (editingCell()?.id === v.id && editingCell()?.field === 'weightGrams') {
+                            <input
+                              type="number"
+                              class="form-input input-xs"
+                              [ngModel]="v.weightGrams"
+                              (blur)="saveVariantCell(v, 'weightGrams', $any($event.target).value)"
+                              (keydown)="onVariantKeydown($event, v, 'weightGrams')"
+                            />
+                          } @else {
+                            <span class="cell-value">{{ v.weightGrams }}</span>
+                          }
+                        </td>
+
+                        <td class="editable-cell" [class.is-editing]="editingCell()?.id === v.id && editingCell()?.field === 'volumeMl'" (click)="startEdit(v.id, 'volumeMl', $event)">
+                          @if (editingCell()?.id === v.id && editingCell()?.field === 'volumeMl') {
+                            <input
+                              type="number"
+                              class="form-input input-xs"
+                              [ngModel]="v.volumeMl"
+                              (blur)="saveVariantCell(v, 'volumeMl', $any($event.target).value)"
+                              (keydown)="onVariantKeydown($event, v, 'volumeMl')"
+                            />
+                          } @else {
+                            <span class="cell-value">{{ v.volumeMl }}</span>
+                          }
+                        </td>
+
+                        <td class="editable-cell" [class.is-editing]="editingCell()?.id === v.id && editingCell()?.field === 'costAmount'" (click)="startEdit(v.id, 'costAmount', $event)">
+                          @if (editingCell()?.id === v.id && editingCell()?.field === 'costAmount') {
+                            <input
+                              type="number"
+                              class="form-input input-xs"
+                              [ngModel]="v.costAmount"
+                              (blur)="saveVariantCell(v, 'costAmount', $any($event.target).value)"
+                              (keydown)="onVariantKeydown($event, v, 'costAmount')"
+                            />
+                          } @else {
+                            <span class="cell-value">{{ v.costAmount.toLocaleString('vi-VN') }}₫</span>
+                          }
+                        </td>
+
+                        <td>
+                          <select class="form-input input-xs" [ngModel]="v.variantStatus" (ngModelChange)="onVariantStatusChange(v, $event)" [ngModelOptions]="{ standalone: true }">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                          </select>
+                        </td>
+
+                        <td class="text-right">
+                          @if (savingVariant() === v.id) {
+                            <div class="spinner spinner-xs text-primary"></div>
+                          } @else if (dirtyVariants().has(v.id)) {
+                            <span class="material-symbols-rounded text-success" title="Pending save">edit_note</span>
+                          } @else if (!v.variantName.trim() || !v.sku.trim()) {
+                            <span class="material-symbols-rounded text-warning" title="Missing name or SKU">warning</span>
+                          }
+                          <button type="button" class="btn-icon-remove-inline" (click)="removeVariantRow(v.id)" title="Remove variant">
+                            <span class="material-symbols-rounded">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-variants card">
+                <span class="material-symbols-rounded empty-icon">account_tree</span>
+                <p class="empty-title">No variants yet</p>
+                <p class="empty-hint">Add options and values to generate combinations, or click “Add variant” for a single row.</p>
+                <button type="button" class="btn btn-soft btn-sm mt-custom" (click)="addVariantRow()">Add variant</button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-sidebar">
+        <div class="form-card card scroll-mt">
+          <div class="card-header">
+            <h2 class="card-title">Organization</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Product Code (SKU Base)</label>
+              <input type="text" class="form-input" formControlName="productCode" placeholder="KNL-PRD-01" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-input" formControlName="categoryId">
+                <option value="">Select Category</option>
+                @for (c of categories(); track c.id) {
+                  <option [value]="c.id">{{ c.categoryName }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Brand</label>
+              <select class="form-input" formControlName="brandId">
+                <option value="">Select Brand</option>
+                @for (b of brands(); track b.id) {
+                  <option [value]="b.id">{{ b.brandName }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="section-pricing" class="form-card card scroll-mt">
+          <div class="card-header">
+            <h2 class="card-title">Pricing &amp; Status</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Base Price (VND)</label>
+              <input type="number" class="form-input" formControlName="price" placeholder="0" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Stock</label>
+              <input type="number" class="form-input" formControlName="stock" placeholder="0" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Publish Status</label>
+              <div class="status-toggle-group">
+                <label class="status-radio" [class.active]="form.get('status')?.value === 'draft'">
+                  <input type="radio" value="draft" formControlName="status" />
+                  Draft
+                </label>
+                <label class="status-radio" [class.active]="form.get('status')?.value === 'published'">
+                  <input type="radio" value="published" formControlName="status" />
+                  Published
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  }
+</section>

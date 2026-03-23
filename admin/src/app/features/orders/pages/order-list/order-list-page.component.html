@@ -1,0 +1,103 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Orders</h1>
+      <p class="page-subtitle">Manage customer orders and fulfillment</p>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="filter-group">
+      <div class="search-input-wrap">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input type="text" class="form-input search-input" placeholder="Search by Order ID or Customer..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+      </div>
+      
+      <select class="form-input" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+        <option value="all">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="processing">Processing</option>
+        <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card p-0 table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Order</th>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Total</th>
+          <th>Payment</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-circle" style="width: 32px; height: 32px;"></div></td>
+            </tr>
+          }
+        } @else {
+          @for (order of filteredOrders(); track order.id) {
+            <tr class="clickable-row" [routerLink]="[order.id]">
+              <td>
+                <span class="order-number">{{ order.orderNumber }}</span>
+              </td>
+              <td class="text-muted">{{ order.createdAt | date:'MMM d, y' }}</td>
+              <td>
+                <div class="customer-info">
+                  <span class="customer-name">{{ order.customerName }}</span>
+                </div>
+              </td>
+              <td class="font-medium text-primary">{{ formatPrice(order.total) }}</td>
+              <td>
+                <span class="status-dot" [class.dot-success]="order.paymentStatus === 'paid'" [class.dot-warning]="order.paymentStatus === 'unpaid'"></span>
+                {{ order.paymentStatus | titlecase }}
+              </td>
+              <td>
+                <span class="badge" 
+                  [class.badge-warning]="order.status === 'pending'"
+                  [class.badge-info]="order.status === 'confirmed' || order.status === 'processing'"
+                  [class.badge-success]="order.status === 'completed'"
+                  [class.badge-muted]="order.status === 'cancelled'">
+                  {{ order.status | titlecase }}
+                </span>
+              </td>
+              <td class="text-right">
+                <button class="btn-icon">
+                  <span class="material-symbols-rounded">chevron_right</span>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">
+                <div class="empty-state py-8">
+                  <span class="material-symbols-rounded empty-icon">inbox</span>
+                  <p class="empty-title">No orders found</p>
+                  @if (searchQuery() || statusFilter() !== 'all') {
+                    <p class="empty-hint">Try adjusting your filters</p>
+                    <button class="btn btn-soft mt-4" (click)="searchQuery.set(''); statusFilter.set('all')">Clear filters</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

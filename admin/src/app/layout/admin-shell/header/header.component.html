@@ -1,0 +1,43 @@
+<header class="header">
+  <div class="header-left">
+    <button class="header-toggle" (click)="toggleCollapse.emit()" title="Toggle sidebar">
+      <span class="material-symbols-rounded">menu</span>
+    </button>
+    <div class="header-context">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        @for (crumb of breadcrumbs; track crumb; let last = $last) {
+          @if (!last) {
+            <span class="breadcrumb-item">{{ crumb }}</span>
+            <span class="breadcrumb-sep material-symbols-rounded">chevron_right</span>
+          } @else {
+            <span class="breadcrumb-item active">{{ crumb }}</span>
+          }
+        }
+      </nav>
+      <h1 class="header-title">{{ pageTitle }}</h1>
+    </div>
+  </div>
+
+  <div class="header-center" style="flex: 1; display: flex; justify-content: center; padding: 0 24px; position: relative;">
+    <app-global-search style="width: 100%; max-width: 520px;"></app-global-search>
+  </div>
+
+  <div class="header-right" style="gap: 8px;">
+    <app-presence-avatars></app-presence-avatars>
+    <div style="width:1px;height:24px;background:var(--border);margin:0 4px;"></div>
+    <app-notification-bell></app-notification-bell>
+    @if (currentUser.user(); as user) {
+      <div class="user-pill">
+        <div class="user-avatar">{{ user.name.charAt(0) }}</div>
+        <div class="user-info">
+          <span class="user-name">{{ user.name }}</span>
+          <span class="user-role">{{ user.role }}</span>
+        </div>
+      </div>
+    }
+    <button class="btn-logout" (click)="logout()" title="Sign out">
+      <span class="material-symbols-rounded">logout</span>
+      <span class="logout-text">Logout</span>
+    </button>
+  </div>
+</header>

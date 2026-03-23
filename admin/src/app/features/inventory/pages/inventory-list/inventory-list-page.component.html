@@ -1,0 +1,230 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Inventory Balance</h1>
+      <p class="page-subtitle">Manage product stock levels and manual adjustments</p>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="search-input-wrap">
+      <span class="material-symbols-rounded search-icon">search</span>
+      <input
+        type="text"
+        class="form-input search-input"
+        placeholder="Search by product, variant or SKU..."
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+      />
+    </div>
+  </div>
+
+  <div class="card inventory-card-wrap">
+    <div class="inventory-content">
+      @if (loading()) {
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="product-card product-card--skeleton">
+            <div class="product-card__head">
+              <div class="skeleton skeleton-line"></div>
+              <div class="skeleton skeleton-text skeleton-text-short"></div>
+            </div>
+            <div class="variant-list">
+              @for (j of [1,2]; track j) {
+                <div class="variant-row variant-row--skeleton">
+                  <div class="variant-left">
+                    <div class="skeleton skeleton-text skeleton-text-short"></div>
+                    <div class="skeleton skeleton-text"></div>
+                  </div>
+                  <div class="variant-stock">
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text skeleton-text-short"></div>
+                  </div>
+                  <div class="variant-actions">
+                    <div class="skeleton skeleton-icon"></div>
+                    <div class="skeleton skeleton-icon"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      } @else if (groupedInventory().length === 0) {
+        <div class="empty-state py-10">
+          <span class="material-symbols-rounded empty-icon">inventory_2</span>
+          <p class="empty-title">No inventory found</p>
+          <p class="empty-subtitle text-muted">Try a different search or adjust stock to update availability.</p>
+        </div>
+      } @else {
+        <div class="product-grid">
+          @for (group of groupedInventory(); track group.productKey) {
+            <div class="product-card">
+              <div class="product-card__head">
+                <div class="product-card__title-row">
+                  <div class="product-thumb">
+                    @if (productImages()[group.productId]) {
+                      <img
+                        class="product-thumb__img"
+                        [src]="productImages()[group.productId]"
+                        [alt]="group.productKey"
+                      />
+                    } @else {
+                      <span class="material-symbols-rounded">category</span>
+                    }
+                  </div>
+                  <div class="product-card__meta">
+                    <div class="product-card__title">{{ group.productKey }}</div>
+                    <div class="product-card__subtitle text-muted">{{ group.variants.length }} variants</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="variant-list">
+                @for (item of group.variants; track item.id) {
+                  <div class="variant-row"
+                    [class.variant-row--out]="item.status === 'out_of_stock'"
+                    [class.variant-row--low]="item.status === 'low_stock'">
+                    <div class="variant-left">
+                      <div class="variant-name">
+                        {{ variantLabel(item) }}
+                      </div>
+                      <div class="variant-sku">{{ item.sku }}</div>
+                    </div>
+
+                    <div class="variant-stock">
+                      <div class="variant-stock__value">{{ item.stockQuantity }}</div>
+                      <div class="variant-stock__subtext">
+                        @if (item.status === 'out_of_stock') { Out of stock }
+                        @if (item.status === 'low_stock') { Low stock threshold reached }
+                        @if (item.status === 'in_stock') { Available }
+                      </div>
+                    </div>
+
+                    <div class="variant-status">
+                      <span
+                        class="stock-badge"
+                        [class.stock-badge--in]="item.status === 'in_stock'"
+                        [class.stock-badge--low]="item.status === 'low_stock'"
+                        [class.stock-badge--out]="item.status === 'out_of_stock'"
+                        [attr.title]="
+                          item.status === 'in_stock' ? 'Available' :
+                          item.status === 'low_stock' ? ('Only ' + item.stockQuantity + ' item' + (item.stockQuantity === 1 ? '' : 's') + ' left') :
+                          'Out of stock — needs restock'
+                        "
+                      >
+                        <span class="stock-dot"></span>
+                        @if (item.status === 'in_stock') { In Stock }
+                        @if (item.status === 'low_stock') { Low Stock }
+                        @if (item.status === 'out_of_stock') { Out of Stock }
+                      </span>
+                    </div>
+
+                    <div class="variant-actions">
+                      <button class="icon-btn icon-btn--history" title="View Stock History" (click)="toggleHistory(item)">
+                        <span class="material-symbols-rounded">history</span>
+                      </button>
+                      <div class="quick-actions">
+                        <button
+                          class="icon-btn icon-btn--danger"
+                          title="Decrease stock"
+                          (click)="openAdjustment(item, -1)"
+                        >
+                          <span class="material-symbols-rounded">remove</span>
+                        </button>
+                        <button
+                          class="icon-btn icon-btn--success"
+                          title="Increase stock"
+                          (click)="openAdjustment(item, +10)"
+                        >
+                          <span class="material-symbols-rounded">add</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Adjustment Panel -->
+                  @if (isAdjusting() === item.id) {
+                    <div class="inline-panel">
+                      <div class="inline-panel__inner">
+                        <div class="inline-panel__head">
+                          <div class="inline-panel__title">Adjust Stock</div>
+                          <div class="inline-panel__subtext text-muted">{{ item.sku }}</div>
+                        </div>
+
+                        <div class="adjust-form">
+                          <div class="form-group qty-group">
+                            <label class="form-label">Delta (Qty)</label>
+                            <input type="number" class="form-input" [ngModel]="adjustDelta()" (ngModelChange)="adjustDelta.set($event)" />
+                          </div>
+                          <div class="form-group reason-group">
+                            <label class="form-label">Reason</label>
+                            <select class="form-input" [ngModel]="adjustReason()" (ngModelChange)="adjustReason.set($event)">
+                              <option value="restock">Restock</option>
+                              <option value="damage">Damage / Loss</option>
+                              <option value="return">Customer Return</option>
+                              <option value="manual">Manual Count</option>
+                            </select>
+                          </div>
+                          <div class="form-group notes-group">
+                            <label class="form-label">Notes (Optional)</label>
+                            <input type="text" class="form-input" placeholder="e.g. PO-1200" [ngModel]="adjustNotes()" (ngModelChange)="adjustNotes.set($event)" />
+                          </div>
+                        </div>
+
+                        <div class="inline-panel__actions">
+                          <button class="btn btn-ghost" (click)="closeAdjustment()">Cancel</button>
+                          <button class="btn btn-primary" [disabled]="isSaving()" (click)="confirmAdjustment(item)">
+                            @if(isSaving()) { Confirming... } @else { Confirm }
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- History Panel -->
+                  @if (historyOpen() === item.id) {
+                    <div class="inline-panel inline-panel--history">
+                      <div class="inline-panel__inner">
+                        <div class="inline-panel__head">
+                          <div class="inline-panel__title">Stock History</div>
+                          <button class="btn-icon ml-auto" (click)="toggleHistory(item)">
+                            <span class="material-symbols-rounded">close</span>
+                          </button>
+                        </div>
+
+                        @if (historyLoading()) {
+                          <div class="skeleton-text skeleton-text-short mt-4"></div>
+                        } @else if (historyLogs().length === 0) {
+                          <p class="text-muted mt-2 text-sm">No adjustments found.</p>
+                        } @else {
+                          <ul class="history-list">
+                            @for(log of historyLogs(); track log.id) {
+                              <li class="history-list-item">
+                                <div class="log-meta">
+                                  <strong
+                                    [class.text-success]="log.delta > 0"
+                                    [class.text-danger]="log.delta < 0"
+                                  >
+                                    {{ log.delta > 0 ? '+' : '' }}{{ log.delta }}
+                                  </strong>
+                                  <span class="log-reason">{{ log.reason | titlecase }}</span>
+                                </div>
+                                <div class="log-timestamp">
+                                  <span>{{ log.createdAt | date:'MMM d, hh:mm a' }} by {{ log.createdBy }}</span>
+                                  @if (log.notes) { <span class="log-note"> - {{ log.notes }}</span> }
+                                </div>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</section>

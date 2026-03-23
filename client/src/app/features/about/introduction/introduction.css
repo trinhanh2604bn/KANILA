@@ -1,0 +1,100 @@
+:host {
+    max-width: 900px;
+    margin: 0 auto;
+    display: block;
+    overflow-x: hidden;
+    background-color: var(--kanila-bg);
+}
+
+
+.brand-name, .slogan-title, .box-title, .section-subtitle, .pc-name {
+    font-family: var(--font-nunito); 
+}
+
+p, .description-text, .subtitle-text, .vision-box p {
+    font-family: var(--font-beVietnamPro);
+    line-height: 1.7;
+    color: #4a4a4a;
+}
+
+
+.vision-box {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.vision-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(107, 30, 46, 0.1) !important;
+}
+
+/* --- Phương Châm & Items --- */
+.phuongcham-item {
+    background-color: var(--kanila-white);
+    border-radius: 15px;
+    border: 1px solid rgba(245, 163, 183, 0.2);
+    transition: all 0.3s ease;
+}
+
+.phuongcham-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
+}
+
+.pc-icon {
+    transition: transform 0.4s ease;
+}
+
+.phuongcham-item:hover .pc-icon {
+    transform: rotate(5deg) scale(1.1);
+}
+
+/* --- Giá Trị Cốt Lõi --- */
+.value-item .icon-circle {
+    transition: all 0.3s ease-in-out;
+}
+
+.value-item:hover .icon-circle {
+    transform: scale(1.1);
+    background-color: var(--kanila-pink) !important;
+    color: var(--kanila-white) !important;
+    border-color: var(--kanila-red) !important;
+}
+
+/* --- Animations (Hiệu ứng xuất hiện) --- */
+.fade-in-up {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUpMsg 0.8s ease-out forwards;
+}
+
+.slide-in-left {
+    opacity: 0;
+    transform: translateX(-40px);
+    animation: slideInLeftMsg 0.8s ease-out forwards;
+}
+
+.slide-in-right {
+    opacity: 0;
+    transform: translateX(40px);
+    animation: slideInRightMsg 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUpMsg {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeftMsg {
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRightMsg {
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* --- Nút bấm CTA --- */
+.btn-cta:hover {
+    background-color: var(--kanila-red) !important;
+    color: var(--kanila-white) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
+}

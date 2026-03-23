@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const shipmentSchema = new mongoose.Schema(
   {
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
+    order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
     warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: "Warehouse", default: null },
     shipmentNumber: { type: String, required: true, unique: true, uppercase: true, trim: true },
     carrierCode: { type: String, default: "" },

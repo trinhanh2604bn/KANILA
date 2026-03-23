@@ -1,0 +1,194 @@
+<section class="page form-page">
+  <div class="page-header">
+    <a routerLink="/promotions" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Promotions
+    </a>
+    <h1 class="page-title">{{ pageTitle }}</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading promotion...</p>
+    </div>
+  } @else {
+    <div class="form-layout">
+      <div class="form-main">
+        <!-- Section 1: Basic Info -->
+        <div class="card form-section">
+          <div class="section-header">
+            <span class="material-symbols-rounded section-icon">info</span>
+            <div>
+              <h2 class="section-title">Basic Information</h2>
+              <p class="section-hint">Give your promotion a clear, recognizable name</p>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="form-group">
+              <label class="form-label">Promotion Name *</label>
+              <input type="text" class="form-input" placeholder="e.g. Summer Beauty Sale" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea class="form-input textarea" placeholder="Brief description of this promotion..." [ngModel]="description()" (ngModelChange)="description.set($event)"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Discount -->
+        <div class="card form-section">
+          <div class="section-header">
+            <span class="material-symbols-rounded section-icon">sell</span>
+            <div>
+              <h2 class="section-title">Discount</h2>
+              <p class="section-hint">Choose the type and value of the discount</p>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="form-group">
+              <label class="form-label">Discount Type</label>
+              <div class="type-selector">
+                <button class="type-option" [class.active]="type() === 'percentage'" (click)="type.set('percentage')">
+                  <span class="material-symbols-rounded">percent</span>
+                  Percentage
+                </button>
+                <button class="type-option" [class.active]="type() === 'fixed'" (click)="type.set('fixed')">
+                  <span class="material-symbols-rounded">payments</span>
+                  Fixed Amount
+                </button>
+                <button class="type-option" [class.active]="type() === 'free_shipping'" (click)="type.set('free_shipping')">
+                  <span class="material-symbols-rounded">local_shipping</span>
+                  Free Shipping
+                </button>
+              </div>
+            </div>
+            @if (showDiscountInput()) {
+              <div class="form-group">
+                <label class="form-label">Discount Value {{ type() === 'percentage' ? '(%)' : '(₫)' }}</label>
+                <input type="number" class="form-input" [min]="0" [ngModel]="discountValue()" (ngModelChange)="discountValue.set($event)" />
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Section 3: Conditions -->
+        <div class="card form-section">
+          <div class="section-header">
+            <span class="material-symbols-rounded section-icon">tune</span>
+            <div>
+              <h2 class="section-title">Conditions</h2>
+              <p class="section-hint">Define when and how this promotion applies</p>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="form-group">
+              <label class="form-label">Minimum Order Value (₫)</label>
+              <input type="number" class="form-input" [min]="0" [ngModel]="minOrderValue()" (ngModelChange)="minOrderValue.set($event)" />
+              <span class="form-hint">Leave 0 for no minimum requirement</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Applicable Scope</label>
+              <div class="scope-selector">
+                <label class="radio-option">
+                  <input type="radio" name="scope" value="all" [checked]="applicableScope() === 'all'" (change)="applicableScope.set('all')" />
+                  <span class="radio-label">All products</span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="scope" value="categories" [checked]="applicableScope() === 'categories'" (change)="applicableScope.set('categories')" />
+                  <span class="radio-label">Selected categories</span>
+                </label>
+                <label class="radio-option">
+                  <input type="radio" name="scope" value="products" [checked]="applicableScope() === 'products'" (change)="applicableScope.set('products')" />
+                  <span class="radio-label">Selected products</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Usage Limit (total)</label>
+                <input type="number" class="form-input" [min]="0" [ngModel]="usageLimit()" (ngModelChange)="usageLimit.set($event)" />
+                <span class="form-hint">0 = unlimited</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Per-Customer Limit</label>
+                <input type="number" class="form-input" [min]="0" [ngModel]="perCustomerLimit()" (ngModelChange)="perCustomerLimit.set($event)" />
+                <span class="form-hint">0 = unlimited</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Validity -->
+        <div class="card form-section">
+          <div class="section-header">
+            <span class="material-symbols-rounded section-icon">calendar_month</span>
+            <div>
+              <h2 class="section-title">Validity Period</h2>
+              <p class="section-hint">Set the start and end dates for this promotion</p>
+            </div>
+          </div>
+          <div class="section-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Start Date *</label>
+                <input type="date" class="form-input" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">End Date *</label>
+                <input type="date" class="form-input" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <a routerLink="/promotions" class="btn btn-soft">Cancel</a>
+          <button class="btn btn-primary" [disabled]="!isValid() || saving()" (click)="save()">
+            @if (saving()) {
+              <div class="spinner"></div> Saving...
+            } @else {
+              <span class="material-symbols-rounded">check</span>
+              {{ isEditMode() ? 'Update Promotion' : 'Create Promotion' }}
+            }
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar: Discount Preview -->
+      <div class="form-sidebar">
+        <div class="card preview-card">
+          <div class="preview-header">
+            <span class="material-symbols-rounded">visibility</span>
+            Discount Preview
+          </div>
+          <div class="preview-body">
+            <div class="preview-label">{{ previewLabel() }}</div>
+            <div class="preview-example">
+              <div class="preview-row">
+                <span class="preview-key">Order total</span>
+                <span class="preview-val">{{ formatPrice(previewOriginal) }}</span>
+              </div>
+              @if (type() !== 'free_shipping') {
+                <div class="preview-row discount-row">
+                  <span class="preview-key">Discount</span>
+                  <span class="preview-val text-success">-{{ formatPrice(previewDiscount()) }}</span>
+                </div>
+                <div class="preview-row final-row">
+                  <span class="preview-key">You pay</span>
+                  <span class="preview-val">{{ formatPrice(previewFinal()) }}</span>
+                </div>
+              } @else {
+                <div class="preview-row discount-row">
+                  <span class="preview-key">Shipping</span>
+                  <span class="preview-val text-success">Free</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</section>

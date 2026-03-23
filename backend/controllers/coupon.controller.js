@@ -169,6 +169,20 @@ const deleteCoupon = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+// PATCH /api/coupons/:id
+const patchCoupon = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid coupon ID" });
+    const allowed = ["couponStatus", "validFrom", "validTo", "usageLimitTotal", "usageLimitPerCustomer", "minOrderAmount"];
+    const updates = {};
+    for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
+    const coupon = await Coupon.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+    if (!coupon) return res.status(404).json({ success: false, message: "Coupon not found" });
+    res.status(200).json({ success: true, message: "Coupon patched successfully", data: coupon });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
 
 module.exports = {
   getAllCoupons,
@@ -176,5 +190,6 @@ module.exports = {
   getCouponByCode,
   createCoupon,
   updateCoupon,
+  patchCoupon,
   deleteCoupon,
 };

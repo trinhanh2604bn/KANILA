@@ -1,0 +1,176 @@
+<div class="dash-page fade-in">
+  @if (loading()) {
+    <app-dashboard-page-skeleton />
+  } @else if (data(); as d) {
+    <div class="dash-inner">
+      <header class="dash-header">
+        <div class="dash-header__text">
+          <p class="dash-eyebrow">Analytics</p>
+          <h1 class="dash-title">Overview</h1>
+          <p class="dash-subtitle">
+            Track revenue and operations in one place. Data updates when you change the range below.
+          </p>
+        </div>
+      </header>
+
+      <div class="dash-filters" role="group" aria-label="Dashboard filters">
+        <div class="dash-filters__left">
+          <span class="dash-filters__icon material-symbols-rounded" aria-hidden="true">filter_alt</span>
+          <label class="dash-select-wrap">
+            <span class="visually-hidden">Category</span>
+            <select class="dash-select" disabled title="Coming soon">
+              <option>All categories</option>
+            </select>
+          </label>
+          <label class="dash-select-wrap">
+            <span class="visually-hidden">Status</span>
+            <select class="dash-select" disabled title="Coming soon">
+              <option>All statuses</option>
+            </select>
+          </label>
+        </div>
+        <div class="dash-filters__right" role="tablist" aria-label="Date range">
+          <button
+            type="button"
+            role="tab"
+            class="dash-seg"
+            [class.dash-seg--active]="timeRange() === '7d'"
+            [attr.aria-selected]="timeRange() === '7d'"
+            (click)="setTimeRange('7d')"
+          >
+            7 days
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="dash-seg"
+            [class.dash-seg--active]="timeRange() === '30d'"
+            [attr.aria-selected]="timeRange() === '30d'"
+            (click)="setTimeRange('30d')"
+          >
+            30 days
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="dash-seg"
+            [class.dash-seg--active]="timeRange() === '90d'"
+            [attr.aria-selected]="timeRange() === '90d'"
+            (click)="setTimeRange('90d')"
+          >
+            90 days
+          </button>
+        </div>
+      </div>
+
+      <app-dashboard-section-card title="Sales performance" [subtitle]="rangeSubcopy()" icon="monitoring">
+        <div class="kpi-grid">
+          <div class="kpi-grid__revenue">
+            <app-dashboard-kpi-card
+              [label]="d.primaryMetric.label"
+              [value]="d.primaryMetric.value"
+              [icon]="iconFor(d.primaryMetric)"
+              variant="primary"
+              [trend]="d.primaryMetric.trend"
+              [showTrend]="true"
+              [context]="d.primaryMetric.context"
+              [sparklineValues]="d.primaryMetric.sparkline ?? null"
+              [sparklineAccent]="primarySparkAccent"
+            />
+          </div>
+          @for (metric of d.secondaryMetrics; track metric.label) {
+            <div class="kpi-grid__cell">
+              <app-dashboard-kpi-card
+                [label]="metric.label"
+                [value]="metric.value"
+                [icon]="iconFor(metric)"
+                variant="default"
+                [trend]="metric.trend"
+                [showTrend]="metric.showTrend !== false"
+                [context]="metric.context"
+                [sparklineValues]="metric.sparkline ?? null"
+                [sparklineAccent]="secondarySparkAccent"
+              />
+            </div>
+          }
+        </div>
+
+        <div class="chart-panel">
+          <div class="chart-panel__head">
+            <div>
+              <h3 class="chart-panel__title">Revenue</h3>
+              <p class="chart-panel__sub">Daily totals in {{ rangeLabel().toLowerCase() }}</p>
+            </div>
+            <a routerLink="/orders" class="chart-panel__link">
+              View orders
+              <span class="material-symbols-rounded" aria-hidden="true">arrow_outward</span>
+            </a>
+          </div>
+          <div class="chart-panel__body">
+            <app-metrics-chart [data]="d.salesChart" />
+          </div>
+        </div>
+      </app-dashboard-section-card>
+
+      <div class="dash-two-col">
+        <app-dashboard-section-card title="Product insights" subtitle="Best sellers by units sold in your catalog." icon="inventory_2">
+          <a slot="actions" routerLink="/products" class="dash-text-link">
+            View catalog
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+          </a>
+          <div class="insight-card">
+            @if (d.topProducts.length === 0) {
+              <div class="empty-state">
+                <span class="empty-state__icon material-symbols-rounded" aria-hidden="true">shopping_cart</span>
+                <p class="empty-state__title">No data yet</p>
+                <p class="empty-state__text">No order line data yet. Start by creating orders to see rankings.</p>
+                <div class="empty-state__actions">
+                  <a routerLink="/orders" class="btn-pill btn-pill--primary">Go to orders</a>
+                  <a routerLink="/products" class="btn-pill">Browse catalog</a>
+                </div>
+              </div>
+            } @else {
+              <ul class="insight-list">
+                @for (prod of d.topProducts; track prod.id; let i = $index) {
+                  <li>
+                    <a class="insight-row" [routerLink]="['/products', prod.id]">
+                      <span class="insight-rank">{{ i + 1 }}</span>
+                      <span class="insight-name">{{ displayProductTitle(prod.title) }}</span>
+                      <span class="insight-meta">{{ prod.sales }} sold</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </app-dashboard-section-card>
+
+        <app-dashboard-section-card title="Operations" subtitle="SKUs at or below your low-stock threshold." icon="warehouse">
+          <a slot="actions" routerLink="/inventory" class="dash-text-link">
+            Open inventory
+            <span class="material-symbols-rounded" aria-hidden="true">chevron_right</span>
+          </a>
+          <div class="insight-card insight-card--warn">
+            @if (d.lowStockItems.length === 0) {
+              <div class="empty-state">
+                <span class="empty-state__icon material-symbols-rounded" aria-hidden="true">check_circle</span>
+                <p class="empty-state__title">All clear</p>
+                <p class="empty-state__text">No SKUs at or below threshold — stock levels look healthy.</p>
+                <a routerLink="/inventory" class="btn-pill btn-pill--primary">View inventory</a>
+              </div>
+            } @else {
+              <ul class="insight-list">
+                @for (prod of d.lowStockItems; track prod.id) {
+                  <li class="insight-row insight-row--static">
+                    <span class="insight-name">{{ displayProductTitle(prod.title) }}</span>
+                    <span class="insight-badge">{{ prod.stock }} left</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </app-dashboard-section-card>
+      </div>
+    </div>
+  }
+</div>

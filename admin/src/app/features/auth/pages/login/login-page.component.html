@@ -1,0 +1,129 @@
+<div class="login-container">
+  <!-- Brand Panel -->
+  <div class="login-brand">
+    <div class="brand-content">
+      <div class="brand-logo">K</div>
+      <h1 class="brand-title">KANILA</h1>
+      <p class="brand-tagline">Beauty & Cosmetics Administration</p>
+      <div class="brand-features">
+        <div class="brand-feature">
+          <span class="material-symbols-rounded">dashboard</span>
+          <span>Real-time analytics dashboard</span>
+        </div>
+        <div class="brand-feature">
+          <span class="material-symbols-rounded">inventory_2</span>
+          <span>Complete catalog management</span>
+        </div>
+        <div class="brand-feature">
+          <span class="material-symbols-rounded">local_shipping</span>
+          <span>Order & shipment tracking</span>
+        </div>
+      </div>
+      <div class="brand-decoration">
+        <div class="decoration-circle c1"></div>
+        <div class="decoration-circle c2"></div>
+        <div class="decoration-circle c3"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Form -->
+  <div class="login-form-area">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-brand-mobile">
+          <div class="brand-logo-sm">K</div>
+          <span class="brand-name-sm">KANILA</span>
+        </div>
+        <h2 class="login-title">Welcome back</h2>
+        <p class="login-subtitle">Sign in to your admin account to continue</p>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="login-error" role="alert">
+          <span class="material-symbols-rounded error-icon">error</span>
+          <div class="error-content">
+            <span class="error-title">Login failed</span>
+            <span class="error-text">{{ errorMessage() }}</span>
+          </div>
+        </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="form" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="email">Email address</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-rounded">mail</span>
+            <input
+              #emailInput
+              id="email"
+              type="email"
+              class="form-input has-icon"
+              formControlName="email"
+              placeholder="admin@example.com"
+              autocomplete="email"
+            />
+          </div>
+          @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('required')) {
+            <span class="form-error">
+              <span class="material-symbols-rounded" style="font-size: 14px;">info</span>
+              Email is required
+            </span>
+          }
+          @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('email')) {
+            <span class="form-error">
+              <span class="material-symbols-rounded" style="font-size: 14px;">info</span>
+              Please enter a valid email
+            </span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon material-symbols-rounded">lock</span>
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              class="form-input has-icon has-toggle"
+              formControlName="password"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            />
+            <button type="button" class="toggle-password" (click)="togglePassword()" tabindex="-1">
+              <span class="material-symbols-rounded">
+                {{ showPassword() ? 'visibility_off' : 'visibility' }}
+              </span>
+            </button>
+          </div>
+          @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')) {
+            <span class="form-error">
+              <span class="material-symbols-rounded" style="font-size: 14px;">info</span>
+              Password is required
+            </span>
+          }
+          @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('minlength')) {
+            <span class="form-error">
+              <span class="material-symbols-rounded" style="font-size: 14px;">info</span>
+              Password must be at least 6 characters
+            </span>
+          }
+        </div>
+
+        <button type="submit" class="btn btn-primary login-btn" [disabled]="isLoading()">
+          @if (isLoading()) {
+            <span class="spinner"></span>
+            <span>Signing in...</span>
+          } @else {
+            <span class="material-symbols-rounded" style="font-size: 20px;">login</span>
+            <span>Sign in</span>
+          }
+        </button>
+      </form>
+
+      <p class="login-hint">
+        Demo credentials: ngan&#64;gmail.com / 123456789
+      </p>
+    </div>
+  </div>
+</div>

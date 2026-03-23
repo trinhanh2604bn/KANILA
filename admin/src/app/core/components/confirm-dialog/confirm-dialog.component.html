@@ -1,0 +1,32 @@
+@if (dialogService.options(); as opts) {
+  <div class="dialog-backdrop" [class.open]="dialogService.isOpen()" (click)="dialogService.close(false)">
+    <div class="dialog-panel card" [class.open]="dialogService.isOpen()" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <div class="dialog-title-group">
+          @if (opts.isDestructive) {
+            <span class="material-symbols-rounded dialog-icon danger">warning</span>
+          } @else {
+            <span class="material-symbols-rounded dialog-icon">help</span>
+          }
+          <h3 class="dialog-title">{{ opts.title }}</h3>
+        </div>
+        <button class="dialog-close" (click)="dialogService.close(false)">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      
+      <div class="dialog-body">
+        <p class="dialog-message">{{ opts.message }}</p>
+      </div>
+      
+      <div class="dialog-footer">
+        <button class="btn btn-ghost" (click)="dialogService.close(false)">
+          {{ opts.cancelText }}
+        </button>
+        <button class="btn" [class.btn-danger]="opts.isDestructive" [class.btn-primary]="!opts.isDestructive" (click)="dialogService.close(true)">
+          {{ opts.confirmText }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

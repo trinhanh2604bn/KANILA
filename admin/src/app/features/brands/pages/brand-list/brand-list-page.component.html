@@ -1,0 +1,87 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Brands</h1>
+      <p class="page-subtitle">Manage manufacturers and product brands</p>
+    </div>
+    <a routerLink="create" class="btn btn-primary">
+      <span class="material-symbols-rounded">add</span>
+      Add Brand
+    </a>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="search-input-wrap">
+      <span class="material-symbols-rounded search-icon">search</span>
+      <input type="text" class="form-input search-input" placeholder="Search brands by name or code..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+      @if (searchQuery()) {
+        <button class="btn-clear" (click)="searchQuery.set('')"><span class="material-symbols-rounded">close</span></button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading brands...</p>
+    </div>
+  } @else {
+    <div class="brands-grid">
+      @for (brand of filteredBrands(); track brand.id) {
+        <div class="brand-card card">
+          <div class="brand-logo-area">
+            @if (showLogo(brand)) {
+              <img
+                class="brand-logo-img"
+                [src]="logoSrc(brand)"
+                [alt]="brand.brandName + ' logo'"
+                loading="lazy"
+                (error)="onLogoError(brand.id)"
+              />
+            } @else {
+              <div class="brand-logo-placeholder">
+                <span class="material-symbols-rounded">verified_user</span>
+              </div>
+            }
+            <span class="badge brand-status-badge" [class.badge-success]="brand.isActive" [class.badge-muted]="!brand.isActive">
+              {{ brand.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          
+          <div class="brand-info">
+            <h3 class="brand-name">{{ brand.brandName }}</h3>
+            <span class="brand-code">{{ brand.brandCode }}</span>
+            <p class="brand-desc">{{ brand.description || 'No description provided.' }}</p>
+          </div>
+          
+          <div class="brand-footer">
+            <div class="brand-stats">
+              <span class="stat-num">{{ brand.productCount || 0 }}</span>
+              <span class="stat-label">Products</span>
+            </div>
+            
+            <div class="brand-actions">
+              <a [routerLink]="[brand.id, 'edit']" class="btn btn-soft btn-xs">
+                <span class="material-symbols-rounded">edit</span>
+                Edit
+              </a>
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state card">
+          <span class="material-symbols-rounded empty-icon">loyalty</span>
+          @if (searchQuery()) {
+            <p class="empty-title">Search returned no matching brands</p>
+            <p class="empty-hint">Try adjusting your search terms</p>
+            <button class="btn btn-soft" (click)="searchQuery.set('')">Clear search</button>
+          } @else {
+            <p class="empty-title">No brands yet</p>
+            <p class="empty-hint">Start by creating your first brand to organize products</p>
+            <a routerLink="create" class="btn btn-primary">Add Brand</a>
+          }
+        </div>
+      }
+    </div>
+  }
+</section>

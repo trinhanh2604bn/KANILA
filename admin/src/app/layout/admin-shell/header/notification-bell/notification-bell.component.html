@@ -1,0 +1,56 @@
+<div class="bell-container" (click)="$event.stopPropagation()">
+  <!-- Bell Button -->
+  <button class="bell-btn" (click)="toggle()" [class.has-unread]="api.unreadCount() > 0">
+    <span class="material-symbols-rounded">notifications</span>
+    @if (api.unreadCount() > 0) {
+      <span class="unread-badge">{{ api.unreadCount() > 9 ? '9+' : api.unreadCount() }}</span>
+    }
+  </button>
+
+  <!-- Dropdown Panel -->
+  @if (isOpen()) {
+    <div class="notification-panel card shadow-lg border fade-in">
+      <div class="panel-header border-b px-5 py-4 flex justify-between items-center">
+        <h3 class="font-bold text-md text-dark m-0">Notifications</h3>
+        @if (api.unreadCount() > 0) {
+          <button class="btn-mark-all text-xs font-bold text-primary" (click)="markAllRead()">Mark all as read</button>
+        }
+      </div>
+
+      <div class="panel-body">
+        @if (loading()) {
+          @for (i of [1,2,3]; track i) {
+            <div class="skeleton-item px-5 py-4 border-b border-light">
+              <div class="skeleton skeleton-text" style="width:70%;height:14px;"></div>
+              <div class="skeleton skeleton-text mt-2" style="width:90%;height:12px;"></div>
+            </div>
+          }
+        } @else if (notifications().length === 0) {
+          <div class="empty-state py-10 text-center">
+            <span class="material-symbols-rounded text-muted" style="font-size:36px;">notifications_off</span>
+            <p class="text-dark font-medium m-0 mt-3">No notifications</p>
+            <p class="text-muted text-xs m-0 mt-1">You're all caught up!</p>
+          </div>
+        } @else {
+          @for (n of notifications(); track n.id) {
+            <div class="notif-item flex gap-3 px-5 py-4 border-b border-light cursor-pointer transition-colors"
+              [class.unread]="!n.read"
+              (click)="markAsRead(n)">
+              <div class="notif-icon-box flex-shrink-0" [style.background]="getTypeColor(n.type) + '15'" [style.color]="getTypeColor(n.type)">
+                <span class="material-symbols-rounded text-lg">{{ n.icon }}</span>
+              </div>
+              <div class="notif-content flex-1">
+                <div class="flex justify-between items-start">
+                  <span class="notif-title font-medium text-sm" [class.text-dark]="!n.read" [class.text-muted]="n.read">{{ n.title }}</span>
+                  @if (!n.read) { <span class="unread-dot"></span> }
+                </div>
+                <p class="notif-desc text-xs text-muted m-0 mt-1" style="line-height:1.4;">{{ n.description }}</p>
+                <span class="notif-time text-xs text-muted mt-2 block opacity-60">{{ timeAgo(n.timestamp) }}</span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,108 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Shipments</h1>
+      <p class="page-subtitle">Track and manage order shipments and deliveries</p>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="filter-group">
+      <div class="filter-left">
+        <span class="material-symbols-rounded filter-label-icon">local_shipping</span>
+        <span class="filter-count">{{ filteredShipments().length }} shipments</span>
+      </div>
+      <div class="filter-right">
+        <select class="form-input filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="shipped">Shipped</option>
+          <option value="in_transit">In Transit</option>
+          <option value="delivered">Delivered</option>
+          <option value="failed">Failed</option>
+        </select>
+        @if (hasActiveFilters()) {
+          <button class="btn btn-ghost btn-reset" (click)="clearFilters()">
+            <span class="material-symbols-rounded">filter_list_off</span>
+            Reset
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-0 table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Shipment</th>
+          <th>Order</th>
+          <th>Carrier</th>
+          <th>Tracking #</th>
+          <th>Status</th>
+          <th>Est. Delivery</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-circle" style="width: 32px; height: 32px;"></div></td>
+            </tr>
+          }
+        } @else {
+          @for (shp of filteredShipments(); track shp.id) {
+            <tr class="clickable-row" [class.delayed-row]="isDelayed(shp)" [class.failed-row]="shp.status === 'failed'" [routerLink]="[shp.id]">
+              <td>
+                <span class="shipment-number">{{ shp.shipmentNumber }}</span>
+              </td>
+              <td>
+                <span class="order-ref" [title]="shp.orderNumber">{{ shp.orderNumber }}</span>
+              </td>
+              <td class="td-secondary">{{ shp.carrier }}</td>
+              <td>
+                <span class="tracking-number" [title]="shp.trackingNumber">{{ shp.trackingNumber }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(shp.status)">
+                  {{ getStatusLabel(shp.status) }}
+                </span>
+                @if (isDelayed(shp)) {
+                  <span class="delayed-tag">Delayed</span>
+                }
+              </td>
+              <td class="text-muted">{{ shp.estimatedDelivery | date:'MMM d, y' }}</td>
+              <td class="text-right">
+                <button class="btn-icon">
+                  <span class="material-symbols-rounded">chevron_right</span>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">
+                <div class="empty-state py-8">
+                  <span class="material-symbols-rounded empty-icon">local_shipping</span>
+                  <p class="empty-title">No shipments found</p>
+                  @if (hasActiveFilters()) {
+                    <p class="empty-hint">Try adjusting your status filter</p>
+                    <button class="btn btn-soft mt-4" (click)="clearFilters()">Clear filters</button>
+                  } @else {
+                    <p class="empty-hint">Shipments will appear here when orders are fulfilled</p>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

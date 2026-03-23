@@ -1,0 +1,142 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Promotions</h1>
+      <p class="page-subtitle">Manage discounts, offers, and marketing campaigns</p>
+    </div>
+    <div class="header-right">
+      <a routerLink="create" class="btn btn-primary">
+        <span class="material-symbols-rounded">add</span>
+        Create Promotion
+      </a>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="filter-group">
+      <div class="search-input-wrap">
+        <span class="material-symbols-rounded search-icon">search</span>
+        <input type="text" class="form-input search-input" placeholder="Search promotions..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+      </div>
+      <div class="filter-right">
+        <select class="form-input filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="all">All Statuses</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="expired">Expired</option>
+        </select>
+        <select class="form-input filter-select" [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event)">
+          <option value="all">All Types</option>
+          <option value="percentage">Percentage</option>
+          <option value="fixed">Fixed</option>
+          <option value="free_shipping">Free Shipping</option>
+        </select>
+        @if (hasActiveFilters()) {
+          <button class="btn btn-ghost btn-reset" (click)="clearFilters()">
+            <span class="material-symbols-rounded">filter_list_off</span>
+            Reset
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-0 table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Discount</th>
+          <th>Status</th>
+          <th>Valid Period</th>
+          <th>Usage</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-circle" style="width: 32px; height: 32px;"></div></td>
+            </tr>
+          }
+        } @else {
+          @for (promo of filteredPromotions(); track promo.id) {
+            <tr>
+              <td>
+                <a [routerLink]="[promo.id]" class="promo-name-link cell-truncate" [title]="promo.name">
+                  <span class="promo-name">{{ promo.name }}</span>
+                </a>
+              </td>
+              <td>
+                @if (getTypeLabel(promo) !== '—') {
+                  <span class="badge badge-primary">{{ getTypeLabel(promo) }}</span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td class="font-medium">{{ formatDiscount(promo) }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(promo.status)">
+                  {{ promo.status | titlecase }}
+                </span>
+              </td>
+              <td class="text-muted td-secondary">
+                @if (promo.startDate && promo.endDate) {
+                  <span class="cell-truncate" [title]="(promo.startDate | date:'MMM d') + ' — ' + (promo.endDate | date:'MMM d, y')">
+                    {{ promo.startDate | date:'MMM d' }} — {{ promo.endDate | date:'MMM d, y' }}
+                  </span>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td>
+                <span class="usage-text">{{ promo.usageCount }}<span class="text-muted">{{ promo.usageLimit > 0 ? ' / ' + promo.usageLimit : '' }}</span></span>
+              </td>
+              <td class="text-right actions-cell" (click)="$event.stopPropagation()">
+                @if (promo.status !== 'expired') {
+                  <button type="button" class="btn-icon" [title]="promo.status === 'active' ? 'Deactivate' : 'Activate'" (click)="toggleStatus($event, promo)">
+                    <span class="material-symbols-rounded">{{ promo.status === 'active' ? 'pause_circle' : 'play_circle' }}</span>
+                  </button>
+                }
+                <button type="button" class="btn-icon" title="Duplicate" (click)="duplicatePromotion($event, promo)">
+                  <span class="material-symbols-rounded">content_copy</span>
+                </button>
+                <a class="btn-icon" [routerLink]="[promo.id]" title="Edit">
+                  <span class="material-symbols-rounded">chevron_right</span>
+                </a>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7">
+                <div class="empty-state py-8">
+                  <span class="material-symbols-rounded empty-icon">sell</span>
+                  <p class="empty-title">No promotions found</p>
+                  @if (hasActiveFilters()) {
+                    <p class="empty-hint">Try adjusting your filters</p>
+                    <button class="btn btn-soft mt-4" (click)="clearFilters()">Clear filters</button>
+                  } @else {
+                    <p class="empty-hint">Create your first promotion to get started</p>
+                    <a routerLink="create" class="btn btn-primary mt-4">
+                      <span class="material-symbols-rounded">add</span>
+                      Create Promotion
+                    </a>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,212 @@
+<section class="order-detail-page">
+  <div class="detail-back">
+    <a routerLink="/orders" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Orders
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading order details…</p>
+    </div>
+  } @else if (order(); as o) {
+    <!-- Hero: order identity + actions -->
+    <header class="order-hero card-elevated">
+      <div class="order-hero-main">
+        <p class="order-hero-label">Order</p>
+        <div class="order-hero-title-row">
+          <h1 class="order-id">{{ o.orderNumber }}</h1>
+          <span
+            class="status-pill"
+            [class.status-pending]="o.status === 'pending'"
+            [class.status-confirmed]="o.status === 'confirmed' || o.status === 'processing'"
+            [class.status-shipped]="o.status === 'shipped'"
+            [class.status-delivered]="o.status === 'delivered' || o.status === 'completed'"
+            [class.status-cancelled]="o.status === 'cancelled'"
+          >
+            {{ o.status | titlecase }}
+          </span>
+        </div>
+        @if (o.createdAt) {
+          <p class="order-placed">Placed {{ o.createdAt | date: 'MMM d, y · h:mm a' }}</p>
+        }
+      </div>
+      <div class="order-hero-actions">
+        @if (nextAvailableAction(); as nextAct) {
+          <button type="button" class="btn btn-primary btn-workflow" [disabled]="updating()" (click)="updateStatus(nextAct.nextStatus)">
+            @if (updating()) {
+              <span class="spinner spinner-sm"></span>
+              Please wait
+            } @else {
+              <span class="material-symbols-rounded">{{ nextAct.icon }}</span>
+              {{ nextAct.label }}
+            }
+          </button>
+        }
+        @if (o.status !== 'cancelled' && o.status !== 'delivered' && o.status !== 'completed') {
+          <button type="button" class="btn btn-ghost btn-cancel" [disabled]="updating()" (click)="updateStatus('cancelled')">Cancel order</button>
+        }
+      </div>
+    </header>
+
+    <!-- Fulfillment timeline -->
+    <div class="timeline-card card-elevated">
+      <h2 class="timeline-heading">Fulfillment</h2>
+      <div class="stepper-scroll">
+        <div class="stepper">
+          @for (step of workflowSteps; track step; let i = $index; let last = $last) {
+            <div
+              class="step"
+              [attr.data-step]="step"
+              [class.step-done]="isStepDone(step, o.status)"
+              [class.step-current]="isStepCurrent(step, o.status)"
+              [class.step-future]="!isStepDone(step, o.status) && !isStepCurrent(step, o.status)"
+              [class.step-cancelled]="o.status === 'cancelled'"
+            >
+              <div class="step-bubble" aria-hidden="true">
+                @if (isStepDone(step, o.status)) {
+                  <span class="material-symbols-rounded step-check">check</span>
+                } @else if (isStepCurrent(step, o.status)) {
+                  <span class="step-index">{{ i + 1 }}</span>
+                } @else {
+                  <span class="step-index dim">{{ i + 1 }}</span>
+                }
+              </div>
+              <span class="step-name">{{ step | titlecase }}</span>
+            </div>
+            @if (!last) {
+              <div class="step-connector" [class.step-connector-on]="isConnectorAfter(step, o.status)"></div>
+            }
+          }
+        </div>
+      </div>
+      @if (o.status === 'cancelled') {
+        <p class="timeline-note"><span class="material-symbols-rounded">block</span> This order was cancelled.</p>
+      }
+    </div>
+
+    <div class="detail-layout">
+      <div class="detail-main">
+        <div class="panel items-panel">
+          <div class="panel-head">
+            <span class="panel-icon material-symbols-rounded">shopping_bag</span>
+            <h2 class="panel-title">Line items</h2>
+            <span class="panel-count">{{ o.items.length }} {{ o.items.length === 1 ? 'item' : 'items' }}</span>
+          </div>
+          <div class="table-wrap">
+            <table class="line-table">
+              <thead>
+                <tr>
+                  <th class="col-product">Product</th>
+                  <th class="col-sku">SKU</th>
+                  <th class="col-num">Price</th>
+                  <th class="col-num">Qty</th>
+                  <th class="col-num col-total">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of o.items; track item.id) {
+                  <tr>
+                    <td class="col-product">
+                      <div class="line-product">
+                        <div class="line-thumb">
+                          @if (item.imageUrl) {
+                            <img [src]="item.imageUrl" alt="" />
+                          } @else {
+                            <span class="material-symbols-rounded">inventory_2</span>
+                          }
+                        </div>
+                        <div class="line-text">
+                          <span class="line-name">{{ item.productName }}</span>
+                          @if (item.optionValues) {
+                            <span class="line-opts">
+                              @for (kv of item.optionValues | keyvalue; track kv.key) {
+                                <span class="opt-chip">{{ kv.key }}: {{ kv.value }}</span>
+                              }
+                            </span>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td class="col-sku"><code class="sku">{{ item.sku }}</code></td>
+                    <td class="col-num">{{ formatPrice(item.price) }}</td>
+                    <td class="col-num">{{ item.quantity }}</td>
+                    <td class="col-num col-total"><strong>{{ formatPrice(item.price * item.quantity) }}</strong></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="totals-panel">
+            <div class="totals-row"><span>Subtotal</span><span>{{ formatPrice(o.subtotal) }}</span></div>
+            <div class="totals-row"><span>Shipping</span><span>{{ formatPrice(o.shippingFee) }}</span></div>
+            <div class="totals-row totals-grand"><span>Total</span><span>{{ formatPrice(o.total) }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="detail-aside">
+        <div class="panel side-panel">
+          <div class="panel-head panel-head-compact">
+            <span class="panel-icon material-symbols-rounded">person</span>
+            <h2 class="panel-title">Customer</h2>
+          </div>
+          <div class="panel-body">
+            <p class="aside-name">{{ o.customerName || '—' }}</p>
+            @if (o.customerEmail) {
+              <a class="aside-link" [href]="'mailto:' + o.customerEmail">{{ o.customerEmail }}</a>
+            }
+            @if (o.customerPhone) {
+              <p class="aside-muted">{{ o.customerPhone }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="panel side-panel">
+          <div class="panel-head panel-head-compact">
+            <span class="panel-icon material-symbols-rounded">local_shipping</span>
+            <h2 class="panel-title">Shipping</h2>
+          </div>
+          <div class="panel-body">
+            @if (o.shippingAddress && o.shippingAddress.trim()) {
+              <p class="aside-address">{{ o.shippingAddress }}</p>
+            } @else {
+              <div class="aside-empty">
+                <span class="material-symbols-rounded">location_off</span>
+                <p>No address saved for this order.</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="panel side-panel">
+          <div class="panel-head panel-head-compact">
+            <span class="panel-icon material-symbols-rounded">payments</span>
+            <h2 class="panel-title">Payment</h2>
+          </div>
+          <div class="panel-body">
+            <div class="payment-row">
+              <span
+                class="pay-pill"
+                [class.pay-paid]="o.paymentStatus === 'paid'"
+                [class.pay-unpaid]="o.paymentStatus === 'unpaid' || o.paymentStatus === 'authorized'"
+                [class.pay-refund]="o.paymentStatus === 'refunded' || o.paymentStatus === 'partially_refunded'"
+              >
+                {{ o.paymentStatus | titlecase }}
+              </span>
+            </div>
+            <p class="aside-hint">Order total <strong>{{ formatPrice(o.total) }}</strong></p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  } @else {
+    <div class="card empty-state card-elevated">
+      <span class="material-symbols-rounded empty-icon">error</span>
+      <p class="empty-title">Order not found</p>
+      <a routerLink="/orders" class="btn btn-soft">Back to orders</a>
+    </div>
+  }
+</section>

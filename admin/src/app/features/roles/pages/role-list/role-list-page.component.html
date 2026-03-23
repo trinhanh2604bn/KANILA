@@ -1,0 +1,67 @@
+<section class="role-list-page">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">Roles</h1>
+      <p class="page-subtitle">Manage roles and permission assignments</p>
+    </div>
+    <a routerLink="create" class="btn btn-primary">
+      <span class="material-symbols-rounded" style="font-size:20px;">add</span>
+      Create Role
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="table-loading">
+      <div class="spinner spinner-dark"></div>
+      <span>Loading roles...</span>
+    </div>
+  } @else if (roles().length === 0) {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">admin_panel_settings</span>
+      <p class="empty-title">No roles yet</p>
+      <p class="empty-hint">Create roles to define access levels for your team</p>
+      <a routerLink="create" class="btn btn-primary">
+        <span class="material-symbols-rounded" style="font-size:18px;">add</span>
+        Create Role
+      </a>
+    </div>
+  } @else {
+    <div class="roles-grid">
+      @for (role of roles(); track role.id) {
+        <div class="role-card card">
+          <div class="role-card-body">
+            <div class="role-header-row">
+              <div class="role-icon-wrap">
+                <span class="material-symbols-rounded">shield</span>
+              </div>
+              <div class="role-meta">
+                <h3 class="role-name">{{ role.name }}</h3>
+                <p class="role-desc">{{ role.description }}</p>
+              </div>
+            </div>
+            <div class="role-stats">
+              <div class="role-stat">
+                <span class="role-stat-value">{{ role.permissions.length }}</span>
+                <span class="role-stat-label">Permissions</span>
+              </div>
+              <div class="role-stat">
+                <span class="role-stat-value">{{ role.accountCount }}</span>
+                <span class="role-stat-label">Accounts</span>
+              </div>
+              <div class="role-stat">
+                <span class="role-stat-value">{{ role.createdAt | date:'MMM d' }}</span>
+                <span class="role-stat-label">Created</span>
+              </div>
+            </div>
+          </div>
+          <div class="role-card-footer">
+            <a [routerLink]="[role.id, 'edit']" class="btn btn-soft btn-sm">
+              <span class="material-symbols-rounded" style="font-size:16px;">edit</span>
+              Edit Role
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

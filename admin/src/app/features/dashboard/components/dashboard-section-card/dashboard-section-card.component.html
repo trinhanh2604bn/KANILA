@@ -1,0 +1,23 @@
+<section class="dash-section">
+  <header class="dash-section__header">
+    @if (icon(); as ic) {
+      @if (ic) {
+        <span class="dash-section__icon material-symbols-rounded" aria-hidden="true">{{ ic }}</span>
+      }
+    }
+    <div class="dash-section__titles">
+      <h2 class="dash-section__title">{{ title() }}</h2>
+      @if (subtitle(); as st) {
+        @if (st) {
+          <p class="dash-section__subtitle">{{ st }}</p>
+        }
+      }
+    </div>
+    <div class="dash-section__actions">
+      <ng-content select="[slot=actions]" />
+    </div>
+  </header>
+  <div class="dash-section__body">
+    <ng-content />
+  </div>
+</section>

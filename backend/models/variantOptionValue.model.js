@@ -16,4 +16,6 @@ const variantOptionValueSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+variantOptionValueSchema.index({ variantId: 1, productOptionValueId: 1 }, { unique: true });
+
 module.exports = mongoose.model("VariantOptionValue", variantOptionValueSchema);

@@ -1,0 +1,37 @@
+
+.policy-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.text-justify {
+    text-align: justify;
+}
+
+
+ul span, ul p {
+    line-height: 1.8;
+}
+
+
+.policy-box {
+    background-color: var(--kanila-white);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.policy-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(107, 30, 46, 0.15) !important;
+    border-color: var(--kanila-red) !important;
+}
+
+
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}

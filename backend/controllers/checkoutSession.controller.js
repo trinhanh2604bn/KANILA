@@ -2,14 +2,18 @@ const CheckoutSession = require("../models/checkoutSession.model");
 const Cart = require("../models/cart.model");
 const Customer = require("../models/customer.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { pickCustomerId } = require("../utils/pickCustomerRef");
+const { normalizeCheckoutSessionBody } = require("../utils/cartCheckoutNormalize");
+
+const CUST = "customer_code full_name";
 
 // GET /api/checkout-sessions
 const getAllCheckoutSessions = async (req, res) => {
   try {
     const sessions = await CheckoutSession.find()
-      .populate("cartId", "cartStatus itemCount totalAmount")
-      .populate("customerId", "customerCode fullName")
-      .sort({ createdAt: -1 });
+      .populate("cart_id", "cart_status item_count total_amount")
+      .populate("customer_id", CUST)
+      .sort({ created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -32,12 +36,12 @@ const getCheckoutSessionById = async (req, res) => {
     }
 
     const session = await CheckoutSession.findById(id)
-      .populate("cartId", "cartStatus itemCount totalAmount")
-      .populate("customerId", "customerCode fullName")
-      .populate("selectedShippingAddressId")
-      .populate("selectedBillingAddressId")
-      .populate("selectedShippingMethodId")
-      .populate("selectedPaymentMethodId");
+      .populate("cart_id", "cart_status item_count total_amount")
+      .populate("customer_id", CUST)
+      .populate("selected_shipping_address_id")
+      .populate("selected_billing_address_id")
+      .populate("selected_shipping_method_id")
+      .populate("selected_payment_method_id");
 
     if (!session) {
       return res.status(404).json({ success: false, message: "Checkout session not found" });
@@ -53,18 +57,18 @@ const getCheckoutSessionById = async (req, res) => {
   }
 };
 
-// GET /api/checkout-sessions/cart/:cartId
+// GET /api/checkout-sessions/cart/:cart_id
 const getSessionsByCartId = async (req, res) => {
   try {
-    const { cartId } = req.params;
+    const cart_id = req.params.cart_id ?? req.params.cartId;
 
-    if (!validateObjectId(cartId)) {
+    if (!validateObjectId(cart_id)) {
       return res.status(400).json({ success: false, message: "Invalid cart ID" });
     }
 
-    const sessions = await CheckoutSession.find({ cartId })
-      .populate("customerId", "customerCode fullName")
-      .sort({ createdAt: -1 });
+    const sessions = await CheckoutSession.find({ cart_id })
+      .populate("customer_id", CUST)
+      .sort({ created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -80,45 +84,49 @@ const getSessionsByCartId = async (req, res) => {
 // POST /api/checkout-sessions
 const createCheckoutSession = async (req, res) => {
   try {
-    const { cartId, customerId } = req.body;
+    const body = normalizeCheckoutSessionBody(req.body);
+    const cart_id = body.cart_id ?? req.body.cartId;
+    const customer_id = pickCustomerId(req.body);
 
-    if (!cartId || !customerId) {
+    if (!cart_id || !customer_id) {
       return res.status(400).json({
         success: false,
-        message: "cartId and customerId are required",
+        message: "cart_id and customer_id are required",
       });
     }
 
-    if (!validateObjectId(cartId)) {
-      return res.status(400).json({ success: false, message: "Invalid cartId" });
+    if (!validateObjectId(cart_id)) {
+      return res.status(400).json({ success: false, message: "Invalid cart_id" });
     }
-    if (!validateObjectId(customerId)) {
-      return res.status(400).json({ success: false, message: "Invalid customerId" });
+    if (!validateObjectId(customer_id)) {
+      return res.status(400).json({ success: false, message: "Invalid customer_id" });
     }
 
-    const cartExists = await Cart.findById(cartId);
+    const cartExists = await Cart.findById(cart_id);
     if (!cartExists) {
       return res.status(404).json({ success: false, message: "Cart not found" });
     }
 
-    const customerExists = await Customer.findById(customerId);
+    const customerExists = await Customer.findById(customer_id);
     if (!customerExists) {
       return res.status(404).json({ success: false, message: "Customer not found" });
     }
 
-    // Copy subtotal from cart
-    if (!req.body.subtotalAmount && cartExists.subtotalAmount) {
-      req.body.subtotalAmount = cartExists.subtotalAmount;
+    if (body.subtotal_amount === undefined && cartExists.subtotal_amount != null) {
+      body.subtotal_amount = cartExists.subtotal_amount;
     }
 
-    // Calculate totalAmount
-    const sub = req.body.subtotalAmount || 0;
-    const ship = req.body.shippingFeeAmount || 0;
-    const tax = req.body.taxAmount || 0;
-    const disc = req.body.discountAmount || 0;
-    req.body.totalAmount = sub + ship + tax - disc;
+    const sub = body.subtotal_amount || 0;
+    const ship = body.shipping_fee_amount || 0;
+    const tax = body.tax_amount || 0;
+    const disc = body.discount_amount || 0;
+    body.total_amount = sub + ship + tax - disc;
 
-    const session = await CheckoutSession.create(req.body);
+    const payload = { ...body, cart_id, customer_id };
+    delete payload.customerId;
+    delete payload.cartId;
+
+    const session = await CheckoutSession.create(payload);
 
     res.status(201).json({
       success: true,
@@ -144,14 +152,16 @@ const updateCheckoutSession = async (req, res) => {
       return res.status(404).json({ success: false, message: "Checkout session not found" });
     }
 
-    // Recalculate totalAmount if any pricing field changes
-    const sub = req.body.subtotalAmount !== undefined ? req.body.subtotalAmount : existing.subtotalAmount;
-    const ship = req.body.shippingFeeAmount !== undefined ? req.body.shippingFeeAmount : existing.shippingFeeAmount;
-    const tax = req.body.taxAmount !== undefined ? req.body.taxAmount : existing.taxAmount;
-    const disc = req.body.discountAmount !== undefined ? req.body.discountAmount : existing.discountAmount;
-    req.body.totalAmount = sub + ship + tax - disc;
+    const body = normalizeCheckoutSessionBody(req.body);
+    const sub =
+      body.subtotal_amount !== undefined ? body.subtotal_amount : existing.subtotal_amount;
+    const ship =
+      body.shipping_fee_amount !== undefined ? body.shipping_fee_amount : existing.shipping_fee_amount;
+    const tax = body.tax_amount !== undefined ? body.tax_amount : existing.tax_amount;
+    const disc = body.discount_amount !== undefined ? body.discount_amount : existing.discount_amount;
+    body.total_amount = sub + ship + tax - disc;
 
-    const session = await CheckoutSession.findByIdAndUpdate(id, req.body, {
+    const session = await CheckoutSession.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
     });

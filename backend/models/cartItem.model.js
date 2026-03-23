@@ -1,59 +1,75 @@
 const mongoose = require("mongoose");
 
+/**
+ * Target: `cart_items` — cart_item_id = MongoDB _id
+ */
 const cartItemSchema = new mongoose.Schema(
   {
-    cartId: {
+    cart_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Cart",
       required: [true, "Cart ID is required"],
+      index: true,
     },
-    variantId: {
+    variant_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ProductVariant",
       required: [true, "Variant ID is required"],
     },
-    skuSnapshot: {
+    sku_snapshot: {
       type: String,
       required: [true, "SKU snapshot is required"],
+      trim: true,
     },
-    productNameSnapshot: {
+    product_name_snapshot: {
       type: String,
       required: [true, "Product name snapshot is required"],
+      trim: true,
     },
-    variantNameSnapshot: {
+    variant_name_snapshot: {
       type: String,
       required: [true, "Variant name snapshot is required"],
+      trim: true,
     },
     quantity: {
       type: Number,
       required: [true, "Quantity is required"],
       min: [1, "Quantity must be at least 1"],
     },
-    unitPriceAmount: {
+    unit_price_amount: {
       type: Number,
       required: [true, "Unit price is required"],
       min: [0, "Unit price must not be negative"],
     },
-    discountAmount: {
+    discount_amount: {
       type: Number,
       default: 0,
     },
-    finalUnitPriceAmount: {
+    final_unit_price_amount: {
       type: Number,
       required: [true, "Final unit price is required"],
       min: [0, "Final unit price must not be negative"],
     },
-    lineTotalAmount: {
+    line_total_amount: {
       type: Number,
       required: [true, "Line total is required"],
       min: [0, "Line total must not be negative"],
     },
-    addedAt: {
+    added_at: {
       type: Date,
       default: Date.now,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: false, updatedAt: "updated_at" },
+    collection: "cart_items",
+  }
 );
+
+cartItemSchema.virtual("cart_item_id").get(function () {
+  return this._id;
+});
+cartItemSchema.set("toJSON", { virtuals: true });
+cartItemSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("CartItem", cartItemSchema);

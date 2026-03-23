@@ -1,0 +1,75 @@
+<div class="search-container" (click)="$event.stopPropagation()">
+  <!-- Input Bar -->
+  <div class="search-input-wrap" [class.is-focused]="isFocused()">
+    <span class="material-symbols-rounded search-icon">search</span>
+    <input 
+      #searchInput
+      type="text" 
+      class="global-search-input" 
+      placeholder="Search products, orders, customers... (/)" 
+      [ngModel]="query()"
+      (ngModelChange)="onSearch($event)"
+      (focus)="isFocused.set(true)"
+      (keydown.enter)="$event.preventDefault()" 
+      autocomplete="off" />
+    
+    @if (isLoading()) {
+      <div class="spinner search-spinner"></div>
+    } @else if (query().length > 0) {
+      <button class="btn-clear" (click)="clearSearch()">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    }
+  </div>
+
+  <!-- Dropdown Panel -->
+  @if (isFocused() && query().length >= 2) {
+    <div class="search-dropdown card shadow-lg fade-in p-0 border">
+      @if (results().length > 0) {
+        <div class="results-list">
+          @for (item of results(); track item.id; let i = $index) {
+             <!-- Group Header (Only when type changes) -->
+             @if (i === 0 || results()[i-1].type !== item.type) {
+               <div class="group-header text-xs font-bold text-muted uppercase tracking-wider px-4 py-2 mt-2 bg-muted-surface border-y border-light">
+                 {{ item.type }}s
+               </div>
+             }
+             
+             <!-- Item Row -->
+             <div 
+               class="search-item flex items-center justify-between cursor-pointer transition-colors px-4 py-3 border-b border-light"
+               [class.active]="selectedIndex() === i"
+               (mouseenter)="selectedIndex.set(i)"
+               (click)="selectResult(item)">
+               
+               <div class="item-left flex items-center gap-3">
+                 @if (item.imageUrl) {
+                   <img [src]="item.imageUrl" alt="" class="item-thumb rounded" />
+                 } @else if (item.icon) {
+                   <div class="item-icon-box bg-muted text-muted flex items-center justify-center rounded">
+                     <span class="material-symbols-rounded text-sm">{{ item.icon }}</span>
+                   </div>
+                 }
+                 <div>
+                   <div class="item-title font-medium text-dark">{{ item.title }}</div>
+                   <div class="item-meta text-xs text-muted mt-1">{{ item.metadata }}</div>
+                 </div>
+               </div>
+               
+               <div class="item-right flex items-center gap-2">
+                 <span class="badge badge-surface text-xs capitalize text-muted border border-light">{{ item.type }}</span>
+                 <span class="material-symbols-rounded text-muted enter-hint transition-opacity" [class.opacity-0]="selectedIndex() !== i">subdirectory_arrow_left</span>
+               </div>
+             </div>
+          }
+        </div>
+      } @else if (!isLoading()) {
+        <div class="empty-state py-10 flex flex-col items-center justify-center">
+           <span class="material-symbols-rounded text-muted text-4xl mb-3">search_off</span>
+           <p class="empty-title text-dark font-medium m-0 text-md">No results found</p>
+           <p class="text-sm text-muted m-0 mt-1">Try adjusting your search term.</p>
+        </div>
+      }
+    </div>
+  }
+</div>

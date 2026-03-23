@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const reviewSchema = new mongoose.Schema(
   {
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+    customer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     orderItemId: { type: mongoose.Schema.Types.ObjectId, ref: "OrderItem", default: null },
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     variantId: { type: mongoose.Schema.Types.ObjectId, ref: "ProductVariant", default: null },

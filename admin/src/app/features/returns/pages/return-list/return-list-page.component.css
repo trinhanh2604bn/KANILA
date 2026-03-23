@@ -1,0 +1,22 @@
+:host { display: block; }
+.page { animation: pageIn 0.3s ease; }
+.filter-bar { padding: var(--space-4); margin-bottom: var(--space-6); }
+.filter-group { display: flex; gap: var(--space-4); align-items: center; }
+
+.search-input-wrap { position: relative; flex: 1; max-width: 400px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 20px; }
+.search-input { padding-left: 40px; }
+
+.clickable-row { cursor: pointer; transition: background-color var(--transition-base); }
+.clickable-row:hover { background-color: var(--muted-surface); }
+
+/* Highlight pending requests */
+.row-attention td { background-color: rgba(245, 158, 11, 0.03); }
+.row-attention:hover td { background-color: rgba(245, 158, 11, 0.08); }
+
+.pulse-indicator { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--warning); margin-left: 6px; vertical-align: middle; box-shadow: 0 0 0 rgba(245, 158, 11, 0.4); animation: pulse 2s infinite; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}

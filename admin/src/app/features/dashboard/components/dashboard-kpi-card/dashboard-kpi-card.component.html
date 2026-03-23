@@ -1,0 +1,60 @@
+<article
+  class="kpi-card"
+  [class.kpi-card--primary]="variant() === 'primary'"
+  [attr.aria-label]="label() + ', ' + value()"
+>
+  <div class="kpi-card__head">
+    <span class="kpi-card__icon material-symbols-rounded" aria-hidden="true">{{ icon() }}</span>
+    <h3 class="kpi-card__label">{{ label() }}</h3>
+  </div>
+
+  <p class="kpi-card__value">{{ value() }}</p>
+
+  @if (hasSparkline()) {
+    <div class="kpi-card__spark">
+      <app-dashboard-sparkline [values]="sparklineValues()!" [accent]="sparklineAccent()" />
+    </div>
+  }
+
+  <div class="kpi-card__footer">
+    @if (showTrend()) {
+      @if (hasNumericTrend()) {
+        <span
+          class="kpi-trend"
+          [class.kpi-trend--up]="trendState() === 'up'"
+          [class.kpi-trend--down]="trendState() === 'down'"
+          [class.kpi-trend--flat]="trendState() === 'flat'"
+        >
+          @switch (trendState()) {
+            @case ('up') {
+              <span class="kpi-trend__arrow" aria-hidden="true">↑</span>
+            }
+            @case ('down') {
+              <span class="kpi-trend__arrow" aria-hidden="true">↓</span>
+            }
+            @default {
+              <span class="kpi-trend__arrow" aria-hidden="true">→</span>
+            }
+          }
+          <span class="kpi-trend__pct">{{ trendDisplay() }}</span>
+          @if (context(); as c) {
+            @if (c) {
+              <span class="kpi-trend__vs">{{ c }}</span>
+            }
+          }
+        </span>
+      } @else {
+        <span class="kpi-trend kpi-trend--muted">
+          <span class="kpi-trend__pct">—</span>
+          @if (context(); as c) {
+            @if (c) {
+              <span class="kpi-trend__vs">{{ c }}</span>
+            }
+          }
+        </span>
+      }
+    } @else {
+      <span class="kpi-snapshot">{{ context() || '—' }}</span>
+    }
+  </div>
+</article>

@@ -1,17 +1,23 @@
 const mongoose = require("mongoose");
 
+/**
+ * Logical match to target `customer_addresses` table.
+ * Primary key: MongoDB `_id` (maps to address_id).
+ */
 const addressSchema = new mongoose.Schema(
   {
-    customerId: {
+    customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: [true, "Customer ID is required"],
+      index: true,
     },
-    addressLabel: {
+    address_label: {
       type: String,
       default: "",
+      trim: true,
     },
-    recipientName: {
+    recipient_name: {
       type: String,
       required: [true, "Recipient name is required"],
       trim: true,
@@ -21,46 +27,60 @@ const addressSchema = new mongoose.Schema(
       required: [true, "Phone is required"],
       trim: true,
     },
-    addressLine1: {
+    address_line_1: {
       type: String,
       required: [true, "Address line 1 is required"],
       trim: true,
     },
-    addressLine2: {
+    address_line_2: {
       type: String,
       default: "",
+      trim: true,
     },
     ward: {
       type: String,
       default: "",
+      trim: true,
     },
     district: {
       type: String,
       default: "",
+      trim: true,
     },
     city: {
       type: String,
       required: [true, "City is required"],
       trim: true,
     },
-    countryCode: {
+    country_code: {
       type: String,
       default: "VN",
+      trim: true,
     },
-    postalCode: {
+    postal_code: {
       type: String,
       default: "",
+      trim: true,
     },
-    isDefaultShipping: {
+    is_default_shipping: {
       type: Boolean,
       default: false,
     },
-    isDefaultBilling: {
+    is_default_billing: {
       type: Boolean,
       default: false,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    collection: "customer_addresses",
+  }
 );
+
+addressSchema.virtual("address_id").get(function () {
+  return this._id;
+});
+addressSchema.set("toJSON", { virtuals: true });
+addressSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("Address", addressSchema);

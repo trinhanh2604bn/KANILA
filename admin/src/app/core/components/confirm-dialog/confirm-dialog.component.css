@@ -1,0 +1,108 @@
+.dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.dialog-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dialog-panel {
+  width: 100%;
+  max-width: 440px;
+  background: white;
+  margin: 20px;
+  transform: scale(0.95) translateY(20px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-panel.open {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.dialog-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dialog-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dialog-icon {
+  font-size: 24px;
+  color: var(--primary-color, #d18a91);
+}
+.dialog-icon.danger {
+  color: var(--danger-color, #ef4444);
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark, #1f2937);
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  padding: 8px;
+  margin: -8px;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog-close:hover {
+  background: var(--surface-hover, #f3f4f6);
+  color: var(--text-dark, #1f2937);
+}
+
+.dialog-body {
+  padding: 32px 24px;
+}
+
+.dialog-message {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-muted, #4b5563);
+  line-height: 1.5;
+}
+
+.dialog-footer {
+  padding: 20px 24px;
+  background: var(--surface-hover, #f9fafb);
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  border-bottom-left-radius: var(--radius-lg, 12px);
+  border-bottom-right-radius: var(--radius-lg, 12px);
+}

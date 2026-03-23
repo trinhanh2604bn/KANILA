@@ -1,13 +1,17 @@
 const Cart = require("../models/cart.model");
 const Customer = require("../models/customer.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { pickCustomerId } = require("../utils/pickCustomerRef");
+const { normalizeCartBody } = require("../utils/cartCheckoutNormalize");
+
+const CUST = "customer_code full_name";
 
 // GET /api/carts
 const getAllCarts = async (req, res) => {
   try {
     const carts = await Cart.find()
-      .populate("customerId", "customerCode fullName")
-      .sort({ createdAt: -1 });
+      .populate("customer_id", CUST)
+      .sort({ created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -29,7 +33,7 @@ const getCartById = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid cart ID" });
     }
 
-    const cart = await Cart.findById(id).populate("customerId", "customerCode fullName");
+    const cart = await Cart.findById(id).populate("customer_id", CUST);
 
     if (!cart) {
       return res.status(404).json({ success: false, message: "Cart not found" });
@@ -45,16 +49,16 @@ const getCartById = async (req, res) => {
   }
 };
 
-// GET /api/carts/customer/:customerId
+// GET /api/carts/customer/:customer_id
 const getCartsByCustomerId = async (req, res) => {
   try {
-    const { customerId } = req.params;
+    const customer_id = req.params.customer_id ?? req.params.customerId;
 
-    if (!validateObjectId(customerId)) {
+    if (!validateObjectId(customer_id)) {
       return res.status(400).json({ success: false, message: "Invalid customer ID" });
     }
 
-    const carts = await Cart.find({ customerId }).sort({ createdAt: -1 });
+    const carts = await Cart.find({ customer_id }).sort({ created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -70,22 +74,25 @@ const getCartsByCustomerId = async (req, res) => {
 // POST /api/carts
 const createCart = async (req, res) => {
   try {
-    const { customerId } = req.body;
+    const customer_id = pickCustomerId(req.body);
 
-    if (!customerId) {
-      return res.status(400).json({ success: false, message: "customerId is required" });
+    if (!customer_id) {
+      return res.status(400).json({ success: false, message: "customer_id is required" });
     }
 
-    if (!validateObjectId(customerId)) {
-      return res.status(400).json({ success: false, message: "Invalid customerId" });
+    if (!validateObjectId(customer_id)) {
+      return res.status(400).json({ success: false, message: "Invalid customer_id" });
     }
 
-    const customerExists = await Customer.findById(customerId);
+    const customerExists = await Customer.findById(customer_id);
     if (!customerExists) {
       return res.status(404).json({ success: false, message: "Customer not found" });
     }
 
-    const cart = await Cart.create(req.body);
+    const payload = normalizeCartBody({ ...req.body, customer_id });
+    delete payload.customerId;
+
+    const cart = await Cart.create(payload);
 
     res.status(201).json({
       success: true,
@@ -106,7 +113,7 @@ const updateCart = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid cart ID" });
     }
 
-    const cart = await Cart.findByIdAndUpdate(id, req.body, {
+    const cart = await Cart.findByIdAndUpdate(id, normalizeCartBody(req.body), {
       new: true,
       runValidators: true,
     });

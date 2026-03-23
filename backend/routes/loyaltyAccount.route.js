@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAllLoyaltyAccounts, getLoyaltyAccountById, getAccountByCustomerId, createLoyaltyAccount, updateLoyaltyAccount, deleteLoyaltyAccount } = require("../controllers/loyaltyAccount.controller");
 router.get("/", getAllLoyaltyAccounts);
-router.get("/customer/:customerId", getAccountByCustomerId);
+router.get("/customer/:customer_id", getAccountByCustomerId);
 router.get("/:id", getLoyaltyAccountById);
 router.post("/", createLoyaltyAccount);
 router.put("/:id", updateLoyaltyAccount);

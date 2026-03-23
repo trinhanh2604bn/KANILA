@@ -1,0 +1,85 @@
+<section class="detail-page">
+  <div class="detail-header">
+    <a routerLink="/accounts" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Accounts
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="detail-loading">
+      <div class="spinner spinner-dark"></div>
+      <span>Loading account...</span>
+    </div>
+  } @else if (account(); as acc) {
+    <div class="detail-grid">
+      <!-- Profile Card -->
+      <div class="profile-card card">
+        <div class="profile-top">
+          <div class="profile-avatar">{{ acc.username.charAt(0) }}</div>
+          <h2 class="profile-name">{{ acc.username }}</h2>
+          <span class="profile-email">{{ acc.email }}</span>
+          <div class="profile-badges">
+            <span class="badge"
+              [class.badge-success]="acc.account_status === 'active'"
+              [class.badge-warning]="acc.account_status === 'inactive'"
+              [class.badge-danger]="acc.account_status === 'locked'">
+              {{ acc.account_status }}
+            </span>
+            <span class="badge badge-primary">{{ acc.account_type }}</span>
+          </div>
+        </div>
+        <div class="profile-actions">
+          <a [routerLink]="['edit']" class="btn btn-primary btn-block">
+            <span class="material-symbols-rounded" style="font-size:18px;">edit</span>
+            Edit Account
+          </a>
+        </div>
+      </div>
+
+      <!-- Info Card -->
+      <div class="info-card card">
+        <div class="info-section">
+          <h3 class="info-title">Account Details</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Role</span>
+              <span class="info-value">{{ acc.roleName || 'No role assigned' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Phone</span>
+              <span class="info-value">{{ acc.phone || '—' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Created</span>
+              <span class="info-value">{{ acc.created_at | date:'MMM d, y — h:mm a' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Last Login</span>
+              <span class="info-value">{{ acc.last_login_at ? (acc.last_login_at | date:'MMM d, y — h:mm a') : 'Never' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Last Updated</span>
+              <span class="info-value">{{ acc.updated_at | date:'MMM d, y — h:mm a' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Placeholder -->
+        <div class="info-section">
+          <h3 class="info-title">Recent Activity</h3>
+          <div class="empty-state-sm">
+            <span class="material-symbols-rounded" style="font-size:32px;">history</span>
+            <p>Activity log coming soon</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="card empty-state">
+      <span class="material-symbols-rounded empty-icon">person_off</span>
+      <p class="empty-title">Account not found</p>
+      <a routerLink="/accounts" class="btn btn-soft">Back to list</a>
+    </div>
+  }
+</section>

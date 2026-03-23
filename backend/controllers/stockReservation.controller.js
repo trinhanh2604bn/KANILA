@@ -1,4 +1,5 @@
 const StockReservation = require("../models/stockReservation.model");
+const { normalizeStockReservationBody } = require("../utils/cartCheckoutNormalize");
 const Warehouse = require("../models/warehouse.model");
 const ProductVariant = require("../models/productVariant.model");
 const InventoryBalance = require("../models/inventoryBalance.model");
@@ -171,7 +172,7 @@ const updateStockReservation = async (req, res) => {
       });
     }
 
-    const reservation = await StockReservation.findByIdAndUpdate(id, req.body, {
+    const reservation = await StockReservation.findByIdAndUpdate(id, normalizeStockReservationBody(req.body), {
       new: true,
       runValidators: true,
     });

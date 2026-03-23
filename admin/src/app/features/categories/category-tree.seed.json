@@ -1,0 +1,71 @@
+[
+  {
+    "category_name": "Face",
+    "category_code": "face",
+    "parent_category_code": null,
+    "children": [
+      { "category_name": "Foundation", "category_code": "foundation" },
+      { "category_name": "Concealer", "category_code": "concealer" },
+      { "category_name": "Primer", "category_code": "primer" },
+      { "category_name": "Powder", "category_code": "powder" },
+      { "category_name": "Setting Spray", "category_code": "setting_spray" },
+      { "category_name": "BB & CC Cream", "category_code": "bb_cc_cream" },
+      { "category_name": "Tinted Moisturizer", "category_code": "tinted_moisturizer" }
+    ]
+  },
+  {
+    "category_name": "Eyes",
+    "category_code": "eyes",
+    "parent_category_code": null,
+    "children": [
+      { "category_name": "Mascara", "category_code": "mascara" },
+      { "category_name": "Eyeliner", "category_code": "eyeliner" },
+      { "category_name": "Eyeshadow", "category_code": "eyeshadow" },
+      { "category_name": "Eyebrow", "category_code": "eyebrow" },
+      { "category_name": "False Lashes", "category_code": "false_lashes" }
+    ]
+  },
+  {
+    "category_name": "Lips",
+    "category_code": "lips",
+    "parent_category_code": null,
+    "children": [
+      { "category_name": "Lipstick", "category_code": "lipstick" },
+      { "category_name": "Lip Gloss", "category_code": "lip_gloss" },
+      { "category_name": "Lip Balm", "category_code": "lip_balm" },
+      { "category_name": "Lip Liner", "category_code": "lip_liner" },
+      { "category_name": "Lip Stain", "category_code": "lip_stain" }
+    ]
+  },
+  {
+    "category_name": "Cheeks",
+    "category_code": "cheeks",
+    "parent_category_code": null,
+    "children": [
+      { "category_name": "Blush", "category_code": "blush" },
+      { "category_name": "Bronzer", "category_code": "bronzer" },
+      { "category_name": "Highlighter", "category_code": "highlighter" },
+      { "category_name": "Contour", "category_code": "contour" }
+    ]
+  },
+  {
+    "category_name": "Palettes & Sets",
+    "category_code": "palettes",
+    "parent_category_code": null,
+    "children": [
+      { "category_name": "Eyeshadow Palette", "category_code": "eyeshadow_palette" },
+      { "category_name": "Face Palette", "category_code": "face_palette" },
+      { "category_name": "Makeup Kit", "category_code": "makeup_kit" }
+    ]
+  },
+  {
+    "category_name": "Mini & Travel",
+    "category_code": "mini",
+    "parent_category_code": null,
+    "children": [
+      { "category_name": "Mini Foundation", "category_code": "mini_foundation" },
+      { "category_name": "Mini Lipstick", "category_code": "mini_lipstick" },
+      { "category_name": "Trial Kits", "category_code": "trial_kits" }
+    ]
+  }
+]

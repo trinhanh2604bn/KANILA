@@ -1,0 +1,164 @@
+<section class="page form-page">
+  <div class="page-header">
+    <a routerLink="/coupons" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Coupons
+    </a>
+    <h1 class="page-title">{{ pageTitle }}</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading coupon...</p>
+    </div>
+  } @else {
+    <div class="form-layout">
+      <div class="form-main">
+
+        <!-- Section 1: Basic Info -->
+        <div class="card form-section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded section-icon">confirmation_number</span>
+            Basic Info
+          </h2>
+          <div class="form-group">
+            <label class="form-label">Coupon Code *</label>
+            <input class="form-input code-input" [ngModel]="couponCode()" (ngModelChange)="couponCode.set($event)" (blur)="onCodeInput()" placeholder="e.g. SUMMER2026" maxlength="30" />
+            <span class="helper-text">Unique uppercase code customers will enter at checkout</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Promotion ID *</label>
+            <input class="form-input" [ngModel]="promotionId()" (ngModelChange)="promotionId.set($event)" placeholder="Enter linked promotion ID" />
+            <span class="helper-text">The promotion this coupon belongs to</span>
+          </div>
+          <div class="form-group toggle-group">
+            <label class="form-label">Active</label>
+            <button class="toggle-btn" [class.active]="isActive()" (click)="isActive.set(!isActive())">
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+              <span class="toggle-label">{{ isActive() ? 'Active' : 'Inactive' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 2: Discount -->
+        <div class="card form-section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded section-icon">local_offer</span>
+            Discount
+          </h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Type</label>
+              <select class="form-input" [ngModel]="discountType()" (ngModelChange)="discountType.set($event)">
+                <option value="percentage">Percentage (%)</option>
+                <option value="fixed">Fixed Amount (₫)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Value</label>
+              <input class="form-input" type="number" [ngModel]="discountValue()" (ngModelChange)="discountValue.set($event)" [max]="discountType() === 'percentage' ? 100 : 999999999" min="0" />
+              <span class="helper-text">{{ discountType() === 'percentage' ? 'Max 100%' : 'Amount in VND' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Discount Preview -->
+        <div class="card form-section preview-section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded section-icon">visibility</span>
+            Discount Preview
+          </h2>
+          <div class="preview-card">
+            <div class="preview-row">
+              <span class="preview-label">Order Total</span>
+              <span class="preview-value">{{ formatPrice(previewOriginal) }}</span>
+            </div>
+            <div class="preview-row discount-row">
+              <span class="preview-label">
+                <span class="material-symbols-rounded" style="font-size:16px; vertical-align: middle;">local_offer</span>
+                {{ couponCode() || 'CODE' }} ({{ previewLabel() }})
+              </span>
+              <span class="preview-value discount-value">-{{ formatPrice(previewDiscount()) }}</span>
+            </div>
+            @if (!previewMeetsMinimum()) {
+              <div class="preview-warning">
+                <span class="material-symbols-rounded">warning</span>
+                Minimum order: {{ formatPrice(minOrderAmount()) }}
+              </div>
+            }
+            <div class="preview-divider"></div>
+            <div class="preview-row total-row">
+              <span class="preview-label">Customer Pays</span>
+              <span class="preview-value total-value">{{ formatPrice(previewFinal()) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4: Conditions -->
+        <div class="card form-section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded section-icon">tune</span>
+            Conditions
+          </h2>
+          <div class="form-group">
+            <label class="form-label">Minimum Order Value</label>
+            <input class="form-input" type="number" [ngModel]="minOrderAmount()" (ngModelChange)="minOrderAmount.set($event)" min="0" />
+            <span class="helper-text">Set to 0 for no minimum</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Usage Limit (Total)</label>
+              <input class="form-input" type="number" [ngModel]="usageLimitTotal()" (ngModelChange)="usageLimitTotal.set($event)" min="0" />
+              <span class="helper-text">0 = Unlimited</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Per Customer Limit</label>
+              <input class="form-input" type="number" [ngModel]="usageLimitPerCustomer()" (ngModelChange)="usageLimitPerCustomer.set($event)" min="0" />
+              <span class="helper-text">0 = Unlimited</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 5: Validity -->
+        <div class="card form-section">
+          <h2 class="section-title">
+            <span class="material-symbols-rounded section-icon">calendar_month</span>
+            Validity Period
+          </h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Start Date</label>
+              <input class="form-input" type="date" [ngModel]="validFrom()" (ngModelChange)="validFrom.set($event)" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Date</label>
+              <input class="form-input" type="date" [ngModel]="validTo()" (ngModelChange)="validTo.set($event)" [min]="validFrom()" />
+            </div>
+          </div>
+          @if (validityHint()) {
+            <div class="validity-hint">{{ validityHint() }}</div>
+          }
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <div class="form-sidebar">
+        <div class="card sticky-actions">
+          <button class="btn btn-primary btn-full" [disabled]="!isValid() || saving()" (click)="save()">
+            @if (saving()) {
+              <div class="spinner"></div> Saving...
+            } @else {
+              <span class="material-symbols-rounded">save</span>
+              {{ isEditMode() ? 'Update Coupon' : 'Create Coupon' }}
+            }
+          </button>
+          <a routerLink="/coupons" class="btn btn-soft btn-full">Cancel</a>
+        </div>
+      </div>
+    </div>
+  }
+</section>

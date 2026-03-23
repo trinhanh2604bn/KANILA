@@ -1,0 +1,19 @@
+:host { display: block; }
+.page { animation: pageIn 0.3s ease; }
+
+.filter-bar { padding: var(--space-4); margin-bottom: var(--space-6); }
+.filter-group { display: flex; gap: var(--space-4); align-items: center; }
+
+.search-input-wrap { position: relative; flex: 1; max-width: 400px; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 20px; }
+.search-input { padding-left: 40px; }
+
+.clickable-row { cursor: pointer; transition: background 0.15s; }
+.clickable-row:hover { background: var(--muted-surface); }
+.order-number { font-family: monospace; font-weight: 600; color: var(--primary); }
+.customer-info { display: flex; flex-direction: column; }
+.customer-name { font-weight: 500; color: var(--text-primary); }
+
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--border); margin-right: 6px; }
+.dot-success { background: var(--success); }
+.dot-warning { background: var(--warning); }

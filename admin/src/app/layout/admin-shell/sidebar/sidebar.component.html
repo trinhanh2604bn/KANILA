@@ -1,0 +1,51 @@
+<aside class="sidebar" [class.collapsed]="collapsed()">
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <div class="brand-icon">K</div>
+    @if (!collapsed()) {
+      <span class="brand-text">KANILA</span>
+    }
+  </div>
+
+  <!-- Organization Switcher -->
+  @if (!collapsed()) {
+    <app-org-switcher></app-org-switcher>
+  }
+
+  <!-- Navigation -->
+  <nav class="sidebar-nav">
+    @for (group of menuGroups; track group.group) {
+      <div class="nav-group" [class.group-active]="isGroupActive(group)">
+        @if (group.group && !collapsed()) {
+          <div class="nav-group-label">{{ group.group }}</div>
+        }
+        @if (group.group && collapsed()) {
+          <div class="nav-divider"></div>
+        }
+        @for (item of group.items; track item.route) {
+          <a
+            class="nav-item"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [attr.title]="collapsed() ? item.label : null"
+          >
+            <span class="material-symbols-rounded nav-icon">{{ item.icon }}</span>
+            @if (!collapsed()) {
+              <span class="nav-label">{{ item.label }}</span>
+            }
+          </a>
+        }
+      </div>
+    }
+  </nav>
+
+  <!-- Collapse toggle -->
+  <button class="sidebar-toggle" (click)="toggleCollapse.emit()" [attr.title]="collapsed() ? 'Expand sidebar' : null">
+    <span class="material-symbols-rounded">
+      {{ collapsed() ? 'chevron_right' : 'chevron_left' }}
+    </span>
+    @if (!collapsed()) {
+      <span class="toggle-label">Collapse</span>
+    }
+  </button>
+</aside>

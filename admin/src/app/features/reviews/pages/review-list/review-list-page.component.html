@@ -1,0 +1,194 @@
+<section class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Review Moderation</h1>
+      <p class="page-subtitle">Approve or reject customer feedback securely</p>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="search-input-wrap">
+      <span class="material-symbols-rounded search-icon">search</span>
+      <input type="text" class="form-input search-input" placeholder="Search product, customer, or keyword..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
+  </div>
+
+  <div class="card p-0 table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Product / Rating</th>
+          <th>Review Content</th>
+          <th>Customer & Date</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (i of [1,2,3]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text skeleton-text-short mt-2"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-circle ml-auto" style="width:120px; height:32px; border-radius:4px;"></div></td>
+            </tr>
+          }
+        } @else {
+          @for (rev of filteredReviews; track rev.id) {
+            <tr
+              class="review-row review-row-clickable"
+              [class.is-processing]="processingActionOnId() === rev.id"
+              (click)="openDetail(rev)"
+              role="button"
+              tabindex="0"
+              (keydown.enter)="openDetail(rev)"
+              (keydown.space)="$event.preventDefault(); openDetail(rev)"
+            >
+              <td class="td-primary align-top w-56">
+                <div class="product-line">{{ rev.productName }}</div>
+                <div class="stars-wrap mt-2">
+                   @for (s of getStarsArray(rev.rating); track $index) {
+                     <span class="material-symbols-rounded star-full">star</span>
+                   }
+                   @for (s of getEmptyStarsArray(rev.rating); track $index) {
+                     <span class="material-symbols-rounded star-empty">star_outline</span>
+                   }
+                </div>
+              </td>
+
+              <td class="align-top">
+                <p class="review-content-preview">{{ contentPreview(rev) }}</p>
+              </td>
+
+              <td class="td-secondary align-top w-48">
+                <div class="font-medium text-dark">{{ rev.customerName }}</div>
+                <div class="text-xs mt-1">{{ formatDateTime(rev.createdAt) }}</div>
+              </td>
+
+              <td class="text-right align-top w-48" (click)="$event.stopPropagation()">
+                 @if (processingActionOnId() === rev.id) {
+                    <div class="processing-spinner ml-auto"><div class="spinner"></div></div>
+                 } @else {
+                    <div class="inline-actions">
+                       <button type="button" class="btn btn-soft btn-reject" title="Reject" (click)="moderateReview(rev, 'rejected')">
+                          <span class="material-symbols-rounded">close</span>
+                       </button>
+                       <button type="button" class="btn btn-soft btn-approve" title="Approve" (click)="moderateReview(rev, 'approved')">
+                          <span class="material-symbols-rounded">check</span> Approve
+                       </button>
+                    </div>
+                 }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">
+                <div class="empty-state py-8">
+                  <span class="material-symbols-rounded empty-icon text-success">done_all</span>
+                  <p class="empty-title">Inbox Zero</p>
+                  <p class="text-muted">No pending reviews require moderation.</p>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Undo Toast -->
+@if (showUndoToast() && lastAction()) {
+  <div class="undo-toast card">
+    <span class="material-symbols-rounded text-primary">info</span>
+    <span class="toast-text font-medium text-sm">Review marked as {{ lastAction()?.newStatus }}.</span>
+    <button type="button" class="btn btn-ghost btn-undo" (click)="undoLastAction()">Undo</button>
+  </div>
+}
+
+<!-- Review detail modal -->
+@if (detailOpen()) {
+  <div class="detail-backdrop fade-in" (click)="closeDetail()">
+    <div class="detail-dialog card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <div class="detail-header">
+        <div class="detail-header-text">
+          <h2 id="detail-title" class="detail-product-name">{{ detailReview()?.productName }}</h2>
+          <span class="badge badge-muted detail-status">{{ detailReview()?.status | titlecase }}</span>
+        </div>
+        <button type="button" class="detail-close" (click)="closeDetail()" aria-label="Close">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+
+      @if (detailLoading()) {
+        <div class="detail-loading">
+          <div class="spinner spinner-dark"></div>
+          <p>Loading review…</p>
+        </div>
+      } @else if (detailReview(); as d) {
+        <div class="detail-body">
+          <div class="detail-meta-row">
+            <div class="stars-wrap detail-stars">
+              @for (s of getStarsArray(d.rating); track $index) {
+                <span class="material-symbols-rounded star-full">star</span>
+              }
+              @for (s of getEmptyStarsArray(d.rating); track $index) {
+                <span class="material-symbols-rounded star-empty">star_outline</span>
+              }
+              <span class="rating-num">{{ d.rating }}/5</span>
+            </div>
+            <div class="detail-meta">
+              <span class="material-symbols-rounded meta-icon">person</span>
+              <span>{{ d.customerName }}</span>
+              <span class="meta-sep">·</span>
+              <span class="material-symbols-rounded meta-icon">schedule</span>
+              <span>{{ formatDateTime(d.createdAt) }}</span>
+            </div>
+          </div>
+
+          @if (d.title) {
+            <h3 class="detail-heading">{{ d.title }}</h3>
+          }
+          <div class="detail-content-block">
+            <p class="detail-content-text">{{ d.content || '—' }}</p>
+          </div>
+
+          @if (d.images?.length) {
+            <div class="detail-media">
+              <p class="detail-media-label">Photos</p>
+              <div class="detail-thumbs">
+                @for (img of d.images; track img) {
+                  <button type="button" class="detail-thumb" (click)="openPreview(img)">
+                    <img [src]="mediaUrl(img)" alt="" />
+                    <span class="detail-thumb-zoom material-symbols-rounded">zoom_in</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="detail-actions" (click)="$event.stopPropagation()">
+            <button type="button" class="btn btn-soft btn-reject" (click)="moderateReview(d, 'rejected')">
+              <span class="material-symbols-rounded">close</span>
+              Reject
+            </button>
+            <button type="button" class="btn btn-primary" (click)="moderateReview(d, 'approved')">
+              <span class="material-symbols-rounded">check</span>
+              Approve
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Image Preview Modal -->
+@if (previewImage()) {
+  <div class="modal-backdrop fade-in" (click)="closePreview()">
+     <div class="modal-dialog image-modal" (click)="$event.stopPropagation()">
+        <button type="button" class="modal-close" (click)="closePreview()"><span class="material-symbols-rounded">close</span></button>
+        <img [src]="previewImage()" class="modal-image" alt="Review photo" />
+     </div>
+  </div>
+}

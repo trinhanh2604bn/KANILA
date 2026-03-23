@@ -1,0 +1,96 @@
+<section class="page fade-in">
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Audit Log</h1>
+      <p class="page-subtitle">Track every action taken in the system</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card filter-bar">
+    <div class="filter-group">
+      <div class="filter-item">
+        <label class="filter-label">Filter by User</label>
+        <input type="text" class="form-input form-input-sm" placeholder="e.g. Admin" [ngModel]="filterUser()" (ngModelChange)="filterUser.set($event)" />
+      </div>
+      <div class="filter-item">
+        <label class="filter-label">Action Type</label>
+        <select class="form-input form-input-sm" [ngModel]="filterAction()" (ngModelChange)="filterAction.set($event)">
+          <option value="">All Types</option>
+          <option value="create">Create</option>
+          <option value="update">Update</option>
+          <option value="delete">Delete</option>
+          <option value="system">System</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card p-0 table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:40px;"></th>
+          <th>Action</th>
+          <th>User</th>
+          <th>Target</th>
+          <th>Details</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-circle" style="width:28px;height:28px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width:140px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width:80px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width:120px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width:180px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width:60px;"></div></td>
+            </tr>
+          }
+        } @else {
+          @for (log of filteredLogs; track log.id) {
+            <tr class="log-row">
+              <td>
+                <div class="action-icon-box" [ngClass]="getActionBadgeClass(log.actionType)">
+                  <span class="material-symbols-rounded">{{ getActionIcon(log.actionType) }}</span>
+                </div>
+              </td>
+              <td class="td-primary">
+                <span class="log-action font-medium">{{ log.action }}</span>
+              </td>
+              <td>
+                <span class="user-chip">{{ log.user }}</span>
+              </td>
+              <td>
+                <div class="target-info">
+                  <span class="target-name font-medium">{{ log.target }}</span>
+                  <span class="target-type text-xs text-muted">{{ log.targetType }}</span>
+                </div>
+              </td>
+              <td class="td-secondary">
+                {{ log.details || '—' }}
+              </td>
+              <td class="td-secondary text-nowrap">
+                {{ timeAgo(log.timestamp) }}
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">
+                <div class="empty-state py-8">
+                  <span class="material-symbols-rounded empty-icon text-muted">history</span>
+                  <p class="empty-title">No log entries found</p>
+                  <p class="text-muted">Adjust your filters to see more results.</p>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

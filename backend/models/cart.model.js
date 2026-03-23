@@ -1,43 +1,57 @@
 const mongoose = require("mongoose");
 
+/**
+ * Target: `carts` — cart_id = MongoDB _id
+ */
 const cartSchema = new mongoose.Schema(
   {
-    customerId: {
+    customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: [true, "Customer ID is required"],
+      index: true,
     },
-    cartStatus: {
+    cart_status: {
       type: String,
       enum: ["active", "converted", "expired"],
       default: "active",
     },
-    currencyCode: {
+    currency_code: {
       type: String,
       default: "VND",
+      trim: true,
     },
-    itemCount: {
+    item_count: {
       type: Number,
       default: 0,
     },
-    subtotalAmount: {
+    subtotal_amount: {
       type: Number,
       default: 0,
     },
-    discountAmount: {
+    discount_amount: {
       type: Number,
       default: 0,
     },
-    totalAmount: {
+    total_amount: {
       type: Number,
       default: 0,
     },
-    expiresAt: {
+    expires_at: {
       type: Date,
       default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    collection: "carts",
+  }
 );
+
+cartSchema.virtual("cart_id").get(function () {
+  return this._id;
+});
+cartSchema.set("toJSON", { virtuals: true });
+cartSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("Cart", cartSchema);

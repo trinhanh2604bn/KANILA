@@ -1,0 +1,83 @@
+<div class="chart-container">
+  @if (loading) {
+    <div class="chart-skeleton" aria-hidden="true">
+      <div class="chart-skeleton__bar"></div>
+      <div class="chart-skeleton__line"></div>
+    </div>
+  } @else if (data.length === 0) {
+    <div class="chart-empty">
+      <span class="chart-empty__icon material-symbols-rounded" aria-hidden="true">show_chart</span>
+      <p class="chart-empty__title">No data yet</p>
+      <p class="chart-empty__text">Start by creating orders so daily revenue appears here.</p>
+      <div class="chart-empty__actions">
+        <a routerLink="/orders" class="chart-empty__btn chart-empty__btn--primary">View orders</a>
+        <a routerLink="/products" class="chart-empty__btn">View catalog</a>
+      </div>
+    </div>
+  } @else {
+    <svg viewBox="0 -10 800 270" class="premium-chart" preserveAspectRatio="none" role="img" aria-label="Revenue trend chart">
+      <title>Revenue trend</title>
+      <defs>
+        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.2" />
+          <stop offset="100%" stop-color="var(--primary)" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+
+      <path [attr.d]="areaPathData()" fill="url(#areaGradient)" class="chart-area" />
+      <path
+        [attr.d]="pathData()"
+        fill="none"
+        stroke="var(--primary)"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="chart-line"
+      />
+
+      @for (pt of points(); track $index) {
+        <g
+          class="interactive-point"
+          (mouseenter)="hoverIndex = $index"
+          (mouseleave)="hoverIndex = -1"
+        >
+          <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="28" fill="transparent" />
+          <circle
+            [attr.cx]="pt.x"
+            [attr.cy]="pt.y"
+            r="5"
+            [attr.fill]="hoverIndex === $index ? 'var(--primary-dark, #9a3d5c)' : 'white'"
+            stroke="var(--primary)"
+            stroke-width="2.5"
+            class="chart-dot"
+            [class.active-dot]="hoverIndex === $index"
+          />
+          @if (hoverIndex === $index) {
+            <line
+              [attr.x1]="pt.x"
+              [attr.y1]="pt.y + 8"
+              [attr.x2]="pt.x"
+              y2="240"
+              stroke="var(--border-strong, #cbd5e1)"
+              stroke-dasharray="4"
+              stroke-opacity="0.45"
+            />
+          }
+        </g>
+      }
+    </svg>
+
+    @if (hoverIndex !== -1) {
+      <div class="chart-tooltip" [style.left]="tooltipLeft()" [style.top.px]="tooltipTop()">
+        <span class="tooltip-val font-bold">{{ formatCurrency(points()[hoverIndex].value) }}</span>
+        <span class="tooltip-label text-muted text-xs">{{ points()[hoverIndex].label }}</span>
+      </div>
+    }
+
+    <div class="x-axis" aria-hidden="true">
+      @for (pt of points(); track $index) {
+        <span class="axis-label" [class.invisible]="hoverIndex !== -1 && hoverIndex !== $index">{{ pt.label }}</span>
+      }
+    </div>
+  }
+</div>

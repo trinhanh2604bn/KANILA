@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const wishlistSchema = new mongoose.Schema(
   {
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+    customer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
     wishlistName: { type: String, default: "My Wishlist" },
     isDefault: { type: Boolean, default: false },
   },

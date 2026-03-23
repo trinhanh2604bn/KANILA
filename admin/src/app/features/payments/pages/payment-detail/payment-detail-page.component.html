@@ -1,0 +1,108 @@
+<section class="page detail-page">
+  <div class="page-header">
+    <a routerLink="/payments" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Payments
+    </a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner spinner-dark"></div>
+      <p>Loading payment details...</p>
+    </div>
+  } @else if (payment(); as p) {
+    <!-- Re-using sticky action bar pattern from order detail -->
+    <div class="sticky-action-bar card">
+      <div class="action-bar-left">
+        <h1 class="order-id">{{ p.id }}</h1>
+        <span class="badge" 
+          [class.badge-success]="p.status === 'success'"
+          [class.badge-warning]="p.status === 'pending'"
+          [class.badge-danger]="p.status === 'failed'">
+          {{ p.status | titlecase }}
+        </span>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="main-column">
+        <!-- Refund Section -->
+        @if (p.status === 'success' && remainingAmount() > 0) {
+          <div class="card refund-card border-danger-subtle">
+            <div class="card-header bg-danger-subtle">
+              <h2 class="card-title text-danger">Process Refund</h2>
+            </div>
+            <div class="card-body">
+              <div class="refund-breakdown">
+                <div class="breakdown-item text-muted"><h4>Original</h4><p>{{ formatPrice(p.amount) }}</p></div>
+                <div class="breakdown-item text-muted"><h4>Refunded</h4><p>{{ formatPrice(p.refundedAmount) }}</p></div>
+                <div class="breakdown-item text-primary"><h4>Remaining</h4><p class="font-bold">{{ formatPrice(remainingAmount()) }}</p></div>
+              </div>
+
+              @if (!isConfirmingRefund()) {
+                <div class="refund-input-group mt-6">
+                  <label class="form-label">Refund Amount</label>
+                  <div class="input-with-currency">
+                    <span class="currency-symbol">$</span>
+                    <input type="number" class="form-input" [ngModel]="refundAmountInput()" (ngModelChange)="refundAmountInput.set($event)" min="0" [max]="remainingAmount()" step="0.01">
+                  </div>
+                  @if (refundError()) {
+                    <p class="inline-error">{{ refundError() }}</p>
+                  }
+                  @if (isFullRefund() && refundAmountInput() > 0) {
+                    <p class="inline-warning mt-2"><span class="material-symbols-rounded">info</span> This will fully refund the remaining balance.</p>
+                  }
+                  <button class="btn btn-primary mt-4" (click)="initiateRefund()" [disabled]="isProcessingRefund() || refundAmountInput() <= 0">
+                    @if(isProcessingRefund()) { <div class="spinner"></div> } @else { Issue Refund }
+                  </button>
+                </div>
+              } @else {
+                <div class="refund-confirm-block mt-6 p-4 rounded-md">
+                  <h3 class="confirm-title text-danger"><span class="material-symbols-rounded">warning</span> Confirm Refund</h3>
+                  <p class="confirm-text">Are you sure you want to refund <strong>{{ formatPrice(refundAmountInput()) }}</strong> to customer for order <strong>{{ p.orderId }}</strong>?</p>
+                  <div class="confirm-actions mt-4 flex gap-3">
+                    <button class="btn btn-ghost" (click)="cancelRefund()" [disabled]="isProcessingRefund()">Cancel</button>
+                    <button class="btn btn-primary btn-danger" (click)="confirmRefund()" [disabled]="isProcessingRefund()">
+                      @if(isProcessingRefund()) { <div class="spinner"></div> Wait } @else { Yes, Refund }
+                    </button>
+                  </div>
+                </div>
+              }
+
+              @if (refundSuccess()) {
+                <div class="toast-success mt-4">
+                  <span class="material-symbols-rounded">check_circle</span>
+                  Refund processed successfully. UI updated.
+                </div>
+              }
+            </div>
+          </div>
+        } @else if (p.status === 'success' && remainingAmount() === 0) {
+           <div class="card bg-success-subtle text-center py-6">
+              <span class="material-symbols-rounded text-success" style="font-size: 32px">verified</span>
+              <p class="mt-2 font-medium text-success">This payment has been fully refunded.</p>
+           </div>
+        }
+      </div>
+
+      <div class="side-column">
+        <div class="card info-card">
+          <div class="card-header"><h2 class="card-title">Payment Summary</h2></div>
+          <div class="card-body">
+            <p class="info-line"><strong>Order:</strong> <a [routerLink]="['/orders', p.orderId]" class="link">{{ p.orderId }}</a></p>
+            <p class="info-line"><strong>Customer:</strong> {{ p.customerName }}</p>
+            <p class="info-line"><strong>Method:</strong> {{ p.method }}</p>
+            <p class="info-line"><strong>Date:</strong> {{ p.createdAt | date:'MMM d, y, hh:mm a' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state card py-8 text-center">
+      <span class="material-symbols-rounded empty-icon">error</span>
+      <p class="empty-title">Payment not found.</p>
+      <a routerLink="/payments" class="btn btn-soft mt-4">Back to list</a>
+    </div>
+  }
+</section>

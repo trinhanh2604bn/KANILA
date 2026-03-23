@@ -2,13 +2,16 @@ const CouponRedemption = require("../models/couponRedemption.model");
 const Coupon = require("../models/coupon.model");
 const Customer = require("../models/customer.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { pickCustomerId } = require("../utils/pickCustomerRef");
+
+const CUST = "customer_code full_name";
 
 // GET /api/coupon-redemptions
 const getAllCouponRedemptions = async (req, res) => {
   try {
     const redemptions = await CouponRedemption.find()
       .populate("couponId", "couponCode couponStatus")
-      .populate("customerId", "customerCode fullName")
+      .populate("customer_id", CUST)
       .sort({ redeemedAt: -1 });
 
     res.status(200).json({
@@ -33,7 +36,7 @@ const getCouponRedemptionById = async (req, res) => {
 
     const redemption = await CouponRedemption.findById(id)
       .populate("couponId", "couponCode couponStatus")
-      .populate("customerId", "customerCode fullName");
+      .populate("customer_id", CUST);
 
     if (!redemption) {
       return res.status(404).json({ success: false, message: "Coupon redemption not found" });
@@ -59,7 +62,7 @@ const getRedemptionsByCouponId = async (req, res) => {
     }
 
     const redemptions = await CouponRedemption.find({ couponId })
-      .populate("customerId", "customerCode fullName")
+      .populate("customer_id", CUST)
       .sort({ redeemedAt: -1 });
 
     res.status(200).json({
@@ -76,13 +79,13 @@ const getRedemptionsByCouponId = async (req, res) => {
 // GET /api/coupon-redemptions/customer/:customerId
 const getRedemptionsByCustomerId = async (req, res) => {
   try {
-    const { customerId } = req.params;
+    const customer_id = req.params.customer_id ?? req.params.customerId;
 
-    if (!validateObjectId(customerId)) {
+    if (!validateObjectId(customer_id)) {
       return res.status(400).json({ success: false, message: "Invalid customer ID" });
     }
 
-    const redemptions = await CouponRedemption.find({ customerId })
+    const redemptions = await CouponRedemption.find({ customer_id })
       .populate("couponId", "couponCode couponStatus")
       .sort({ redeemedAt: -1 });
 
@@ -100,20 +103,21 @@ const getRedemptionsByCustomerId = async (req, res) => {
 // POST /api/coupon-redemptions
 const createCouponRedemption = async (req, res) => {
   try {
-    const { couponId, customerId, discountAmount } = req.body;
+    const { couponId, discountAmount } = req.body;
+    const customer_id = pickCustomerId(req.body);
 
-    if (!couponId || !customerId || discountAmount === undefined) {
+    if (!couponId || !customer_id || discountAmount === undefined) {
       return res.status(400).json({
         success: false,
-        message: "couponId, customerId, and discountAmount are required",
+        message: "couponId, customer_id, and discountAmount are required",
       });
     }
 
     if (!validateObjectId(couponId)) {
       return res.status(400).json({ success: false, message: "Invalid couponId" });
     }
-    if (!validateObjectId(customerId)) {
-      return res.status(400).json({ success: false, message: "Invalid customerId" });
+    if (!validateObjectId(customer_id)) {
+      return res.status(400).json({ success: false, message: "Invalid customer_id" });
     }
 
     // Verify coupon exists
@@ -123,7 +127,7 @@ const createCouponRedemption = async (req, res) => {
     }
 
     // Verify customer exists
-    const customerExists = await Customer.findById(customerId);
+    const customerExists = await Customer.findById(customer_id);
     if (!customerExists) {
       return res.status(404).json({ success: false, message: "Customer not found" });
     }
@@ -132,7 +136,9 @@ const createCouponRedemption = async (req, res) => {
       return res.status(400).json({ success: false, message: "discountAmount must not be negative" });
     }
 
-    const redemption = await CouponRedemption.create(req.body);
+    const payload = { ...req.body, customer_id };
+    delete payload.customerId;
+    const redemption = await CouponRedemption.create(payload);
 
     res.status(201).json({
       success: true,

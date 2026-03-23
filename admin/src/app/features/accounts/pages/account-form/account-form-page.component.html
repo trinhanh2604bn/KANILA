@@ -1,0 +1,114 @@
+<section class="form-page">
+  <div class="form-page-header">
+    <a routerLink="/accounts" class="back-link">
+      <span class="material-symbols-rounded">arrow_back</span>
+      Back to Accounts
+    </a>
+    <h1 class="page-title">{{ isEdit() ? 'Edit Account' : 'Create Account' }}</h1>
+    <p class="page-subtitle">{{ isEdit() ? 'Update account information' : 'Add a new admin or staff account' }}</p>
+  </div>
+
+  @if (successMessage()) {
+    <div class="success-banner">
+      <span class="material-symbols-rounded">check_circle</span>
+      {{ successMessage() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="form-loading">
+      <div class="spinner spinner-dark"></div>
+      <span>Loading account...</span>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-card card">
+      <!-- Basic Info -->
+      <div class="form-section">
+        <h3 class="form-section-title">Basic Information</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="username">Full Name</label>
+            <input id="username" type="text" class="form-input" formControlName="username" placeholder="Enter full name" />
+            @if (form.get('username')?.touched && form.get('username')?.hasError('required')) {
+              <span class="form-error"><span class="material-symbols-rounded" style="font-size:14px;">info</span> Name is required</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input id="email" type="email" class="form-input" formControlName="email" placeholder="email@example.com" [attr.disabled]="isEdit() ? '' : null" />
+            @if (form.get('email')?.touched && form.get('email')?.hasError('required')) {
+              <span class="form-error"><span class="material-symbols-rounded" style="font-size:14px;">info</span> Email is required</span>
+            }
+            @if (form.get('email')?.touched && form.get('email')?.hasError('email')) {
+              <span class="form-error"><span class="material-symbols-rounded" style="font-size:14px;">info</span> Invalid email format</span>
+            }
+          </div>
+        </div>
+        <div class="form-grid">
+          @if (!isEdit()) {
+            <div class="form-group">
+              <label class="form-label" for="password">Password</label>
+              <input id="password" type="password" class="form-input" formControlName="password" placeholder="Min 6 characters" />
+              @if (form.get('password')?.touched && form.get('password')?.hasError('required')) {
+                <span class="form-error"><span class="material-symbols-rounded" style="font-size:14px;">info</span> Password is required</span>
+              }
+              @if (form.get('password')?.touched && form.get('password')?.hasError('minlength')) {
+                <span class="form-error"><span class="material-symbols-rounded" style="font-size:14px;">info</span> Min 6 characters</span>
+              }
+            </div>
+          }
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone</label>
+            <input id="phone" type="text" class="form-input" formControlName="phone" placeholder="Phone number (optional)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Role & Access -->
+      <div class="form-section">
+        <h3 class="form-section-title">Role & Access</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="account_type">Account Type</label>
+            <select id="account_type" class="form-input" formControlName="account_type">
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="roleId">Role</label>
+            <select id="roleId" class="form-input" formControlName="roleId">
+              <option value="">No role assigned</option>
+              @for (role of roles(); track role.id) {
+                <option [value]="role.id">{{ role.name }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="account_status">Status</label>
+            <select id="account_status" class="form-input" formControlName="account_status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <a routerLink="/accounts" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) {
+            <span class="spinner"></span>
+            <span>Saving...</span>
+          } @else {
+            <span class="material-symbols-rounded" style="font-size:18px;">save</span>
+            <span>{{ isEdit() ? 'Update Account' : 'Create Account' }}</span>
+          }
+        </button>
+      </div>
+    </form>
+  }
+</section>

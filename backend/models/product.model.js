@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 
+/** Register Account so `.populate("createdByAccountId")` / `updatedByAccountId` never throws MissingSchemaError. */
+require("./account.model");
+
 const productSchema = new mongoose.Schema(
   {
     productName: {
@@ -14,11 +17,20 @@ const productSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
+    /** URL-friendly identifier (unique when set). */
+    slug: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      sparse: true,
+      unique: true,
+    },
     brandId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Brand",
       required: [true, "Brand is required"],
     },
+    /** Primary category (maps to primary_category_id). */
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -60,8 +72,42 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    /** Mirrors isActive for APIs that use string status; kept in sync in pre-save. */
+    productStatus: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
+    ingredientText: {
+      type: String,
+      default: "",
+    },
+    usageInstruction: {
+      type: String,
+      default: "",
+    },
+    /** Optional audit refs — must exist on schema for `.populate()` in getProductById. */
+    createdByAccountId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Account",
+      default: null,
+    },
+    updatedByAccountId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Account",
+      default: null,
+    },
   },
   { timestamps: true }
 );
+
+productSchema.pre("save", function syncProductStatus(next) {
+  if (this.isModified("productStatus") && !this.isModified("isActive")) {
+    this.isActive = this.productStatus === "active";
+  } else if (this.isModified("isActive") && !this.isModified("productStatus")) {
+    this.productStatus = this.isActive ? "active" : "inactive";
+  }
+  next();
+});
 
 module.exports = mongoose.model("Product", productSchema);

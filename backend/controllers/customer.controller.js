@@ -1,19 +1,25 @@
 const Customer = require("../models/customer.model");
 const Account = require("../models/account.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { isCustomerListable } = require("../utils/customerListable");
+const { normalizeCustomerWrite } = require("../utils/customerProfileBody");
+
+const ACCOUNT_POPULATE_SELECT = "email phone account_type account_status";
 
 // GET /api/customers
 const getAllCustomers = async (req, res) => {
   try {
     const customers = await Customer.find()
-      .populate("accountId", "email phone accountType accountStatus")
-      .sort({ createdAt: -1 });
+      .populate("account_id", ACCOUNT_POPULATE_SELECT)
+      .sort({ created_at: -1 });
+
+    const data = customers.filter((c) => isCustomerListable(c));
 
     res.status(200).json({
       success: true,
       message: "Get all customers successfully",
-      count: customers.length,
-      data: customers,
+      count: data.length,
+      data,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -30,8 +36,8 @@ const getCustomerById = async (req, res) => {
     }
 
     const customer = await Customer.findById(id).populate(
-      "accountId",
-      "email phone accountType accountStatus"
+      "account_id",
+      ACCOUNT_POPULATE_SELECT
     );
 
     if (!customer) {
@@ -48,18 +54,18 @@ const getCustomerById = async (req, res) => {
   }
 };
 
-// GET /api/customers/account/:accountId
+// GET /api/customers/account/:account_id
 const getCustomerByAccountId = async (req, res) => {
   try {
-    const { accountId } = req.params;
+    const { account_id } = req.params;
 
-    if (!validateObjectId(accountId)) {
+    if (!validateObjectId(account_id)) {
       return res.status(400).json({ success: false, message: "Invalid account ID" });
     }
 
-    const customer = await Customer.findOne({ accountId }).populate(
-      "accountId",
-      "email phone accountType accountStatus"
+    const customer = await Customer.findOne({ account_id }).populate(
+      "account_id",
+      ACCOUNT_POPULATE_SELECT
     );
 
     if (!customer) {
@@ -85,14 +91,14 @@ const updateCustomer = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid customer ID" });
     }
 
-    // Prevent changing accountId and customerCode through update
-    delete req.body.accountId;
+    const body = normalizeCustomerWrite(req.body);
+    delete body.customer_code;
     delete req.body.customerCode;
 
-    const customer = await Customer.findByIdAndUpdate(id, req.body, {
+    const customer = await Customer.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
-    }).populate("accountId", "email phone accountType accountStatus");
+    }).populate("account_id", ACCOUNT_POPULATE_SELECT);
 
     if (!customer) {
       return res.status(404).json({ success: false, message: "Customer not found" });
@@ -133,10 +139,30 @@ const deleteCustomer = async (req, res) => {
   }
 };
 
+// PATCH /api/customers/:id
+const patchCustomer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid customer ID" });
+    const normalized = normalizeCustomerWrite(req.body);
+    const allowedKeys = ["full_name", "first_name", "last_name", "gender", "date_of_birth", "avatar_url", "customer_status"];
+    const updates = {};
+    for (const key of allowedKeys) {
+      if (normalized[key] !== undefined) updates[key] = normalized[key];
+    }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
+    const customer = await Customer.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+      .populate("account_id", "email account_type account_status");
+    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+    res.status(200).json({ success: true, message: "Customer patched successfully", data: customer });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
 module.exports = {
   getAllCustomers,
   getCustomerById,
   getCustomerByAccountId,
   updateCustomer,
+  patchCustomer,
   deleteCustomer,
 };

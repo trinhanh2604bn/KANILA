@@ -1,21 +1,60 @@
 const mongoose = require("mongoose");
 
+/**
+ * Target: `orders` — order_id = MongoDB _id
+ */
 const orderSchema = new mongoose.Schema(
   {
-    orderNumber: { type: String, required: true, unique: true, uppercase: true, trim: true },
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
-    checkoutSessionId: { type: mongoose.Schema.Types.ObjectId, ref: "CheckoutSession", default: null },
-    currencyCode: { type: String, default: "VND" },
-    orderStatus: { type: String, enum: ["pending", "confirmed", "processing", "completed", "cancelled"], default: "pending" },
-    paymentStatus: { type: String, enum: ["unpaid", "authorized", "paid", "partially_refunded", "refunded"], default: "unpaid" },
-    fulfillmentStatus: { type: String, enum: ["unfulfilled", "partially_fulfilled", "fulfilled", "returned"], default: "unfulfilled" },
-    customerNote: { type: String, default: "" },
-    placedAt: { type: Date, default: Date.now },
-    confirmedAt: { type: Date, default: null },
-    cancelledAt: { type: Date, default: null },
-    cancellationReason: { type: String, default: "" },
+    order_number: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+      trim: true,
+    },
+    customer_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true,
+      index: true,
+    },
+    checkout_session_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CheckoutSession",
+      default: null,
+    },
+    currency_code: { type: String, default: "VND", trim: true },
+    order_status: {
+      type: String,
+      enum: ["pending", "confirmed", "processing", "completed", "cancelled"],
+      default: "pending",
+    },
+    payment_status: {
+      type: String,
+      enum: ["unpaid", "authorized", "paid", "partially_refunded", "refunded"],
+      default: "unpaid",
+    },
+    fulfillment_status: {
+      type: String,
+      enum: ["unfulfilled", "partially_fulfilled", "fulfilled", "returned"],
+      default: "unfulfilled",
+    },
+    customer_note: { type: String, default: "" },
+    placed_at: { type: Date, default: Date.now },
+    confirmed_at: { type: Date, default: null },
+    cancelled_at: { type: Date, default: null },
+    cancellation_reason: { type: String, default: "" },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    collection: "orders",
+  }
 );
+
+orderSchema.virtual("order_id").get(function () {
+  return this._id;
+});
+orderSchema.set("toJSON", { virtuals: true });
+orderSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("Order", orderSchema);

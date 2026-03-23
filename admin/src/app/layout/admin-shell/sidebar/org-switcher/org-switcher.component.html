@@ -1,0 +1,38 @@
+<div class="org-switcher" (click)="$event.stopPropagation()">
+  <!-- Current Org Display -->
+  <button class="current-org" (click)="toggle()" [class.is-open]="isOpen()">
+    <div class="org-avatar" [style.background]="'var(--primary)'">
+      {{ orgService.getInitials(orgService.current().name) }}
+    </div>
+    <div class="org-details">
+      <span class="org-name">{{ orgService.current().name }}</span>
+      <span class="org-plan">{{ getPlanBadge(orgService.current().plan) }}</span>
+    </div>
+    <span class="material-symbols-rounded chevron">unfold_more</span>
+  </button>
+
+  <!-- Dropdown Panel -->
+  @if (isOpen()) {
+    <div class="org-dropdown card shadow-lg border fade-in">
+      <div class="dropdown-header">
+        <span class="dropdown-label">Switch Organization</span>
+      </div>
+      <div class="org-list">
+        @for (org of orgService.organizations(); track org.id) {
+          <button class="org-option" [class.active]="org.id === orgService.current().id" (click)="select(org)">
+            <div class="org-avatar-sm" [style.background]="org.id === orgService.current().id ? 'var(--primary)' : 'var(--border-strong)'">
+              {{ orgService.getInitials(org.name) }}
+            </div>
+            <div class="org-option-info">
+              <span class="org-option-name">{{ org.name }}</span>
+              <span class="org-option-meta">{{ org.memberCount }} members · {{ getPlanBadge(org.plan) }}</span>
+            </div>
+            @if (org.id === orgService.current().id) {
+              <span class="material-symbols-rounded check-icon">check</span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

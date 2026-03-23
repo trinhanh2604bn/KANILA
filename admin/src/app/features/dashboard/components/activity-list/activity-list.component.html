@@ -1,0 +1,31 @@
+<div class="activity-card card">
+  <div class="activity-header">
+    <h3 class="activity-title">Recent Activity</h3>
+    <span class="badge badge-primary">{{ activities().length }} items</span>
+  </div>
+  @if (activities().length === 0) {
+    <div class="empty-state">
+      <span class="material-symbols-rounded empty-icon">schedule</span>
+      <p class="empty-title">No recent activity yet</p>
+      <p class="empty-hint">Activity from orders, products, and customers will appear here</p>
+    </div>
+  } @else {
+    <div class="activity-items">
+      @for (item of activities(); track item.title) {
+        <div class="activity-item">
+          <div class="activity-icon" [attr.data-status]="item.statusType">
+            <span class="material-symbols-rounded">{{ item.icon }}</span>
+          </div>
+          <div class="activity-info">
+            <span class="activity-text">{{ item.title }}</span>
+            <span class="activity-time">
+              <span class="material-symbols-rounded" style="font-size: 13px;">schedule</span>
+              {{ item.time }}
+            </span>
+          </div>
+          <span class="badge" [class]="'badge-' + item.statusType">{{ item.status }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>
