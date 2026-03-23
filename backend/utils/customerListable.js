@@ -1,15 +1,13 @@
 /**
  * Customers with no name, email (from account), or code should not appear in admin lists.
- * Name includes fullName or firstName + lastName.
+ * Name includes full_name or first_name + last_name.
  */
 function isCustomerListable(doc) {
-  const fromParts = [doc.firstName, doc.lastName].filter(Boolean).join(" ").trim();
-  const name = (doc.fullName || "").trim() || fromParts;
-  const email =
-    doc.accountId && typeof doc.accountId === "object" && doc.accountId.email
-      ? String(doc.accountId.email).trim()
-      : "";
-  const code = (doc.customerCode || "").trim();
+  const fromParts = [doc.first_name, doc.last_name].filter(Boolean).join(" ").trim();
+  const name = (doc.full_name || "").trim() || fromParts;
+  const acc = doc.account_id && typeof doc.account_id === "object" ? doc.account_id : null;
+  const email = acc && acc.email ? String(acc.email).trim() : "";
+  const code = (doc.customer_code || "").trim();
   return !!(name || email || code);
 }
 

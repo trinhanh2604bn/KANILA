@@ -10,7 +10,7 @@ const {
 } = require("../controllers/cart.controller");
 
 router.get("/", getAllCarts);
-router.get("/customer/:customerId", getCartsByCustomerId);
+router.get("/customer/:customer_id", getCartsByCustomerId);
 router.get("/:id", getCartById);
 router.post("/", createCart);
 router.put("/:id", updateCart);

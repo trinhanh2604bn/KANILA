@@ -2,8 +2,8 @@ export interface User {
   _id: string;
   email: string;
   name: string;
-  accountType: 'admin' | 'staff' | 'customer';
-  role: string; // kept for backward compat with existing components
-  lastLoginAt?: string;
+  account_type: 'admin' | 'staff' | 'customer';
+  role: string; // mirrors account_type for UI
+  last_login_at?: string;
   avatar?: string;
 }

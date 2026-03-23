@@ -147,7 +147,7 @@
             <h2 class="card-title">Details</h2>
           </div>
           <div class="card-body">
-            <p class="meta-line"><span class="meta-label">Registered</span> {{ c.registeredAt | date:'MMM d, y' }}</p>
+            <p class="meta-line"><span class="meta-label">Registered</span> {{ c.registered_at | date:'MMM d, y' }}</p>
             <p class="meta-line"><span class="meta-label">Segment</span>
               <span class="badge" [ngClass]="getSegmentBadgeClass(c.segment)">{{ getSegmentLabel(c.segment) }}</span>
             </p>

@@ -1,72 +1,87 @@
 const mongoose = require("mongoose");
 
+/**
+ * Target: `checkout_sessions` — checkout_session_id = MongoDB _id
+ */
 const checkoutSessionSchema = new mongoose.Schema(
   {
-    cartId: {
+    cart_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Cart",
       required: [true, "Cart ID is required"],
+      index: true,
     },
-    customerId: {
+    customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: [true, "Customer ID is required"],
+      index: true,
     },
-    checkoutStatus: {
+    checkout_status: {
       type: String,
       enum: ["in_progress", "completed", "expired"],
       default: "in_progress",
     },
-    currencyCode: {
+    currency_code: {
       type: String,
       default: "VND",
+      trim: true,
     },
-    selectedShippingAddressId: {
+    selected_shipping_address_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CheckoutAddress",
       default: null,
     },
-    selectedBillingAddressId: {
+    selected_billing_address_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CheckoutAddress",
       default: null,
     },
-    selectedShippingMethodId: {
+    selected_shipping_method_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CheckoutShippingMethod",
       default: null,
     },
-    selectedPaymentMethodId: {
+    selected_payment_method_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PaymentMethod",
       default: null,
     },
-    subtotalAmount: {
+    subtotal_amount: {
       type: Number,
       default: 0,
     },
-    shippingFeeAmount: {
+    shipping_fee_amount: {
       type: Number,
       default: 0,
     },
-    discountAmount: {
+    discount_amount: {
       type: Number,
       default: 0,
     },
-    taxAmount: {
+    tax_amount: {
       type: Number,
       default: 0,
     },
-    totalAmount: {
+    total_amount: {
       type: Number,
       default: 0,
     },
-    expiresAt: {
+    expires_at: {
       type: Date,
       default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    collection: "checkout_sessions",
+  }
 );
+
+checkoutSessionSchema.virtual("checkout_session_id").get(function () {
+  return this._id;
+});
+checkoutSessionSchema.set("toJSON", { virtuals: true });
+checkoutSessionSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("CheckoutSession", checkoutSessionSchema);

@@ -1,10 +1,11 @@
 const PaymentMethod = require("../models/paymentMethod.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { normalizePaymentMethodBody } = require("../utils/cartCheckoutNormalize");
 
 // GET /api/payment-methods
 const getAllPaymentMethods = async (req, res) => {
   try {
-    const methods = await PaymentMethod.find().sort({ sortOrder: 1, createdAt: -1 });
+    const methods = await PaymentMethod.find().sort({ sort_order: 1, created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -45,16 +46,17 @@ const getPaymentMethodById = async (req, res) => {
 // POST /api/payment-methods
 const createPaymentMethod = async (req, res) => {
   try {
-    const { paymentMethodCode, paymentMethodName, methodType } = req.body;
+    const body = normalizePaymentMethodBody(req.body);
+    const { payment_method_code, payment_method_name, method_type } = body;
 
-    if (!paymentMethodCode || !paymentMethodName || !methodType) {
+    if (!payment_method_code || !payment_method_name || !method_type) {
       return res.status(400).json({
         success: false,
-        message: "paymentMethodCode, paymentMethodName, and methodType are required",
+        message: "payment_method_code, payment_method_name, and method_type are required",
       });
     }
 
-    const method = await PaymentMethod.create(req.body);
+    const method = await PaymentMethod.create(body);
 
     res.status(201).json({
       success: true,
@@ -78,7 +80,7 @@ const updatePaymentMethod = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid payment method ID" });
     }
 
-    const method = await PaymentMethod.findByIdAndUpdate(id, req.body, {
+    const method = await PaymentMethod.findByIdAndUpdate(id, normalizePaymentMethodBody(req.body), {
       new: true,
       runValidators: true,
     });

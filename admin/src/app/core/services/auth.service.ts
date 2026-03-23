@@ -13,10 +13,10 @@ interface LoginResponse {
   account: {
     _id: string;
     email: string;
-    accountType: 'admin' | 'staff' | 'customer';
-    lastLoginAt: string;
+    account_type: 'admin' | 'staff' | 'customer';
+    last_login_at: string;
   };
-  customer: { _id: string; customerCode: string; fullName: string } | null;
+  customer: { _id: string; customer_code: string; full_name: string } | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -42,10 +42,10 @@ export class AuthService {
           const user: User = {
             _id: account._id,
             email: account.email,
-            name: customer?.fullName || account.email,
-            accountType: account.accountType,
-            role: account.accountType,
-            lastLoginAt: account.lastLoginAt,
+            name: customer?.full_name || account.email,
+            account_type: account.account_type,
+            role: account.account_type,
+            last_login_at: account.last_login_at,
           };
           this.currentUser.setUser(user);
           return user;
@@ -84,10 +84,10 @@ export class AuthService {
           const user: User = {
             _id: account._id,
             email: account.email,
-            name: customer?.fullName || account.email,
-            accountType: account.accountType,
-            role: account.accountType,
-            lastLoginAt: account.lastLoginAt,
+            name: customer?.full_name || account.email,
+            account_type: account.account_type,
+            role: account.account_type,
+            last_login_at: account.last_login_at,
           };
           this.currentUser.setUser(user);
         }

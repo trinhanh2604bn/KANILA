@@ -30,28 +30,30 @@ export class ReturnsApiService {
   }
 
   private mapReturn(raw: Record<string, unknown>): ReturnRequest {
-    const orderRaw = raw['orderId'];
+    const orderRaw = raw['order_id'] ?? raw['orderId'];
     const order =
       orderRaw && typeof orderRaw === 'object' && orderRaw !== null && '_id' in orderRaw
-        ? (orderRaw as { _id?: unknown; orderNumber?: string })
+        ? (orderRaw as { _id?: unknown; order_number?: string; orderNumber?: string })
         : null;
 
     const orderIdStr =
       order?._id != null
         ? String(order._id)
-        : raw['orderId'] != null
-          ? String(raw['orderId'])
-          : '';
+        : raw['order_id'] != null
+          ? String(raw['order_id'])
+          : raw['orderId'] != null
+            ? String(raw['orderId'])
+            : '';
 
-    const orderNumber = (order?.orderNumber ?? '').trim();
+    const orderNumber = (order?.order_number ?? order?.orderNumber ?? '').trim();
 
-    const custRaw = raw['requestedByCustomerId'];
+    const custRaw = raw['requested_by_customer_id'] ?? raw['requestedByCustomerId'];
     const cust =
       custRaw && typeof custRaw === 'object' && custRaw !== null
-        ? (custRaw as { fullName?: string; email?: string })
+        ? (custRaw as { full_name?: string; fullName?: string; email?: string })
         : null;
 
-    const name = (cust?.fullName ?? '').trim();
+    const name = (cust?.full_name ?? cust?.fullName ?? '').trim();
     const reasonRaw = raw['returnReason'];
     const reasonStr =
       typeof reasonRaw === 'string' && reasonRaw.trim() ? reasonRaw.trim() : '';

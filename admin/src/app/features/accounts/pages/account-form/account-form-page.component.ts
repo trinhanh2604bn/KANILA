@@ -31,9 +31,9 @@ export class AccountFormPageComponent implements OnInit {
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
     phone: [''],
-    accountType: ['staff' as 'admin' | 'staff', Validators.required],
+    account_type: ['staff' as 'admin' | 'staff', Validators.required],
     roleId: [''],
-    accountStatus: ['active' as 'active' | 'inactive', Validators.required],
+    account_status: ['active' as 'active' | 'inactive', Validators.required],
   });
 
   ngOnInit(): void {
@@ -51,9 +51,9 @@ export class AccountFormPageComponent implements OnInit {
           username: account.username,
           email: account.email,
           phone: account.phone,
-          accountType: account.accountType as 'admin' | 'staff',
+          account_type: account.account_type as 'admin' | 'staff',
           roleId: account.roleId || '',
-          accountStatus: account.accountStatus as 'active' | 'inactive',
+          account_status: account.account_status as 'active' | 'inactive',
         });
         this.loading.set(false);
       });
@@ -74,9 +74,9 @@ export class AccountFormPageComponent implements OnInit {
       this.api.update(this.accountId, {
         username: data.username,
         phone: data.phone,
-        accountType: data.accountType,
+        account_type: data.account_type,
         roleId: data.roleId,
-        accountStatus: data.accountStatus,
+        account_status: data.account_status,
       }).subscribe({
         next: () => {
           this.saving.set(false);
@@ -91,9 +91,9 @@ export class AccountFormPageComponent implements OnInit {
         username: data.username,
         password: data.password,
         phone: data.phone,
-        accountType: data.accountType,
+        account_type: data.account_type,
         roleId: data.roleId,
-        accountStatus: data.accountStatus,
+        account_status: data.account_status,
       }).subscribe({
         next: () => {
           this.saving.set(false);

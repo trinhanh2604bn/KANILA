@@ -10,7 +10,7 @@ const {
 } = require("../controllers/customer.controller");
 
 router.get("/", getAllCustomers);
-router.get("/account/:accountId", getCustomerByAccountId);
+router.get("/account/:account_id", getCustomerByAccountId);
 router.get("/:id", getCustomerById);
 router.put("/:id", updateCustomer);
 router.patch("/:id", patchCustomer);

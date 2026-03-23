@@ -9,16 +9,16 @@ const testAccounts = [
     password: 'Password123!',
     username: 'testuser1',
     phone: '1234567890',
-    accountType: 'customer',
-    accountStatus: 'active'
+    account_type: 'customer',
+    account_status: 'active'
   },
   {
     email: 'testuser2@example.com',
     password: 'Password456!',
     username: 'testuser2',
     phone: '0987654321',
-    accountType: 'admin',
-    accountStatus: 'active'
+    account_type: 'admin',
+    account_status: 'active'
   }
 ];
 
@@ -52,7 +52,7 @@ async function testAccountCreation() {
     
     // Test 5: Patch account
     console.log('\n🔵 Test 5: Patching account status...');
-    const patchData = { accountStatus: 'inactive' };
+    const patchData = { account_status: 'inactive' };
     const patchedAccount = await axios.patch(`${API_BASE_URL}/${accountId1}`, patchData);
     console.log('✅ Success:', patchedAccount.data);
     

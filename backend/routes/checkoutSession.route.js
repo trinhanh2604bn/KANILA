@@ -10,7 +10,7 @@ const {
 } = require("../controllers/checkoutSession.controller");
 
 router.get("/", getAllCheckoutSessions);
-router.get("/cart/:cartId", getSessionsByCartId);
+router.get("/cart/:cart_id", getSessionsByCartId);
 router.get("/:id", getCheckoutSessionById);
 router.post("/", createCheckoutSession);
 router.put("/:id", updateCheckoutSession);

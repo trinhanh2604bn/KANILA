@@ -56,12 +56,15 @@ export class ReviewsApiService {
     const title = t && b ? t : undefined;
     const content = b || t || '';
 
-    const cust = raw.customerId;
+    const cust = raw.customer_id ?? raw.customerId;
     let customerName = 'Anonymous';
     if (typeof cust === 'object' && cust !== null) {
       customerName =
+        cust.full_name ||
         cust.fullName ||
+        [cust.first_name, cust.last_name].filter(Boolean).join(' ').trim() ||
         [cust.firstName, cust.lastName].filter(Boolean).join(' ').trim() ||
+        cust.customer_code ||
         cust.customerCode ||
         customerName;
     }

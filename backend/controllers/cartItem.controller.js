@@ -2,20 +2,23 @@ const CartItem = require("../models/cartItem.model");
 const Cart = require("../models/cart.model");
 const ProductVariant = require("../models/productVariant.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { normalizeCartItemBody } = require("../utils/cartCheckoutNormalize");
 
-// Helper: recalculate cart totals
-const recalcCartTotals = async (cartId) => {
-  const items = await CartItem.find({ cartId });
-  const itemCount = items.length;
-  const subtotalAmount = items.reduce((sum, item) => sum + item.lineTotalAmount, 0);
-  const discountAmount = items.reduce((sum, item) => sum + (item.discountAmount * item.quantity), 0);
-  const totalAmount = subtotalAmount;
+const recalcCartTotals = async (cart_id) => {
+  const items = await CartItem.find({ cart_id });
+  const item_count = items.length;
+  const subtotal_amount = items.reduce((sum, item) => sum + item.line_total_amount, 0);
+  const discount_amount = items.reduce(
+    (sum, item) => sum + (item.discount_amount * item.quantity),
+    0
+  );
+  const total_amount = subtotal_amount;
 
-  await Cart.findByIdAndUpdate(cartId, {
-    itemCount,
-    subtotalAmount,
-    discountAmount,
-    totalAmount,
+  await Cart.findByIdAndUpdate(cart_id, {
+    item_count,
+    subtotal_amount,
+    discount_amount,
+    total_amount,
   });
 };
 
@@ -23,9 +26,9 @@ const recalcCartTotals = async (cartId) => {
 const getAllCartItems = async (req, res) => {
   try {
     const items = await CartItem.find()
-      .populate("cartId", "cartStatus customerId")
-      .populate("variantId", "sku variantName")
-      .sort({ addedAt: -1 });
+      .populate("cart_id", "cart_status customer_id")
+      .populate("variant_id", "sku variantName")
+      .sort({ added_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -48,8 +51,8 @@ const getCartItemById = async (req, res) => {
     }
 
     const item = await CartItem.findById(id)
-      .populate("cartId", "cartStatus customerId")
-      .populate("variantId", "sku variantName");
+      .populate("cart_id", "cart_status customer_id")
+      .populate("variant_id", "sku variantName");
 
     if (!item) {
       return res.status(404).json({ success: false, message: "Cart item not found" });
@@ -65,18 +68,18 @@ const getCartItemById = async (req, res) => {
   }
 };
 
-// GET /api/cart-items/cart/:cartId
+// GET /api/cart-items/cart/:cart_id
 const getItemsByCartId = async (req, res) => {
   try {
-    const { cartId } = req.params;
+    const cart_id = req.params.cart_id ?? req.params.cartId;
 
-    if (!validateObjectId(cartId)) {
+    if (!validateObjectId(cart_id)) {
       return res.status(400).json({ success: false, message: "Invalid cart ID" });
     }
 
-    const items = await CartItem.find({ cartId })
-      .populate("variantId", "sku variantName")
-      .sort({ addedAt: -1 });
+    const items = await CartItem.find({ cart_id })
+      .populate("variant_id", "sku variantName")
+      .sort({ added_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -92,36 +95,57 @@ const getItemsByCartId = async (req, res) => {
 // POST /api/cart-items
 const createCartItem = async (req, res) => {
   try {
-    const { cartId, variantId, skuSnapshot, productNameSnapshot, variantNameSnapshot, quantity, unitPriceAmount, finalUnitPriceAmount, lineTotalAmount } = req.body;
+    const body = normalizeCartItemBody(req.body);
+    const {
+      cart_id,
+      variant_id,
+      sku_snapshot,
+      product_name_snapshot,
+      variant_name_snapshot,
+      quantity,
+      unit_price_amount,
+      final_unit_price_amount,
+      line_total_amount,
+    } = body;
 
-    if (!cartId || !variantId || !skuSnapshot || !productNameSnapshot || !variantNameSnapshot || !quantity || unitPriceAmount === undefined || finalUnitPriceAmount === undefined || lineTotalAmount === undefined) {
+    if (
+      !cart_id ||
+      !variant_id ||
+      !sku_snapshot ||
+      !product_name_snapshot ||
+      !variant_name_snapshot ||
+      !quantity ||
+      unit_price_amount === undefined ||
+      final_unit_price_amount === undefined ||
+      line_total_amount === undefined
+    ) {
       return res.status(400).json({
         success: false,
-        message: "cartId, variantId, skuSnapshot, productNameSnapshot, variantNameSnapshot, quantity, unitPriceAmount, finalUnitPriceAmount, and lineTotalAmount are required",
+        message:
+          "cart_id, variant_id, sku_snapshot, product_name_snapshot, variant_name_snapshot, quantity, unit_price_amount, final_unit_price_amount, and line_total_amount are required",
       });
     }
 
-    if (!validateObjectId(cartId)) {
-      return res.status(400).json({ success: false, message: "Invalid cartId" });
+    if (!validateObjectId(cart_id)) {
+      return res.status(400).json({ success: false, message: "Invalid cart_id" });
     }
-    if (!validateObjectId(variantId)) {
-      return res.status(400).json({ success: false, message: "Invalid variantId" });
+    if (!validateObjectId(variant_id)) {
+      return res.status(400).json({ success: false, message: "Invalid variant_id" });
     }
 
-    const cartExists = await Cart.findById(cartId);
+    const cartExists = await Cart.findById(cart_id);
     if (!cartExists) {
       return res.status(404).json({ success: false, message: "Cart not found" });
     }
 
-    const variantExists = await ProductVariant.findById(variantId);
+    const variantExists = await ProductVariant.findById(variant_id);
     if (!variantExists) {
       return res.status(404).json({ success: false, message: "Product variant not found" });
     }
 
-    const item = await CartItem.create(req.body);
+    const item = await CartItem.create(body);
 
-    // Recalculate cart totals
-    await recalcCartTotals(cartId);
+    await recalcCartTotals(cart_id);
 
     res.status(201).json({
       success: true,
@@ -147,13 +171,12 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ success: false, message: "Cart item not found" });
     }
 
-    const item = await CartItem.findByIdAndUpdate(id, req.body, {
+    const item = await CartItem.findByIdAndUpdate(id, normalizeCartItemBody(req.body), {
       new: true,
       runValidators: true,
     });
 
-    // Recalculate cart totals
-    await recalcCartTotals(item.cartId);
+    await recalcCartTotals(item.cart_id);
 
     res.status(200).json({
       success: true,
@@ -180,8 +203,7 @@ const deleteCartItem = async (req, res) => {
       return res.status(404).json({ success: false, message: "Cart item not found" });
     }
 
-    // Recalculate cart totals
-    await recalcCartTotals(item.cartId);
+    await recalcCartTotals(item.cart_id);
 
     res.status(200).json({
       success: true,

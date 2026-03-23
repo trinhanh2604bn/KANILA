@@ -10,7 +10,7 @@ const {
 } = require("../controllers/address.controller");
 
 router.get("/", getAllAddresses);
-router.get("/customer/:customerId", getAddressesByCustomerId);
+router.get("/customer/:customer_id", getAddressesByCustomerId);
 router.get("/:id", getAddressById);
 router.post("/", createAddress);
 router.put("/:id", updateAddress);

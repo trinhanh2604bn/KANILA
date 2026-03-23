@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAllOrderAddresses, getOrderAddressById, getAddressesByOrderId, createOrderAddress, updateOrderAddress, deleteOrderAddress } = require("../controllers/orderAddress.controller");
 router.get("/", getAllOrderAddresses);
-router.get("/order/:orderId", getAddressesByOrderId);
+router.get("/order/:order_id", getAddressesByOrderId);
 router.get("/:id", getOrderAddressById);
 router.post("/", createOrderAddress);
 router.put("/:id", updateOrderAddress);

@@ -43,15 +43,15 @@ const getDashboardSummary = async (req, res) => {
       Product.countDocuments({ stock: { $lte: 10 }, isActive: true }),
       sumRevenueInRange(OrderTotal, start, end),
       sumRevenueInRange(OrderTotal, prevStart, prevEnd),
-      Order.countDocuments({ placedAt: { $gte: start, $lte: end } }),
-      Order.countDocuments({ placedAt: { $gte: prevStart, $lte: prevEnd } }),
+      Order.countDocuments({ placed_at: { $gte: start, $lte: end } }),
+      Order.countDocuments({ placed_at: { $gte: prevStart, $lte: prevEnd } }),
       getDailyRevenueSeries(OrderTotal, start, end),
       Order.find()
-        .populate("customerId", "fullName customerCode")
-        .sort({ placedAt: -1 })
+        .populate("customer_id", "full_name customer_code")
+        .sort({ placed_at: -1 })
         .limit(10),
       OrderItem.aggregate([
-        { $group: { _id: "$productId", sold: { $sum: "$quantity" } } },
+        { $group: { _id: "$product_id", sold: { $sum: "$quantity" } } },
         { $sort: { sold: -1 } },
         { $limit: 5 },
         {
@@ -108,12 +108,12 @@ const getDashboardSummary = async (req, res) => {
         })),
         recentOrders: recentOrders.map((o) => ({
           _id: o._id,
-          orderNumber: o.orderNumber,
-          customerName: o.customerId?.fullName || "N/A",
-          orderStatus: o.orderStatus,
-          paymentStatus: o.paymentStatus,
-          placedAt: o.placedAt,
-          createdAt: o.createdAt,
+          order_number: o.order_number,
+          customerName: o.customer_id?.full_name || "N/A",
+          order_status: o.order_status,
+          payment_status: o.payment_status,
+          placed_at: o.placed_at,
+          created_at: o.created_at,
         })),
       },
     });

@@ -1,13 +1,14 @@
 const CheckoutAddress = require("../models/checkoutAddress.model");
 const CheckoutSession = require("../models/checkoutSession.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { normalizeCheckoutAddressBody } = require("../utils/cartCheckoutNormalize");
 
 // GET /api/checkout-addresses
 const getAllCheckoutAddresses = async (req, res) => {
   try {
     const addresses = await CheckoutAddress.find()
-      .populate("checkoutSessionId", "checkoutStatus")
-      .sort({ createdAt: -1 });
+      .populate("checkout_session_id", "checkout_status")
+      .sort({ created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -29,7 +30,10 @@ const getCheckoutAddressById = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid address ID" });
     }
 
-    const address = await CheckoutAddress.findById(id).populate("checkoutSessionId", "checkoutStatus");
+    const address = await CheckoutAddress.findById(id).populate(
+      "checkout_session_id",
+      "checkout_status"
+    );
 
     if (!address) {
       return res.status(404).json({ success: false, message: "Checkout address not found" });
@@ -45,16 +49,19 @@ const getCheckoutAddressById = async (req, res) => {
   }
 };
 
-// GET /api/checkout-addresses/session/:checkoutSessionId
+// GET /api/checkout-addresses/session/:checkout_session_id
 const getAddressesBySessionId = async (req, res) => {
   try {
-    const { checkoutSessionId } = req.params;
+    const checkout_session_id =
+      req.params.checkout_session_id ?? req.params.checkoutSessionId;
 
-    if (!validateObjectId(checkoutSessionId)) {
+    if (!validateObjectId(checkout_session_id)) {
       return res.status(400).json({ success: false, message: "Invalid session ID" });
     }
 
-    const addresses = await CheckoutAddress.find({ checkoutSessionId }).sort({ createdAt: -1 });
+    const addresses = await CheckoutAddress.find({ checkout_session_id }).sort({
+      created_at: -1,
+    });
 
     res.status(200).json({
       success: true,
@@ -70,40 +77,56 @@ const getAddressesBySessionId = async (req, res) => {
 // POST /api/checkout-addresses
 const createCheckoutAddress = async (req, res) => {
   try {
-    const { checkoutSessionId, addressType, recipientName, phone, addressLine1, city, isSelected } = req.body;
+    const body = normalizeCheckoutAddressBody(req.body);
+    const {
+      checkout_session_id,
+      address_type,
+      recipient_name,
+      phone,
+      address_line_1,
+      city,
+      is_selected,
+    } = body;
 
-    if (!checkoutSessionId || !addressType || !recipientName || !phone || !addressLine1 || !city) {
+    if (
+      !checkout_session_id ||
+      !address_type ||
+      !recipient_name ||
+      !phone ||
+      !address_line_1 ||
+      !city
+    ) {
       return res.status(400).json({
         success: false,
-        message: "checkoutSessionId, addressType, recipientName, phone, addressLine1, and city are required",
+        message:
+          "checkout_session_id, address_type, recipient_name, phone, address_line_1, and city are required",
       });
     }
 
-    if (!validateObjectId(checkoutSessionId)) {
-      return res.status(400).json({ success: false, message: "Invalid checkoutSessionId" });
+    if (!validateObjectId(checkout_session_id)) {
+      return res.status(400).json({ success: false, message: "Invalid checkout_session_id" });
     }
 
-    const sessionExists = await CheckoutSession.findById(checkoutSessionId);
+    const sessionExists = await CheckoutSession.findById(checkout_session_id);
     if (!sessionExists) {
       return res.status(404).json({ success: false, message: "Checkout session not found" });
     }
 
-    // If isSelected, unselect others of same type in this session
-    if (isSelected === true) {
+    if (is_selected === true) {
       await CheckoutAddress.updateMany(
-        { checkoutSessionId, addressType, isSelected: true },
-        { isSelected: false }
+        { checkout_session_id, address_type, is_selected: true },
+        { is_selected: false }
       );
     }
 
-    const address = await CheckoutAddress.create(req.body);
+    const address = await CheckoutAddress.create(body);
 
-    // Update the session's selected address ref
-    if (isSelected === true) {
-      const updateField = addressType === "shipping"
-        ? { selectedShippingAddressId: address._id }
-        : { selectedBillingAddressId: address._id };
-      await CheckoutSession.findByIdAndUpdate(checkoutSessionId, updateField);
+    if (is_selected === true) {
+      const updateField =
+        address_type === "shipping"
+          ? { selected_shipping_address_id: address._id }
+          : { selected_billing_address_id: address._id };
+      await CheckoutSession.findByIdAndUpdate(checkout_session_id, updateField);
     }
 
     res.status(201).json({
@@ -120,7 +143,8 @@ const createCheckoutAddress = async (req, res) => {
 const updateCheckoutAddress = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isSelected } = req.body;
+    const body = normalizeCheckoutAddressBody(req.body);
+    const { is_selected } = body;
 
     if (!validateObjectId(id)) {
       return res.status(400).json({ success: false, message: "Invalid address ID" });
@@ -131,25 +155,29 @@ const updateCheckoutAddress = async (req, res) => {
       return res.status(404).json({ success: false, message: "Checkout address not found" });
     }
 
-    // If setting as selected, unselect others of same type
-    if (isSelected === true) {
+    if (is_selected === true) {
       await CheckoutAddress.updateMany(
-        { checkoutSessionId: existing.checkoutSessionId, addressType: existing.addressType, _id: { $ne: id }, isSelected: true },
-        { isSelected: false }
+        {
+          checkout_session_id: existing.checkout_session_id,
+          address_type: existing.address_type,
+          _id: { $ne: id },
+          is_selected: true,
+        },
+        { is_selected: false }
       );
     }
 
-    const address = await CheckoutAddress.findByIdAndUpdate(id, req.body, {
+    const address = await CheckoutAddress.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
     });
 
-    // Update session ref if selecting
-    if (isSelected === true) {
-      const updateField = address.addressType === "shipping"
-        ? { selectedShippingAddressId: address._id }
-        : { selectedBillingAddressId: address._id };
-      await CheckoutSession.findByIdAndUpdate(address.checkoutSessionId, updateField);
+    if (is_selected === true) {
+      const updateField =
+        address.address_type === "shipping"
+          ? { selected_shipping_address_id: address._id }
+          : { selected_billing_address_id: address._id };
+      await CheckoutSession.findByIdAndUpdate(address.checkout_session_id, updateField);
     }
 
     res.status(200).json({

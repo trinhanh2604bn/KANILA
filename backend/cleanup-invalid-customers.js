@@ -26,26 +26,26 @@ const ReviewVote = require("./models/reviewVote.model");
 
 async function deleteRelatedToCustomer(customerId) {
   const id = customerId;
-  await CheckoutSession.deleteMany({ customerId: id });
-  await Address.deleteMany({ customerId: id });
+  await CheckoutSession.deleteMany({ customer_id: id });
+  await Address.deleteMany({ customer_id: id });
 
-  const carts = await Cart.find({ customerId: id });
+  const carts = await Cart.find({ customer_id: id });
   for (const cart of carts) {
-    await CartItem.deleteMany({ cartId: cart._id });
+    await CartItem.deleteMany({ cart_id: cart._id });
     await cart.deleteOne();
   }
 
-  const wishlists = await Wishlist.find({ customerId: id });
+  const wishlists = await Wishlist.find({ customer_id: id });
   for (const w of wishlists) {
     await WishlistItem.deleteMany({ wishlistId: w._id });
     await w.deleteOne();
   }
 
-  await LoyaltyPointLedger.deleteMany({ customerId: id });
-  await LoyaltyAccount.deleteMany({ customerId: id });
-  await CouponRedemption.deleteMany({ customerId: id });
-  await ReviewVote.deleteMany({ customerId: id });
-  await Review.deleteMany({ customerId: id });
+  await LoyaltyPointLedger.deleteMany({ customer_id: id });
+  await LoyaltyAccount.deleteMany({ customer_id: id });
+  await CouponRedemption.deleteMany({ customer_id: id });
+  await ReviewVote.deleteMany({ customer_id: id });
+  await Review.deleteMany({ customer_id: id });
 }
 
 async function main() {
@@ -59,8 +59,8 @@ async function main() {
   console.log("Connected.\n");
 
   const customers = await Customer.find()
-    .populate("accountId", "email phone accountType accountStatus")
-    .sort({ createdAt: -1 });
+    .populate("account_id", "email phone account_type account_status")
+    .sort({ created_at: -1 });
 
   const junk = customers.filter((c) => !isCustomerListable(c));
   console.log(`Found ${junk.length} non-listable customer document(s) (no name, email, or code).\n`);
@@ -69,23 +69,24 @@ async function main() {
   let skipped = 0;
 
   for (const c of junk) {
-    const orderCount = await Order.countDocuments({ customerId: c._id });
+    const orderCount = await Order.countDocuments({ customer_id: c._id });
     if (orderCount > 0) {
       console.log(`Skip ${c._id}: has ${orderCount} order(s) — fix data manually if needed.`);
       skipped++;
       continue;
     }
 
-    const accountId = c.accountId && c.accountId._id ? c.accountId._id : c.accountId;
+    const account_id =
+      c.account_id && c.account_id._id ? c.account_id._id : c.account_id;
     await deleteRelatedToCustomer(c._id);
     await Customer.findByIdAndDelete(c._id);
     console.log(`Deleted Customer ${c._id}`);
 
-    if (accountId) {
-      const acc = await Account.findById(accountId);
-      if (acc && acc.accountType === "customer") {
-        await Account.findByIdAndDelete(accountId);
-        console.log(`  Deleted Account ${accountId}`);
+    if (account_id) {
+      const acc = await Account.findById(account_id);
+      if (acc && acc.account_type === "customer") {
+        await Account.findByIdAndDelete(account_id);
+        console.log(`  Deleted Account ${account_id}`);
       }
     }
     removed++;

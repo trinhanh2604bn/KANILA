@@ -21,12 +21,12 @@
           <span class="profile-email">{{ acc.email }}</span>
           <div class="profile-badges">
             <span class="badge"
-              [class.badge-success]="acc.accountStatus === 'active'"
-              [class.badge-warning]="acc.accountStatus === 'inactive'"
-              [class.badge-danger]="acc.accountStatus === 'locked'">
-              {{ acc.accountStatus }}
+              [class.badge-success]="acc.account_status === 'active'"
+              [class.badge-warning]="acc.account_status === 'inactive'"
+              [class.badge-danger]="acc.account_status === 'locked'">
+              {{ acc.account_status }}
             </span>
-            <span class="badge badge-primary">{{ acc.accountType }}</span>
+            <span class="badge badge-primary">{{ acc.account_type }}</span>
           </div>
         </div>
         <div class="profile-actions">
@@ -52,15 +52,15 @@
             </div>
             <div class="info-item">
               <span class="info-label">Created</span>
-              <span class="info-value">{{ acc.createdAt | date:'MMM d, y — h:mm a' }}</span>
+              <span class="info-value">{{ acc.created_at | date:'MMM d, y — h:mm a' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Last Login</span>
-              <span class="info-value">{{ acc.lastLoginAt ? (acc.lastLoginAt | date:'MMM d, y — h:mm a') : 'Never' }}</span>
+              <span class="info-value">{{ acc.last_login_at ? (acc.last_login_at | date:'MMM d, y — h:mm a') : 'Never' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Last Updated</span>
-              <span class="info-value">{{ acc.updatedAt | date:'MMM d, y — h:mm a' }}</span>
+              <span class="info-value">{{ acc.updated_at | date:'MMM d, y — h:mm a' }}</span>
             </div>
           </div>
         </div>

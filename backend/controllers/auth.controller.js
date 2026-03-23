@@ -13,13 +13,16 @@ const generateCustomerCode = async () => {
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { email, password, fullName, firstName, lastName, phone } = req.body;
+    const { email, password, phone } = req.body;
+    const full_name = req.body.full_name ?? req.body.fullName;
+    const first_name = req.body.first_name ?? req.body.firstName ?? "";
+    const last_name = req.body.last_name ?? req.body.lastName ?? "";
 
     // Required fields check
-    if (!email || !password || !fullName) {
+    if (!email || !password || !full_name) {
       return res.status(400).json({
         success: false,
-        message: "email, password, and fullName are required",
+        message: "email, password, and full_name (or fullName) are required",
       });
     }
 
@@ -34,29 +37,28 @@ const register = async (req, res) => {
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const password_hash = await bcrypt.hash(password, salt);
 
     // Create account
     const account = await Account.create({
       email,
       phone: phone || "",
-      passwordHash,
-      accountType: "customer",
+      password_hash,
+      account_type: "customer",
     });
 
-    // Generate customer code and create customer profile
-    const customerCode = await generateCustomerCode();
+    const customer_code = await generateCustomerCode();
     const customer = await Customer.create({
-      accountId: account._id,
-      customerCode,
-      fullName,
-      firstName: firstName || "",
-      lastName: lastName || "",
+      account_id: account._id,
+      customer_code,
+      full_name,
+      first_name,
+      last_name,
     });
 
     // Generate JWT
     const token = jwt.sign(
-      { accountId: account._id, email: account.email, accountType: account.accountType },
+      { account_id: account._id, email: account.email, account_type: account.account_type },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
@@ -69,12 +71,12 @@ const register = async (req, res) => {
         account: {
           _id: account._id,
           email: account.email,
-          accountType: account.accountType,
+          account_type: account.account_type,
         },
         customer: {
           _id: customer._id,
-          customerCode: customer.customerCode,
-          fullName: customer.fullName,
+          customer_code: customer.customer_code,
+          full_name: customer.full_name,
         },
       },
     });
@@ -111,32 +113,32 @@ const login = async (req, res) => {
     }
 
     // Check account status
-    if (account.accountStatus === "inactive") {
+    if (account.account_status === "inactive") {
       return res.status(403).json({
         success: false,
         message: "Account is inactive",
       });
     }
 
-    if (account.accountStatus === "locked") {
+    if (account.account_status === "locked") {
       // Check if lock has expired
-      if (account.lockedUntil && account.lockedUntil > new Date()) {
+      if (account.locked_until && account.locked_until > new Date()) {
         return res.status(403).json({
           success: false,
           message: "Account is locked. Please try again later",
         });
       }
       // Lock expired, reset status
-      account.accountStatus = "active";
-      account.failedLoginCount = 0;
-      account.lockedUntil = null;
+      account.account_status = "active";
+      account.failed_login_count = 0;
+      account.locked_until = null;
     }
 
     // Compare password
-    const isMatch = await bcrypt.compare(password, account.passwordHash);
+    const isMatch = await bcrypt.compare(password, account.password_hash);
     if (!isMatch) {
       // Increment failed login count
-      account.failedLoginCount += 1;
+      account.failed_login_count += 1;
       await account.save();
 
       return res.status(401).json({
@@ -146,16 +148,16 @@ const login = async (req, res) => {
     }
 
     // Successful login — update tracking fields
-    account.lastLoginAt = new Date();
-    account.failedLoginCount = 0;
+    account.last_login_at = new Date();
+    account.failed_login_count = 0;
     await account.save();
 
     // Get customer info
-    const customer = await Customer.findOne({ accountId: account._id });
+    const customer = await Customer.findOne({ account_id: account._id });
 
     // Generate JWT
     const token = jwt.sign(
-      { accountId: account._id, email: account.email, accountType: account.accountType },
+      { account_id: account._id, email: account.email, account_type: account.account_type },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
@@ -168,14 +170,14 @@ const login = async (req, res) => {
         account: {
           _id: account._id,
           email: account.email,
-          accountType: account.accountType,
-          lastLoginAt: account.lastLoginAt,
+          account_type: account.account_type,
+          last_login_at: account.last_login_at,
         },
         customer: customer
           ? {
               _id: customer._id,
-              customerCode: customer.customerCode,
-              fullName: customer.fullName,
+              customer_code: customer.customer_code,
+              full_name: customer.full_name,
             }
           : null,
       },
@@ -188,12 +190,13 @@ const login = async (req, res) => {
 // GET /api/auth/me (protected)
 const getMe = async (req, res) => {
   try {
-    const account = await Account.findById(req.user.accountId).select("-passwordHash");
+    const id = req.user.account_id || req.user.accountId;
+    const account = await Account.findById(id).select("-password_hash");
     if (!account) {
       return res.status(404).json({ success: false, message: "Account not found" });
     }
 
-    const customer = await Customer.findOne({ accountId: account._id });
+    const customer = await Customer.findOne({ account_id: account._id });
 
     res.status(200).json({
       success: true,

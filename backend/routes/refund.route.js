@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAllRefunds, getRefundById, getRefundsByOrderId, createRefund, updateRefund, deleteRefund } = require("../controllers/refund.controller");
 router.get("/", getAllRefunds);
-router.get("/order/:orderId", getRefundsByOrderId);
+router.get("/order/:order_id", getRefundsByOrderId);
 router.get("/:id", getRefundById);
 router.post("/", createRefund);
 router.put("/:id", updateRefund);

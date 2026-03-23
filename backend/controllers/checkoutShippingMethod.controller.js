@@ -2,14 +2,15 @@ const CheckoutShippingMethod = require("../models/checkoutShippingMethod.model")
 const CheckoutSession = require("../models/checkoutSession.model");
 const ShippingMethod = require("../models/shippingMethod.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { normalizeCheckoutShippingMethodBody } = require("../utils/cartCheckoutNormalize");
 
 // GET /api/checkout-shipping-methods
 const getAllCheckoutShippingMethods = async (req, res) => {
   try {
     const methods = await CheckoutShippingMethod.find()
-      .populate("checkoutSessionId", "checkoutStatus")
-      .populate("shippingMethodId", "shippingMethodCode shippingMethodName")
-      .sort({ createdAt: -1 });
+      .populate("checkout_session_id", "checkout_status")
+      .populate("shipping_method_id", "shipping_method_code shipping_method_name")
+      .sort({ created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -32,8 +33,8 @@ const getCheckoutShippingMethodById = async (req, res) => {
     }
 
     const method = await CheckoutShippingMethod.findById(id)
-      .populate("checkoutSessionId", "checkoutStatus")
-      .populate("shippingMethodId", "shippingMethodCode shippingMethodName");
+      .populate("checkout_session_id", "checkout_status")
+      .populate("shipping_method_id", "shipping_method_code shipping_method_name");
 
     if (!method) {
       return res.status(404).json({ success: false, message: "Checkout shipping method not found" });
@@ -49,18 +50,19 @@ const getCheckoutShippingMethodById = async (req, res) => {
   }
 };
 
-// GET /api/checkout-shipping-methods/session/:checkoutSessionId
+// GET /api/checkout-shipping-methods/session/:checkout_session_id
 const getMethodsBySessionId = async (req, res) => {
   try {
-    const { checkoutSessionId } = req.params;
+    const checkout_session_id =
+      req.params.checkout_session_id ?? req.params.checkoutSessionId;
 
-    if (!validateObjectId(checkoutSessionId)) {
+    if (!validateObjectId(checkout_session_id)) {
       return res.status(400).json({ success: false, message: "Invalid session ID" });
     }
 
-    const methods = await CheckoutShippingMethod.find({ checkoutSessionId })
-      .populate("shippingMethodId", "shippingMethodCode shippingMethodName")
-      .sort({ shippingFeeAmount: 1 });
+    const methods = await CheckoutShippingMethod.find({ checkout_session_id })
+      .populate("shipping_method_id", "shipping_method_code shipping_method_name")
+      .sort({ shipping_fee_amount: 1 });
 
     res.status(200).json({
       success: true,
@@ -76,47 +78,60 @@ const getMethodsBySessionId = async (req, res) => {
 // POST /api/checkout-shipping-methods
 const createCheckoutShippingMethod = async (req, res) => {
   try {
-    const { checkoutSessionId, shippingMethodId, shippingMethodCode, carrierCode, serviceName, isSelected } = req.body;
+    const body = normalizeCheckoutShippingMethodBody(req.body);
+    const {
+      checkout_session_id,
+      shipping_method_id,
+      shipping_method_code,
+      carrier_code,
+      service_name,
+      is_selected,
+    } = body;
 
-    if (!checkoutSessionId || !shippingMethodId || !shippingMethodCode || !carrierCode || !serviceName) {
+    if (
+      !checkout_session_id ||
+      !shipping_method_id ||
+      !shipping_method_code ||
+      !carrier_code ||
+      !service_name
+    ) {
       return res.status(400).json({
         success: false,
-        message: "checkoutSessionId, shippingMethodId, shippingMethodCode, carrierCode, and serviceName are required",
+        message:
+          "checkout_session_id, shipping_method_id, shipping_method_code, carrier_code, and service_name are required",
       });
     }
 
-    if (!validateObjectId(checkoutSessionId)) {
-      return res.status(400).json({ success: false, message: "Invalid checkoutSessionId" });
+    if (!validateObjectId(checkout_session_id)) {
+      return res.status(400).json({ success: false, message: "Invalid checkout_session_id" });
     }
-    if (!validateObjectId(shippingMethodId)) {
-      return res.status(400).json({ success: false, message: "Invalid shippingMethodId" });
+    if (!validateObjectId(shipping_method_id)) {
+      return res.status(400).json({ success: false, message: "Invalid shipping_method_id" });
     }
 
-    const sessionExists = await CheckoutSession.findById(checkoutSessionId);
+    const sessionExists = await CheckoutSession.findById(checkout_session_id);
     if (!sessionExists) {
       return res.status(404).json({ success: false, message: "Checkout session not found" });
     }
 
-    const methodExists = await ShippingMethod.findById(shippingMethodId);
+    const methodExists = await ShippingMethod.findById(shipping_method_id);
     if (!methodExists) {
       return res.status(404).json({ success: false, message: "Shipping method not found" });
     }
 
-    // If isSelected, unselect others in this session
-    if (isSelected === true) {
+    if (is_selected === true) {
       await CheckoutShippingMethod.updateMany(
-        { checkoutSessionId, isSelected: true },
-        { isSelected: false }
+        { checkout_session_id, is_selected: true },
+        { is_selected: false }
       );
     }
 
-    const method = await CheckoutShippingMethod.create(req.body);
+    const method = await CheckoutShippingMethod.create(body);
 
-    // Update session's selected shipping method and fee
-    if (isSelected === true) {
-      await CheckoutSession.findByIdAndUpdate(checkoutSessionId, {
-        selectedShippingMethodId: method._id,
-        shippingFeeAmount: method.shippingFeeAmount || 0,
+    if (is_selected === true) {
+      await CheckoutSession.findByIdAndUpdate(checkout_session_id, {
+        selected_shipping_method_id: method._id,
+        shipping_fee_amount: method.shipping_fee_amount || 0,
       });
     }
 
@@ -134,7 +149,8 @@ const createCheckoutShippingMethod = async (req, res) => {
 const updateCheckoutShippingMethod = async (req, res) => {
   try {
     const { id } = req.params;
-    const { isSelected } = req.body;
+    const body = normalizeCheckoutShippingMethodBody(req.body);
+    const { is_selected } = body;
 
     if (!validateObjectId(id)) {
       return res.status(400).json({ success: false, message: "Invalid ID" });
@@ -145,24 +161,22 @@ const updateCheckoutShippingMethod = async (req, res) => {
       return res.status(404).json({ success: false, message: "Checkout shipping method not found" });
     }
 
-    // If setting as selected, unselect others
-    if (isSelected === true) {
+    if (is_selected === true) {
       await CheckoutShippingMethod.updateMany(
-        { checkoutSessionId: existing.checkoutSessionId, _id: { $ne: id }, isSelected: true },
-        { isSelected: false }
+        { checkout_session_id: existing.checkout_session_id, _id: { $ne: id }, is_selected: true },
+        { is_selected: false }
       );
     }
 
-    const method = await CheckoutShippingMethod.findByIdAndUpdate(id, req.body, {
+    const method = await CheckoutShippingMethod.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
     });
 
-    // Update session ref if selecting
-    if (isSelected === true) {
-      await CheckoutSession.findByIdAndUpdate(method.checkoutSessionId, {
-        selectedShippingMethodId: method._id,
-        shippingFeeAmount: method.shippingFeeAmount || 0,
+    if (is_selected === true) {
+      await CheckoutSession.findByIdAndUpdate(method.checkout_session_id, {
+        selected_shipping_method_id: method._id,
+        shipping_fee_amount: method.shipping_fee_amount || 0,
       });
     }
 

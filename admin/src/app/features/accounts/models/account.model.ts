@@ -1,15 +1,16 @@
+/** Mirrors backend `accounts` collection (snake_case fields from API). */
 export interface Account {
   id: string;
   email: string;
   username: string;
   phone: string;
-  accountType: 'customer' | 'admin' | 'staff';
-  accountStatus: 'active' | 'inactive' | 'locked';
+  account_type: 'customer' | 'admin' | 'staff';
+  account_status: 'active' | 'inactive' | 'locked';
   roleId?: string;
   roleName?: string;
-  lastLoginAt?: string;
-  createdAt: string;
-  updatedAt: string;
+  last_login_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateAccountPayload {
@@ -17,15 +18,15 @@ export interface CreateAccountPayload {
   username: string;
   phone?: string;
   password: string;
-  accountType: 'admin' | 'staff';
+  account_type: 'admin' | 'staff';
   roleId?: string;
-  accountStatus: 'active' | 'inactive';
+  account_status: 'active' | 'inactive';
 }
 
 export interface UpdateAccountPayload {
   username?: string;
   phone?: string;
-  accountType?: 'admin' | 'staff';
+  account_type?: 'admin' | 'staff';
   roleId?: string;
-  accountStatus?: 'active' | 'inactive' | 'locked';
+  account_status?: 'active' | 'inactive' | 'locked';
 }

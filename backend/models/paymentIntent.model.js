@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const paymentIntentSchema = new mongoose.Schema(
   {
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
-    paymentMethodId: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentMethod", default: null },
+    order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
+    payment_method_id: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentMethod", default: null },
     providerCode: { type: String, default: "" },
     providerPaymentIntentId: { type: String, default: "" },
     requestedAmount: { type: Number, required: true, min: 0 },

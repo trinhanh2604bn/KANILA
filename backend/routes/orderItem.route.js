@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAllOrderItems, getOrderItemById, getItemsByOrderId, createOrderItem, updateOrderItem, deleteOrderItem } = require("../controllers/orderItem.controller");
 router.get("/", getAllOrderItems);
-router.get("/order/:orderId", getItemsByOrderId);
+router.get("/order/:order_id", getItemsByOrderId);
 router.get("/:id", getOrderItemById);
 router.post("/", createOrderItem);
 router.put("/:id", updateOrderItem);

@@ -24,15 +24,17 @@ export class CustomersApiService {
     }).pipe(
       map(({ customer, orders }) => {
         const c = this.mapCustomer(customer.data);
-        // Filter orders for this customer
         const custOrders = orders.data
-          .filter(o => (o.customerId?._id || o.customerId) === id)
+          .filter(o => {
+            const cid = o.customer_id?._id || o.customer_id;
+            return String(cid) === id;
+          })
           .map(o => ({
             id: o._id,
-            orderNumber: o.orderNumber,
+            orderNumber: o.order_number ?? o.orderNumber,
             total: 0,
-            status: o.orderStatus,
-            createdAt: o.createdAt,
+            status: o.order_status ?? o.orderStatus,
+            createdAt: o.created_at ?? o.createdAt,
           }));
         c.orders = custOrders;
         c.ordersCount = custOrders.length;
@@ -42,46 +44,45 @@ export class CustomersApiService {
     );
   }
 
-  /** True when the row has something meaningful to show (name, email, or code). */
   private isListable(c: Customer): boolean {
-    const fromParts = [c.firstName, c.lastName].filter(Boolean).join(' ').trim();
-    const name = (c.name || c.fullName || fromParts || '').trim();
+    const fromParts = [c.first_name, c.last_name].filter(Boolean).join(' ').trim();
+    const name = (c.name || c.full_name || fromParts || '').trim();
     const email = (c.email || '').trim();
-    const code = (c.customerCode || '').trim();
+    const code = (c.customer_code || '').trim();
     return !!(name || email || code);
   }
 
-  /** Map backend Customer (with populated accountId) to frontend model */
+  /** Map backend Customer (with populated account_id) to frontend model */
   private mapCustomer(raw: any): Customer {
-    const account = raw.accountId && typeof raw.accountId === 'object' ? raw.accountId : {};
-    const fromParts = [raw.firstName, raw.lastName].filter(Boolean).join(' ').trim();
-    const full = (raw.fullName || '').trim();
+    const account =
+      raw.account_id && typeof raw.account_id === 'object' ? raw.account_id : {};
+    const fromParts = [raw.first_name, raw.last_name].filter(Boolean).join(' ').trim();
+    const full = (raw.full_name || '').trim();
     const displayName =
       full ||
       fromParts ||
-      (raw.customerCode || '').trim() ||
+      (raw.customer_code || '').trim() ||
       (account.email ? String(account.email).split('@')[0] : '') ||
       '';
     return {
       id: String(raw._id),
-      accountId: account._id ? String(account._id) : raw.accountId ? String(raw.accountId) : '',
-      customerCode: raw.customerCode,
-      fullName: raw.fullName,
-      firstName: raw.firstName || '',
-      lastName: raw.lastName || '',
+      accountId: account._id ? String(account._id) : raw.account_id ? String(raw.account_id) : '',
+      customer_code: raw.customer_code,
+      full_name: raw.full_name,
+      first_name: raw.first_name || '',
+      last_name: raw.last_name || '',
       email: account.email || '',
       phone: account.phone || '',
-      avatarUrl: raw.avatarUrl || '',
-      customerStatus: raw.customerStatus || 'active',
+      avatar_url: raw.avatar_url || '',
+      customer_status: raw.customer_status || 'active',
       gender: raw.gender || '',
-      dateOfBirth: raw.dateOfBirth || null,
-      registeredAt: raw.registeredAt || raw.createdAt,
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
-      // UI fields
+      date_of_birth: raw.date_of_birth || null,
+      registered_at: raw.registered_at || raw.created_at,
+      created_at: raw.created_at,
+      updated_at: raw.updated_at,
       name: displayName,
-      status: raw.customerStatus || 'active',
-      segment: 'active', // simplified — no segment data in backend
+      status: raw.customer_status || 'active',
+      segment: 'active',
       behaviorLabel: '',
       totalSpent: 0,
       avgOrderValue: 0,

@@ -40,7 +40,7 @@ export class AccountListPageComponent implements OnInit {
       list = list.filter((a) => a.roleId === this.roleFilter());
     }
     if (this.statusFilter()) {
-      list = list.filter((a) => a.accountStatus === this.statusFilter());
+      list = list.filter((a) => a.account_status === this.statusFilter());
     }
     return list;
   });

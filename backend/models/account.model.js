@@ -1,8 +1,12 @@
 const mongoose = require("mongoose");
 
+/**
+ * Logical match to target `accounts` table.
+ * Primary key: MongoDB `_id` (maps to account_id in relational terms).
+ */
 const accountSchema = new mongoose.Schema(
   {
-    accountType: {
+    account_type: {
       type: String,
       required: [true, "Account type is required"],
       enum: ["customer", "admin", "staff"],
@@ -25,43 +29,52 @@ const accountSchema = new mongoose.Schema(
       default: "",
       trim: true,
       unique: true,
-      sparse: true, // Allow multiple empty/null values
+      sparse: true,
     },
-    passwordHash: {
+    password_hash: {
       type: String,
       required: [true, "Password is required"],
     },
-    accountStatus: {
+    account_status: {
       type: String,
       enum: ["active", "inactive", "locked"],
       default: "active",
     },
-    emailVerifiedAt: {
+    email_verified_at: {
       type: Date,
       default: null,
     },
-    phoneVerifiedAt: {
+    phone_verified_at: {
       type: Date,
       default: null,
     },
-    lastLoginAt: {
+    last_login_at: {
       type: Date,
       default: null,
     },
-    failedLoginCount: {
+    failed_login_count: {
       type: Number,
       default: 0,
     },
-    lockedUntil: {
+    locked_until: {
       type: Date,
       default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    collection: "accounts",
+  }
 );
 
-// Create indexes
 accountSchema.index({ email: 1 }, { unique: true });
 accountSchema.index({ username: 1 }, { unique: true, sparse: true });
+
+/** Expose account_id alongside _id for API symmetry with target schema */
+accountSchema.virtual("account_id").get(function () {
+  return this._id;
+});
+accountSchema.set("toJSON", { virtuals: true });
+accountSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("Account", accountSchema);

@@ -1,18 +1,30 @@
 const mongoose = require("mongoose");
 
+/**
+ * Target: `order_totals` — order_total_id = MongoDB _id
+ */
 const orderTotalSchema = new mongoose.Schema(
   {
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
-    subtotalAmount: { type: Number, default: 0 },
-    itemDiscountAmount: { type: Number, default: 0 },
-    orderDiscountAmount: { type: Number, default: 0 },
-    shippingFeeAmount: { type: Number, default: 0 },
-    taxAmount: { type: Number, default: 0 },
-    grandTotalAmount: { type: Number, default: 0 },
-    refundedAmount: { type: Number, default: 0 },
-    currencyCode: { type: String, default: "VND" },
+    order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true, index: true },
+    subtotal_amount: { type: Number, default: 0 },
+    item_discount_amount: { type: Number, default: 0 },
+    order_discount_amount: { type: Number, default: 0 },
+    shipping_fee_amount: { type: Number, default: 0 },
+    tax_amount: { type: Number, default: 0 },
+    grand_total_amount: { type: Number, default: 0 },
+    refunded_amount: { type: Number, default: 0 },
+    currency_code: { type: String, default: "VND", trim: true },
   },
-  { timestamps: true }
+  {
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
+    collection: "order_totals",
+  }
 );
+
+orderTotalSchema.virtual("order_total_id").get(function () {
+  return this._id;
+});
+orderTotalSchema.set("toJSON", { virtuals: true });
+orderTotalSchema.set("toObject", { virtuals: true });
 
 module.exports = mongoose.model("OrderTotal", orderTotalSchema);

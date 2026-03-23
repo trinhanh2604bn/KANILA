@@ -48,21 +48,21 @@ export class OrdersApiService {
   }
 
   private mapOrder(raw: any): Order {
-    // customerId is populated as { _id, fullName, customerCode, accountId: { email } }
-    const custObj = (raw.customerId && typeof raw.customerId === 'object' && raw.customerId.fullName)
-      ? raw.customerId
-      : (raw.customer_id && typeof raw.customer_id === 'object' && raw.customer_id.fullName)
+    // customer_id populated as { _id, full_name, customer_code, account_id: { email } }
+    const custObj =
+      raw.customer_id && typeof raw.customer_id === 'object'
         ? raw.customer_id
-        : null;
+        : raw.customerId && typeof raw.customerId === 'object'
+          ? raw.customerId
+          : null;
 
-    // Email may be nested in accountId population
-    const customerEmail = custObj?.accountId?.email || custObj?.email || '';
+    const customerEmail = custObj?.account_id?.email || custObj?.email || '';
 
     return {
       id: raw._id || '',
       orderNumber: raw.order_number || raw.orderNumber || '',
       customerId: custObj?._id || raw.customer_id || raw.customerId || '',
-      customerName: custObj?.fullName || custObj?.full_name || '',
+      customerName: custObj?.full_name || custObj?.fullName || '',
       customerEmail,
       customerPhone: '',
       shippingAddress: '',

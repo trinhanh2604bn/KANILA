@@ -10,7 +10,7 @@ const {
 } = require("../controllers/checkoutShippingMethod.controller");
 
 router.get("/", getAllCheckoutShippingMethods);
-router.get("/session/:checkoutSessionId", getMethodsBySessionId);
+router.get("/session/:checkout_session_id", getMethodsBySessionId);
 router.get("/:id", getCheckoutShippingMethodById);
 router.post("/", createCheckoutShippingMethod);
 router.put("/:id", updateCheckoutShippingMethod);

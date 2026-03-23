@@ -1,14 +1,14 @@
 const ORDER_COLL = "orders";
 
 /**
- * Sum grand totals for orders whose placedAt falls in [start, end] (inclusive).
+ * Sum grand totals for orders whose placed_at falls in [start, end] (inclusive).
  */
 async function sumRevenueInRange(OrderTotal, start, end) {
   const rows = await OrderTotal.aggregate([
     {
       $lookup: {
         from: ORDER_COLL,
-        localField: "orderId",
+        localField: "order_id",
         foreignField: "_id",
         as: "ord",
       },
@@ -16,10 +16,10 @@ async function sumRevenueInRange(OrderTotal, start, end) {
     { $unwind: "$ord" },
     {
       $match: {
-        "ord.placedAt": { $gte: start, $lte: end },
+        "ord.placed_at": { $gte: start, $lte: end },
       },
     },
-    { $group: { _id: null, total: { $sum: "$grandTotalAmount" } } },
+    { $group: { _id: null, total: { $sum: "$grand_total_amount" } } },
   ]);
   return rows[0]?.total || 0;
 }
@@ -32,7 +32,7 @@ async function getDailyRevenueSeries(OrderTotal, start, end) {
     {
       $lookup: {
         from: ORDER_COLL,
-        localField: "orderId",
+        localField: "order_id",
         foreignField: "_id",
         as: "ord",
       },
@@ -40,15 +40,15 @@ async function getDailyRevenueSeries(OrderTotal, start, end) {
     { $unwind: "$ord" },
     {
       $match: {
-        "ord.placedAt": { $gte: start, $lte: end },
+        "ord.placed_at": { $gte: start, $lte: end },
       },
     },
     {
       $group: {
         _id: {
-          $dateToString: { format: "%Y-%m-%d", date: "$ord.placedAt" },
+          $dateToString: { format: "%Y-%m-%d", date: "$ord.placed_at" },
         },
-        revenue: { $sum: "$grandTotalAmount" },
+        revenue: { $sum: "$grand_total_amount" },
       },
     },
     { $sort: { _id: 1 } },

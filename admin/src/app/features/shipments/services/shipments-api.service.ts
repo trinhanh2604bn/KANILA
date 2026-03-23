@@ -46,9 +46,11 @@ export class ShipmentsApiService {
   }
 
   private mapShipment(raw: any): Shipment {
+    const ord = raw.order_id ?? raw.orderId;
+    const ordObj = ord && typeof ord === 'object' ? ord : null;
     return {
       id: raw._id,
-      orderId: raw.orderId?._id || raw.orderId || '',
+      orderId: ordObj?._id?.toString?.() ?? ord?.toString?.() ?? '',
       warehouseId: raw.warehouseId || null,
       shipmentNumber: raw.shipmentNumber,
       carrierCode: raw.carrierCode || '',
@@ -68,7 +70,7 @@ export class ShipmentsApiService {
       estimatedDelivery: '',
       events: [],
       failureReason: '',
-      orderNumber: raw.orderId?.orderNumber || '',
+      orderNumber: ordObj?.order_number ?? ordObj?.orderNumber ?? '',
     };
   }
 

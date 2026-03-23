@@ -1,10 +1,11 @@
 const ShippingMethod = require("../models/shippingMethod.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { normalizeShippingMethodBody } = require("../utils/cartCheckoutNormalize");
 
 // GET /api/shipping-methods
 const getAllShippingMethods = async (req, res) => {
   try {
-    const methods = await ShippingMethod.find().sort({ createdAt: -1 });
+    const methods = await ShippingMethod.find().sort({ created_at: -1 });
 
     res.status(200).json({
       success: true,
@@ -45,16 +46,17 @@ const getShippingMethodById = async (req, res) => {
 // POST /api/shipping-methods
 const createShippingMethod = async (req, res) => {
   try {
-    const { shippingMethodCode, shippingMethodName, carrierCode } = req.body;
+    const body = normalizeShippingMethodBody(req.body);
+    const { shipping_method_code, shipping_method_name, carrier_code } = body;
 
-    if (!shippingMethodCode || !shippingMethodName || !carrierCode) {
+    if (!shipping_method_code || !shipping_method_name || !carrier_code) {
       return res.status(400).json({
         success: false,
-        message: "shippingMethodCode, shippingMethodName, and carrierCode are required",
+        message: "shipping_method_code, shipping_method_name, and carrier_code are required",
       });
     }
 
-    const method = await ShippingMethod.create(req.body);
+    const method = await ShippingMethod.create(body);
 
     res.status(201).json({
       success: true,
@@ -78,7 +80,7 @@ const updateShippingMethod = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid shipping method ID" });
     }
 
-    const method = await ShippingMethod.findByIdAndUpdate(id, req.body, {
+    const method = await ShippingMethod.findByIdAndUpdate(id, normalizeShippingMethodBody(req.body), {
       new: true,
       runValidators: true,
     });

@@ -7,12 +7,12 @@ const couponRedemptionSchema = new mongoose.Schema(
       ref: "Coupon",
       required: [true, "Coupon ID is required"],
     },
-    customerId: {
+    customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: [true, "Customer ID is required"],
     },
-    orderId: {
+    order_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       default: null,

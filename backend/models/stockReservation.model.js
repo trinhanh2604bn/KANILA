@@ -12,17 +12,17 @@ const stockReservationSchema = new mongoose.Schema(
       ref: "ProductVariant",
       required: [true, "Variant ID is required"],
     },
-    cartId: {
+    cart_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Cart",
       default: null,
     },
-    checkoutSessionId: {
+    checkout_session_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CheckoutSession",
       default: null,
     },
-    orderId: {
+    order_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       default: null,

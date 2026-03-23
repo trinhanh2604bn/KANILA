@@ -16,20 +16,20 @@ async function seedAdmin() {
 
     let account = await Account.findOne({ email });
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const password_hash = await bcrypt.hash(password, salt);
 
     if (account) {
-      account.passwordHash = passwordHash;
-      account.accountType = "admin";
-      account.accountStatus = "active";
+      account.password_hash = password_hash;
+      account.account_type = "admin";
+      account.account_status = "active";
       await account.save();
       console.log("Admin account updated.");
     } else {
       account = await Account.create({
         email,
-        passwordHash,
-        accountType: "admin",
-        accountStatus: "active",
+        password_hash,
+        account_type: "admin",
+        account_status: "active",
         username: "Kanila Admin",
       });
       console.log("Admin account created.");

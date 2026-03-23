@@ -38,20 +38,20 @@ export class AccountsApiService {
   toggleStatus(id: string): Observable<Account> {
     return this.http.get<ApiResponse<any>>(`${URL}/${id}`).pipe(
       switchMap((res) => {
-        const current = res.data.accountStatus as Account['accountStatus'];
-        const next: Account['accountStatus'] =
+        const current = res.data.account_status as Account['account_status'];
+        const next: Account['account_status'] =
           current === 'active' ? 'inactive' : 'active';
-        return this.update(id, { accountStatus: next });
+        return this.update(id, { account_status: next });
       })
     );
   }
 
   lockAccount(id: string): Observable<Account> {
-    return this.update(id, { accountStatus: 'locked' } as any);
+    return this.update(id, { account_status: 'locked' } as any);
   }
 
   unlockAccount(id: string): Observable<Account> {
-    return this.update(id, { accountStatus: 'active' } as any);
+    return this.update(id, { account_status: 'active' } as any);
   }
 
   private mapAccount(raw: any): Account {
@@ -60,13 +60,13 @@ export class AccountsApiService {
       email: raw.email,
       username: raw.username || raw.email,
       phone: raw.phone || '',
-      accountType: raw.accountType,
-      accountStatus: raw.accountStatus,
+      account_type: raw.account_type,
+      account_status: raw.account_status,
       roleId: '',
-      roleName: raw.accountType,
-      lastLoginAt: raw.lastLoginAt || undefined,
-      createdAt: raw.createdAt,
-      updatedAt: raw.updatedAt,
+      roleName: raw.account_type,
+      last_login_at: raw.last_login_at || undefined,
+      created_at: raw.created_at,
+      updated_at: raw.updated_at,
     };
   }
 }

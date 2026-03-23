@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAllPaymentIntents, getPaymentIntentById, getIntentsByOrderId, createPaymentIntent, updatePaymentIntent, deletePaymentIntent } = require("../controllers/paymentIntent.controller");
 router.get("/", getAllPaymentIntents);
-router.get("/order/:orderId", getIntentsByOrderId);
+router.get("/order/:order_id", getIntentsByOrderId);
 router.get("/:id", getPaymentIntentById);
 router.post("/", createPaymentIntent);
 router.put("/:id", updatePaymentIntent);

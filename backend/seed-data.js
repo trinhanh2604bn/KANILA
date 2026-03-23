@@ -14,6 +14,9 @@ const Product = require("./models/product.model");
 const ProductMedia = require("./models/productMedia.model");
 const Account = require("./models/account.model");
 const Customer = require("./models/customer.model");
+const Address = require("./models/address.model");
+const CustomerConsent = require("./models/customerConsent.model");
+const CustomerPreference = require("./models/customerPreference.model");
 const Order = require("./models/order.model");
 const OrderItem = require("./models/orderItem.model");
 const OrderTotal = require("./models/orderTotal.model");
@@ -86,49 +89,79 @@ const productsTemplate = [
 
 // ─── ACCOUNTS (staff/admin) ──────────────────────────────
 const accountsData = [
-  { email: "nguyenthithanh@kanila.vn", username: "thanhnguyen", phone: "0901234567", accountType: "admin", accountStatus: "active" },
-  { email: "tranthimai@kanila.vn", username: "maitran", phone: "0912345678", accountType: "staff", accountStatus: "active" },
-  { email: "lehoanganh@kanila.vn", username: "anhle", phone: "0923456789", accountType: "staff", accountStatus: "active" },
-  { email: "phamminhtuan@kanila.vn", username: "tuanpham", phone: "0934567890", accountType: "staff", accountStatus: "active" },
-  { email: "vothikimchi@kanila.vn", username: "chivo", phone: "0945678901", accountType: "staff", accountStatus: "inactive" },
+  { email: "nguyenthithanh@kanila.vn", username: "thanhnguyen", phone: "0901234567", account_type: "admin", account_status: "active" },
+  { email: "tranthimai@kanila.vn", username: "maitran", phone: "0912345678", account_type: "staff", account_status: "active" },
+  { email: "lehoanganh@kanila.vn", username: "anhle", phone: "0923456789", account_type: "staff", account_status: "active" },
+  { email: "phamminhtuan@kanila.vn", username: "tuanpham", phone: "0934567890", account_type: "staff", account_status: "active" },
+  { email: "vothikimchi@kanila.vn", username: "chivo", phone: "0945678901", account_type: "staff", account_status: "inactive" },
 ];
 
 // ─── CUSTOMER ACCOUNTS ───────────────────────────────────
 const customerAccountsData = [
-  { email: "lethihuong@gmail.com", username: "huongle", phone: "0356789012", accountType: "customer", accountStatus: "active" },
-  { email: "nguyenvantung@gmail.com", username: "tungnguyen", phone: "0367890123", accountType: "customer", accountStatus: "active" },
-  { email: "tranthimy@gmail.com", username: "mytran", phone: "0378901234", accountType: "customer", accountStatus: "active" },
-  { email: "phamthilan@gmail.com", username: "lanpham", phone: "0389012345", accountType: "customer", accountStatus: "active" },
-  { email: "hoangthithao@gmail.com", username: "thaohoang", phone: "0390123456", accountType: "customer", accountStatus: "active" },
-  { email: "dangvanduc@gmail.com", username: "ducdang", phone: "0812345678", accountType: "customer", accountStatus: "active" },
-  { email: "buithikim@gmail.com", username: "kimbui", phone: "0823456789", accountType: "customer", accountStatus: "active" },
-  { email: "ngothanhson@gmail.com", username: "sonngo", phone: "0834567890", accountType: "customer", accountStatus: "active" },
-  { email: "vuthiyen@gmail.com", username: "yenvu", phone: "0845678901", accountType: "customer", accountStatus: "active" },
-  { email: "dothibich@gmail.com", username: "bichdo", phone: "0856789012", accountType: "customer", accountStatus: "active" },
-  { email: "lynguyen@gmail.com", username: "lyng", phone: "0867890123", accountType: "customer", accountStatus: "active" },
-  { email: "tranminhanh@gmail.com", username: "anhtranm", phone: "0878901234", accountType: "customer", accountStatus: "active" },
-  { email: "lehoaiphuong@gmail.com", username: "phuongle", phone: "0889012345", accountType: "customer", accountStatus: "active" },
-  { email: "nguyenthithuy@outlook.com", username: "thuynguyen", phone: "0890123456", accountType: "customer", accountStatus: "active" },
-  { email: "phamquocviet@gmail.com", username: "vietpham", phone: "0701234567", accountType: "customer", accountStatus: "active" },
+  { email: "lethihuong@gmail.com", username: "huongle", phone: "0356789012", account_type: "customer", account_status: "active" },
+  { email: "nguyenvantung@gmail.com", username: "tungnguyen", phone: "0367890123", account_type: "customer", account_status: "active" },
+  { email: "tranthimy@gmail.com", username: "mytran", phone: "0378901234", account_type: "customer", account_status: "active" },
+  { email: "phamthilan@gmail.com", username: "lanpham", phone: "0389012345", account_type: "customer", account_status: "active" },
+  { email: "hoangthithao@gmail.com", username: "thaohoang", phone: "0390123456", account_type: "customer", account_status: "active" },
+  { email: "dangvanduc@gmail.com", username: "ducdang", phone: "0812345678", account_type: "customer", account_status: "active" },
+  { email: "buithikim@gmail.com", username: "kimbui", phone: "0823456789", account_type: "customer", account_status: "active" },
+  { email: "ngothanhson@gmail.com", username: "sonngo", phone: "0834567890", account_type: "customer", account_status: "active" },
+  { email: "vuthiyen@gmail.com", username: "yenvu", phone: "0845678901", account_type: "customer", account_status: "active" },
+  { email: "dothibich@gmail.com", username: "bichdo", phone: "0856789012", account_type: "customer", account_status: "active" },
+  { email: "lynguyen@gmail.com", username: "lyng", phone: "0867890123", account_type: "customer", account_status: "active" },
+  { email: "tranminhanh@gmail.com", username: "anhtranm", phone: "0878901234", account_type: "customer", account_status: "active" },
+  { email: "lehoaiphuong@gmail.com", username: "phuongle", phone: "0889012345", account_type: "customer", account_status: "active" },
+  { email: "nguyenthithuy@outlook.com", username: "thuynguyen", phone: "0890123456", account_type: "customer", account_status: "active" },
+  { email: "phamquocviet@gmail.com", username: "vietpham", phone: "0701234567", account_type: "customer", account_status: "active" },
+  { email: "nguyenvankhoi@gmail.com", username: "khoinguyen", phone: "0712345678", account_type: "customer", account_status: "active" },
+  { email: "tranthingoc@gmail.com", username: "ngoctran", phone: "0723456789", account_type: "customer", account_status: "active" },
+  { email: "leminhtuan@gmail.com", username: "tuanle", phone: "0734567890", account_type: "customer", account_status: "active" },
+  { email: "phamthihai@gmail.com", username: "haipham", phone: "0745678901", account_type: "customer", account_status: "active" },
+  { email: "hoangducanh@gmail.com", username: "anhhoang", phone: "0756789012", account_type: "customer", account_status: "active" },
+  { email: "vuthilinh@gmail.com", username: "linhvu", phone: "0767890123", account_type: "customer", account_status: "active" },
+  { email: "doquanghuy@gmail.com", username: "huydo", phone: "0778901234", account_type: "customer", account_status: "active" },
+  { email: "buithimai@gmail.com", username: "maibui", phone: "0789012345", account_type: "customer", account_status: "active" },
+  { email: "ngovantam@gmail.com", username: "tamngo", phone: "0790123456", account_type: "customer", account_status: "active" },
+  { email: "vothihanh@gmail.com", username: "hanhvo", phone: "0601234567", account_type: "customer", account_status: "active" },
+  { email: "dangthinga@gmail.com", username: "ngadang", phone: "0612345678", account_type: "customer", account_status: "active" },
+  { email: "lyvanhung@gmail.com", username: "hungly", phone: "0623456789", account_type: "customer", account_status: "active" },
+  { email: "tranthitrang@gmail.com", username: "trangtran", phone: "0634567890", account_type: "customer", account_status: "active" },
+  { email: "phamthihoa@gmail.com", username: "hoapham", phone: "0645678901", account_type: "customer", account_status: "active" },
+  { email: "nguyenthiquynh@gmail.com", username: "quynhnguyen", phone: "0656789012", account_type: "customer", account_status: "active" },
 ];
 
 // ─── CUSTOMERS (full name + profile) ─────────────────────
 const customersTemplate = [
-  { firstName: "Lê", lastName: "Thị Hương", fullName: "Lê Thị Hương", customerCode: "KNL-C0001", gender: "female", dateOfBirth: new Date("1995-03-15") },
-  { firstName: "Nguyễn", lastName: "Văn Tùng", fullName: "Nguyễn Văn Tùng", customerCode: "KNL-C0002", gender: "male", dateOfBirth: new Date("1990-07-22") },
-  { firstName: "Trần", lastName: "Thị Mỹ", fullName: "Trần Thị Mỹ", customerCode: "KNL-C0003", gender: "female", dateOfBirth: new Date("1998-11-08") },
-  { firstName: "Phạm", lastName: "Thị Lan", fullName: "Phạm Thị Lan", customerCode: "KNL-C0004", gender: "female", dateOfBirth: new Date("1992-01-30") },
-  { firstName: "Hoàng", lastName: "Thị Thảo", fullName: "Hoàng Thị Thảo", customerCode: "KNL-C0005", gender: "female", dateOfBirth: new Date("1997-05-12") },
-  { firstName: "Đặng", lastName: "Văn Đức", fullName: "Đặng Văn Đức", customerCode: "KNL-C0006", gender: "male", dateOfBirth: new Date("1988-09-25") },
-  { firstName: "Bùi", lastName: "Thị Kim", fullName: "Bùi Thị Kim", customerCode: "KNL-C0007", gender: "female", dateOfBirth: new Date("2000-12-03") },
-  { firstName: "Ngô", lastName: "Thanh Sơn", fullName: "Ngô Thanh Sơn", customerCode: "KNL-C0008", gender: "male", dateOfBirth: new Date("1993-04-18") },
-  { firstName: "Vũ", lastName: "Thị Yến", fullName: "Vũ Thị Yến", customerCode: "KNL-C0009", gender: "female", dateOfBirth: new Date("1996-08-07") },
-  { firstName: "Đỗ", lastName: "Thị Bích", fullName: "Đỗ Thị Bích", customerCode: "KNL-C0010", gender: "female", dateOfBirth: new Date("1994-02-14") },
-  { firstName: "Lý", lastName: "Nguyên", fullName: "Lý Nguyên", customerCode: "KNL-C0011", gender: "male", dateOfBirth: new Date("1991-06-28") },
-  { firstName: "Trần", lastName: "Minh Anh", fullName: "Trần Minh Anh", customerCode: "KNL-C0012", gender: "female", dateOfBirth: new Date("1999-10-11") },
-  { firstName: "Lê", lastName: "Hoài Phương", fullName: "Lê Hoài Phương", customerCode: "KNL-C0013", gender: "female", dateOfBirth: new Date("1997-07-04") },
-  { firstName: "Nguyễn", lastName: "Thị Thuỷ", fullName: "Nguyễn Thị Thuỷ", customerCode: "KNL-C0014", gender: "female", dateOfBirth: new Date("2001-03-20") },
-  { firstName: "Phạm", lastName: "Quốc Việt", fullName: "Phạm Quốc Việt", customerCode: "KNL-C0015", gender: "male", dateOfBirth: new Date("1989-11-16") },
+  { first_name: "Lê", last_name: "Thị Hương", full_name: "Lê Thị Hương", customer_code: "KNL-C0001", gender: "female", date_of_birth: new Date("1995-03-15") },
+  { first_name: "Nguyễn", last_name: "Văn Tùng", full_name: "Nguyễn Văn Tùng", customer_code: "KNL-C0002", gender: "male", date_of_birth: new Date("1990-07-22") },
+  { first_name: "Trần", last_name: "Thị Mỹ", full_name: "Trần Thị Mỹ", customer_code: "KNL-C0003", gender: "female", date_of_birth: new Date("1998-11-08") },
+  { first_name: "Phạm", last_name: "Thị Lan", full_name: "Phạm Thị Lan", customer_code: "KNL-C0004", gender: "female", date_of_birth: new Date("1992-01-30") },
+  { first_name: "Hoàng", last_name: "Thị Thảo", full_name: "Hoàng Thị Thảo", customer_code: "KNL-C0005", gender: "female", date_of_birth: new Date("1997-05-12") },
+  { first_name: "Đặng", last_name: "Văn Đức", full_name: "Đặng Văn Đức", customer_code: "KNL-C0006", gender: "male", date_of_birth: new Date("1988-09-25") },
+  { first_name: "Bùi", last_name: "Thị Kim", full_name: "Bùi Thị Kim", customer_code: "KNL-C0007", gender: "female", date_of_birth: new Date("2000-12-03") },
+  { first_name: "Ngô", last_name: "Thanh Sơn", full_name: "Ngô Thanh Sơn", customer_code: "KNL-C0008", gender: "male", date_of_birth: new Date("1993-04-18") },
+  { first_name: "Vũ", last_name: "Thị Yến", full_name: "Vũ Thị Yến", customer_code: "KNL-C0009", gender: "female", date_of_birth: new Date("1996-08-07") },
+  { first_name: "Đỗ", last_name: "Thị Bích", full_name: "Đỗ Thị Bích", customer_code: "KNL-C0010", gender: "female", date_of_birth: new Date("1994-02-14") },
+  { first_name: "Lý", last_name: "Nguyên", full_name: "Lý Nguyên", customer_code: "KNL-C0011", gender: "male", date_of_birth: new Date("1991-06-28") },
+  { first_name: "Trần", last_name: "Minh Anh", full_name: "Trần Minh Anh", customer_code: "KNL-C0012", gender: "female", date_of_birth: new Date("1999-10-11") },
+  { first_name: "Lê", last_name: "Hoài Phương", full_name: "Lê Hoài Phương", customer_code: "KNL-C0013", gender: "female", date_of_birth: new Date("1997-07-04") },
+  { first_name: "Nguyễn", last_name: "Thị Thuỷ", full_name: "Nguyễn Thị Thuỷ", customer_code: "KNL-C0014", gender: "female", date_of_birth: new Date("2001-03-20") },
+  { first_name: "Phạm", last_name: "Quốc Việt", full_name: "Phạm Quốc Việt", customer_code: "KNL-C0015", gender: "male", date_of_birth: new Date("1989-11-16") },
+  { first_name: "Nguyễn", last_name: "Văn Khôi", full_name: "Nguyễn Văn Khôi", customer_code: "KNL-C0016", gender: "male", date_of_birth: new Date("1992-04-09") },
+  { first_name: "Trần", last_name: "Thị Ngọc", full_name: "Trần Thị Ngọc", customer_code: "KNL-C0017", gender: "female", date_of_birth: new Date("1996-12-01") },
+  { first_name: "Lê", last_name: "Minh Tuấn", full_name: "Lê Minh Tuấn", customer_code: "KNL-C0018", gender: "male", date_of_birth: new Date("1987-08-19") },
+  { first_name: "Phạm", last_name: "Thị Hải", full_name: "Phạm Thị Hải", customer_code: "KNL-C0019", gender: "female", date_of_birth: new Date("1994-02-27") },
+  { first_name: "Hoàng", last_name: "Đức Anh", full_name: "Hoàng Đức Anh", customer_code: "KNL-C0020", gender: "male", date_of_birth: new Date("1991-10-05") },
+  { first_name: "Vũ", last_name: "Thị Linh", full_name: "Vũ Thị Linh", customer_code: "KNL-C0021", gender: "female", date_of_birth: new Date("1999-06-14") },
+  { first_name: "Đỗ", last_name: "Quang Huy", full_name: "Đỗ Quang Huy", customer_code: "KNL-C0022", gender: "male", date_of_birth: new Date("1993-01-22") },
+  { first_name: "Bùi", last_name: "Thị Mai", full_name: "Bùi Thị Mai", customer_code: "KNL-C0023", gender: "female", date_of_birth: new Date("1998-07-30") },
+  { first_name: "Ngô", last_name: "Văn Tâm", full_name: "Ngô Văn Tâm", customer_code: "KNL-C0024", gender: "male", date_of_birth: new Date("1986-05-11") },
+  { first_name: "Võ", last_name: "Thị Hạnh", full_name: "Võ Thị Hạnh", customer_code: "KNL-C0025", gender: "female", date_of_birth: new Date("2000-09-08") },
+  { first_name: "Đặng", last_name: "Thị Nga", full_name: "Đặng Thị Nga", customer_code: "KNL-C0026", gender: "female", date_of_birth: new Date("1995-03-25") },
+  { first_name: "Lý", last_name: "Văn Hùng", full_name: "Lý Văn Hùng", customer_code: "KNL-C0027", gender: "male", date_of_birth: new Date("1990-11-03") },
+  { first_name: "Trần", last_name: "Thị Trang", full_name: "Trần Thị Trang", customer_code: "KNL-C0028", gender: "female", date_of_birth: new Date("1997-04-17") },
+  { first_name: "Phạm", last_name: "Thị Hoa", full_name: "Phạm Thị Hoa", customer_code: "KNL-C0029", gender: "female", date_of_birth: new Date("1992-08-29") },
+  { first_name: "Nguyễn", last_name: "Thị Quỳnh", full_name: "Nguyễn Thị Quỳnh", customer_code: "KNL-C0030", gender: "female", date_of_birth: new Date("1994-12-20") },
 ];
 
 // ─── PROMOTIONS ───────────────────────────────────────────
@@ -153,6 +186,19 @@ const couponsTemplate = [
   { couponCode: "SKINLOVE", promoIdx: 5, validFrom: new Date("2026-04-01"), validTo: new Date("2026-04-30"), usageLimitTotal: 150, usageLimitPerCustomer: 1, minOrderAmount: 250000, couponStatus: "active" },
 ];
 
+// ─── ADDRESS LOCATIONS (customer_addresses seed) ──────────
+/** Vietnamese address rows for seeding `customer_addresses` (rotate by customer index). */
+const ADDRESS_LOCATIONS = [
+  { city: "Thành phố Hồ Chí Minh", district: "Quận 1", ward: "Phường Bến Nghé", line1: "123 Lê Lợi", line2: "", postal: "700000" },
+  { city: "Thành phố Hồ Chí Minh", district: "Quận 3", ward: "Phường 6", line1: "45 Nguyễn Thị Minh Khai", line2: "Căn hộ 3B", postal: "700000" },
+  { city: "Hà Nội", district: "Quận Ba Đình", ward: "Phường Điện Biên", line1: "78 Hoàng Diệu", line2: "", postal: "100000" },
+  { city: "Đà Nẵng", district: "Quận Hải Châu", ward: "Phường Thạch Thang", line1: "12 Trần Phú", line2: "", postal: "550000" },
+  { city: "Cần Thơ", district: "Quận Ninh Kiều", ward: "Phường Tân An", line1: "56 Nguyễn Văn Cừ", line2: "", postal: "940000" },
+  { city: "Hải Phòng", district: "Quận Ngô Quyền", ward: "Phường Máy Chai", line1: "9 Lạch Tray", line2: "", postal: "180000" },
+  { city: "Thành phố Hồ Chí Minh", district: "Quận 7", ward: "Phường Tân Phú", line1: "210 Nguyễn Thị Thập", line2: "Khu đô thị", postal: "700000" },
+  { city: "Thành phố Hồ Chí Minh", district: "Thủ Đức", ward: "Phường Linh Trung", line1: "88 Võ Văn Ngân", line2: "", postal: "700000" },
+];
+
 // ─── REVIEW TEMPLATES ─────────────────────────────────────
 const reviewTemplates = [
   { rating: 5, reviewTitle: "Sản phẩm tuyệt vời!", reviewContent: "Dùng rồi da mình thay đổi hẳn, mềm mịn hơn nhiều. Sẽ mua lại!", reviewStatus: "approved" },
@@ -175,12 +221,25 @@ async function seed() {
     await mongoose.connect(MONGO_URI);
     console.log("✅ Connected to MongoDB Atlas");
 
+    // Legacy DBs may have a unique index on `order_number` while the app uses `orderNumber`;
+    // multiple docs with null `order_number` violate that index — drop before re-seeding.
+    try {
+      await mongoose.connection.collection("orders").dropIndex("order_number_1");
+      console.log("  🗑️  Dropped legacy index orders.order_number_1");
+    } catch {
+      /* index missing — OK */
+    }
+
     // --- Clean existing data (optional — keeps ngan@gmail.com admin) ---
     const collections = [
       "brands",
       "categories",
       "productmedias",
       "products",
+      "customer_addresses",
+      "customer_consents",
+      "customer_preferences",
+      "customer_profiles",
       "customers",
       "orders",
       "orderitems",
@@ -247,28 +306,46 @@ async function seed() {
     console.log(`✅ Inserted ${productMediaPayload.length} product media rows and synced imageUrl`);
 
     // 4. STAFF/ADMIN ACCOUNTS (skip duplicates)
-    const passwordHash = await bcrypt.hash("kanila2026", 10);
+    const password_hash = await bcrypt.hash("kanila2026", 10);
     const staffAccounts = [];
     for (const a of accountsData) {
       const existing = await Account.findOne({ email: a.email });
       if (existing) {
         staffAccounts.push(existing);
       } else {
-        const acc = await Account.create({ ...a, passwordHash, emailVerifiedAt: new Date(), lastLoginAt: new Date(Date.now() - Math.random() * 7 * 86400000) });
+        const acc = await Account.create({
+          email: a.email,
+          username: a.username,
+          phone: a.phone,
+          account_type: a.account_type,
+          account_status: a.account_status,
+          password_hash,
+          email_verified_at: new Date(),
+          last_login_at: new Date(Date.now() - Math.random() * 7 * 86400000),
+        });
         staffAccounts.push(acc);
       }
     }
     console.log(`✅ Created/found ${staffAccounts.length} staff accounts`);
 
     // 5. CUSTOMER ACCOUNTS
-    const custPasswordHash = await bcrypt.hash("khachhang123", 10);
+    const cust_password_hash = await bcrypt.hash("khachhang123", 10);
     const custAccounts = [];
     for (const a of customerAccountsData) {
       const existing = await Account.findOne({ email: a.email });
       if (existing) {
         custAccounts.push(existing);
       } else {
-        const acc = await Account.create({ ...a, passwordHash: custPasswordHash, emailVerifiedAt: new Date(), lastLoginAt: new Date(Date.now() - Math.random() * 30 * 86400000) });
+        const acc = await Account.create({
+          email: a.email,
+          username: a.username,
+          phone: a.phone,
+          account_type: a.account_type,
+          account_status: a.account_status,
+          password_hash: cust_password_hash,
+          email_verified_at: new Date(),
+          last_login_at: new Date(Date.now() - Math.random() * 30 * 86400000),
+        });
         custAccounts.push(acc);
       }
     }
@@ -277,20 +354,121 @@ async function seed() {
     // 6. CUSTOMERS
     const customers = [];
     for (let i = 0; i < customersTemplate.length; i++) {
-      const existing = await Customer.findOne({ customerCode: customersTemplate[i].customerCode });
+      const existing = await Customer.findOne({ customer_code: customersTemplate[i].customer_code });
       if (existing) {
         customers.push(existing);
       } else {
         const cust = await Customer.create({
           ...customersTemplate[i],
-          accountId: custAccounts[i]._id,
-          customerStatus: "active",
-          registeredAt: new Date(Date.now() - Math.random() * 180 * 86400000),
+          account_id: custAccounts[i]._id,
+          customer_status: "active",
+          registered_at: new Date(Date.now() - Math.random() * 180 * 86400000),
         });
         customers.push(cust);
       }
     }
     console.log(`✅ Created/found ${customers.length} customers`);
+
+    // 6b. ADDRESSES, CONSENTS & PREFERENCES (per customer — matches current models / admin UI)
+    const addressDocs = [];
+    const consentDocs = [];
+    const preferenceDocs = [];
+    for (let i = 0; i < customers.length; i++) {
+      const c = customers[i];
+      const acc = custAccounts[i];
+      const loc = ADDRESS_LOCATIONS[i % ADDRESS_LOCATIONS.length];
+      const phone = acc.phone || "0900000000";
+
+      addressDocs.push({
+        customer_id: c._id,
+        address_label: "Nhà riêng",
+        recipient_name: c.full_name,
+        phone,
+        address_line_1: loc.line1,
+        address_line_2: loc.line2 || "",
+        ward: loc.ward,
+        district: loc.district,
+        city: loc.city,
+        country_code: "VN",
+        postal_code: loc.postal,
+        is_default_shipping: true,
+        is_default_billing: true,
+      });
+
+      if (i % 2 === 0) {
+        addressDocs.push({
+          customer_id: c._id,
+          address_label: "Văn phòng",
+          recipient_name: c.full_name,
+          phone,
+          address_line_1: `Tầng 3 — ${loc.line1}`,
+          address_line_2: "Phòng nhận hàng",
+          ward: loc.ward,
+          district: loc.district,
+          city: loc.city,
+          country_code: "VN",
+          postal_code: loc.postal,
+          is_default_shipping: false,
+          is_default_billing: false,
+        });
+      }
+
+      const baseConsentAt = new Date(Date.now() - (30 + i) * 86400000);
+      consentDocs.push(
+        {
+          customer_id: c._id,
+          consent_type: "terms_of_service",
+          consent_status: "granted",
+          consent_version: "1.0",
+          consented_at: baseConsentAt,
+          source_channel: "web",
+          created_at: baseConsentAt,
+        },
+        {
+          customer_id: c._id,
+          consent_type: "privacy_policy",
+          consent_status: "granted",
+          consent_version: "2.0",
+          consented_at: baseConsentAt,
+          source_channel: "web",
+          created_at: baseConsentAt,
+        },
+        {
+          customer_id: c._id,
+          consent_type: "marketing_email",
+          consent_status: i % 5 === 0 ? "withdrawn" : "granted",
+          consent_version: "1.0",
+          consented_at: new Date(baseConsentAt.getTime() + 86400000),
+          source_channel: i % 3 === 0 ? "mobile_app" : "web",
+          created_at: new Date(),
+        }
+      );
+
+      const nowPref = new Date();
+      preferenceDocs.push(
+        { customer_id: c._id, preference_key: "locale", preference_value: "vi-VN", updated_at: nowPref },
+        { customer_id: c._id, preference_key: "currency", preference_value: "VND", updated_at: nowPref },
+        {
+          customer_id: c._id,
+          preference_key: "newsletter",
+          preference_value: i % 4 === 0 ? "false" : "true",
+          updated_at: nowPref,
+        },
+        {
+          customer_id: c._id,
+          preference_key: "theme",
+          preference_value: i % 2 === 0 ? "light" : "dark",
+          updated_at: nowPref,
+        }
+      );
+    }
+
+    const insertedAddresses = await Address.insertMany(addressDocs);
+    const insertedConsents = await CustomerConsent.insertMany(consentDocs);
+    const insertedPreferences = await CustomerPreference.insertMany(preferenceDocs);
+    console.log(
+      `✅ Inserted ${insertedAddresses.length} addresses, ${insertedConsents.length} consents, ${insertedPreferences.length} preferences`
+    );
 
     // 7. PROMOTIONS
     const promotions = await Promotion.insertMany(
@@ -326,15 +504,17 @@ async function seed() {
       const orderNum = `KNL${String(2026031000 + i)}`;
 
       const order = await Order.create({
-        orderNumber: orderNum,
-        customerId: customers[custIdx]._id,
-        orderStatus: orderStatuses[statusIdx],
-        paymentStatus: paymentStatuses[statusIdx],
-        fulfillmentStatus: orderStatuses[statusIdx] === "completed" ? "fulfilled" : "unfulfilled",
-        placedAt,
-        confirmedAt: ["confirmed", "processing", "completed"].includes(orderStatuses[statusIdx]) ? new Date(placedAt.getTime() + 3600000) : null,
-        currencyCode: "VND",
-        customerNote: i % 3 === 0 ? "Giao giờ hành chính" : "",
+        order_number: orderNum,
+        customer_id: customers[custIdx]._id,
+        order_status: orderStatuses[statusIdx],
+        payment_status: paymentStatuses[statusIdx],
+        fulfillment_status: orderStatuses[statusIdx] === "completed" ? "fulfilled" : "unfulfilled",
+        placed_at: placedAt,
+        confirmed_at: ["confirmed", "processing", "completed"].includes(orderStatuses[statusIdx])
+          ? new Date(placedAt.getTime() + 3600000)
+          : null,
+        currency_code: "VND",
+        customer_note: i % 3 === 0 ? "Giao giờ hành chính" : "",
       });
       orders.push(order);
 
@@ -349,49 +529,54 @@ async function seed() {
         subtotal += lineTotal;
 
         await OrderItem.create({
-          orderId: order._id,
-          productId: products[prodIdx]._id,
-          variantId: products[prodIdx]._id, // using productId as placeholder for variant
-          skuSnapshot: products[prodIdx].productCode,
-          productNameSnapshot: products[prodIdx].productName,
-          variantNameSnapshot: "Mặc định",
+          order_id: order._id,
+          product_id: products[prodIdx]._id,
+          variant_id: products[prodIdx]._id, // using product id as placeholder for variant
+          sku_snapshot: products[prodIdx].productCode,
+          product_name_snapshot: products[prodIdx].productName,
+          variant_name_snapshot: "Mặc định",
           quantity: qty,
-          unitListPriceAmount: unitPrice,
-          unitSalePriceAmount: unitPrice,
-          unitFinalPriceAmount: unitPrice,
-          lineSubtotalAmount: lineTotal,
-          lineDiscountAmount: 0,
-          lineTotalAmount: lineTotal,
+          unit_list_price_amount: unitPrice,
+          unit_sale_price_amount: unitPrice,
+          unit_final_price_amount: unitPrice,
+          line_subtotal_amount: lineTotal,
+          line_discount_amount: 0,
+          line_total_amount: lineTotal,
+          currency_code: "VND",
         });
       }
 
       const shippingFee = subtotal >= 500000 ? 0 : 30000;
       await OrderTotal.create({
-        orderId: order._id,
-        subtotalAmount: subtotal,
-        itemDiscountAmount: 0,
-        orderDiscountAmount: 0,
-        shippingFeeAmount: shippingFee,
-        taxAmount: 0,
-        grandTotalAmount: subtotal + shippingFee,
+        order_id: order._id,
+        subtotal_amount: subtotal,
+        item_discount_amount: 0,
+        order_discount_amount: 0,
+        shipping_fee_amount: shippingFee,
+        tax_amount: 0,
+        grand_total_amount: subtotal + shippingFee,
+        currency_code: "VND",
       });
     }
     console.log(`✅ Inserted ${orders.length} orders with items and totals`);
 
     // 10. SHIPMENTS
-    const shippedOrders = orders.filter(o => ["confirmed", "processing", "completed"].includes(o.orderStatus));
+    const shippedOrders = orders.filter(o => ["confirmed", "processing", "completed"].includes(o.order_status));
     const carriers = ["GHTK", "GHN", "VNPost", "JT Express", "Ninja Van"];
     for (let i = 0; i < shippedOrders.length; i++) {
       const carrier = carriers[i % carriers.length];
       await Shipment.create({
-        orderId: shippedOrders[i]._id,
+        order_id: shippedOrders[i]._id,
         shipmentNumber: `SHP${String(2026030100 + i)}`,
         carrierCode: carrier,
         serviceName: carrier === "GHTK" ? "Nhanh" : carrier === "GHN" ? "Express" : "Tiêu chuẩn",
         trackingNumber: `VN${String(Math.floor(Math.random() * 900000000) + 100000000)}`,
-        shipmentStatus: shippedOrders[i].orderStatus === "completed" ? "delivered" : "in_transit",
-        shippedAt: new Date(shippedOrders[i].placedAt.getTime() + 86400000),
-        deliveredAt: shippedOrders[i].orderStatus === "completed" ? new Date(shippedOrders[i].placedAt.getTime() + 3 * 86400000) : null,
+        shipmentStatus: shippedOrders[i].order_status === "completed" ? "delivered" : "in_transit",
+        shippedAt: new Date(shippedOrders[i].placed_at.getTime() + 86400000),
+        deliveredAt:
+          shippedOrders[i].order_status === "completed"
+            ? new Date(shippedOrders[i].placed_at.getTime() + 3 * 86400000)
+            : null,
         shippingFeeAmount: 30000,
       });
     }
@@ -404,7 +589,7 @@ async function seed() {
       const custIdx = i % customers.length;
       const prodIdx = i % products.length;
       const review = await Review.create({
-        customerId: customers[custIdx]._id,
+        customer_id: customers[custIdx]._id,
         productId: products[prodIdx]._id,
         rating: template.rating,
         reviewTitle: template.reviewTitle,
@@ -428,6 +613,9 @@ async function seed() {
     console.log(`  Products:    ${products.length}`);
     console.log(`  Accounts:    ${staffAccounts.length + custAccounts.length}`);
     console.log(`  Customers:   ${customers.length}`);
+    console.log(`  Addresses:   ${insertedAddresses.length}`);
+    console.log(`  Consents:    ${insertedConsents.length}`);
+    console.log(`  Preferences: ${insertedPreferences.length}`);
     console.log(`  Orders:      ${orders.length}`);
     console.log(`  Promotions:  ${promotions.length}`);
     console.log(`  Coupons:     ${coupons.length}`);

@@ -95,13 +95,13 @@
               </td>
               <td>
                 <span class="badge"
-                  [class.badge-success]="account.accountStatus === 'active'"
-                  [class.badge-warning]="account.accountStatus === 'inactive'"
-                  [class.badge-danger]="account.accountStatus === 'locked'">
-                  {{ account.accountStatus }}
+                  [class.badge-success]="account.account_status === 'active'"
+                  [class.badge-warning]="account.account_status === 'inactive'"
+                  [class.badge-danger]="account.account_status === 'locked'">
+                  {{ account.account_status }}
                 </span>
               </td>
-              <td><span class="cell-date">{{ account.createdAt | date:'MMM d, y' }}</span></td>
+              <td><span class="cell-date">{{ account.created_at | date:'MMM d, y' }}</span></td>
               <td class="td-actions" (click)="$event.stopPropagation()">
                 <a class="action-btn" [routerLink]="[account.id]" title="View">
                   <span class="material-symbols-rounded">visibility</span>
@@ -113,13 +113,13 @@
                   class="action-btn"
                   [class.toggling]="togglingId() === account.id"
                   (click)="toggleStatus(account)"
-                  [title]="account.accountStatus === 'active' ? 'Deactivate' : 'Activate'"
+                  [title]="account.account_status === 'active' ? 'Deactivate' : 'Activate'"
                 >
                   @if (togglingId() === account.id) {
                     <div class="spinner spinner-dark" style="width:16px;height:16px;"></div>
                   } @else {
                     <span class="material-symbols-rounded">
-                      {{ account.accountStatus === 'active' ? 'toggle_on' : 'toggle_off' }}
+                      {{ account.account_status === 'active' ? 'toggle_on' : 'toggle_off' }}
                     </span>
                   }
                 </button>

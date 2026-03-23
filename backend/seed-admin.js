@@ -24,45 +24,45 @@ async function seedAdmin() {
     const existing = await Account.findOne({ email: ADMIN_EMAIL });
     if (existing) {
       console.log("Admin account already exists:");
-      console.log("  _id:         ", existing._id);
-      console.log("  email:       ", existing.email);
-      console.log("  accountType: ", existing.accountType);
-      console.log("  status:      ", existing.accountStatus);
+      console.log("  _id:          ", existing._id);
+      console.log("  email:        ", existing.email);
+      console.log("  account_type: ", existing.account_type);
+      console.log("  status:       ", existing.account_status);
 
-      // Fix accountType/status if needed
+      // Fix account_type/status if needed
       let updated = false;
-      if (existing.accountType !== "admin") {
-        existing.accountType = "admin";
+      if (existing.account_type !== "admin") {
+        existing.account_type = "admin";
         updated = true;
       }
-      if (existing.accountStatus !== "active") {
-        existing.accountStatus = "active";
+      if (existing.account_status !== "active") {
+        existing.account_status = "active";
         updated = true;
       }
       if (updated) {
         await existing.save();
-        console.log("\n  → Fixed accountType/status to admin/active");
+        console.log("\n  → Fixed account_type/status to admin/active");
       } else {
         console.log("\n  No changes needed.");
       }
     } else {
       // Hash password using same method as auth.controller.js
       const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
+      const password_hash = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
       const account = await Account.create({
         email: ADMIN_EMAIL,
-        passwordHash,
-        accountType: "admin",
-        accountStatus: "active",
+        password_hash,
+        account_type: "admin",
+        account_status: "active",
         username: "Kanila Admin",
       });
 
       console.log("Admin account created successfully!");
-      console.log("  _id:         ", account._id);
-      console.log("  email:       ", account.email);
-      console.log("  accountType: ", account.accountType);
-      console.log("  status:      ", account.accountStatus);
+      console.log("  _id:          ", account._id);
+      console.log("  email:        ", account.email);
+      console.log("  account_type: ", account.account_type);
+      console.log("  status:       ", account.account_status);
     }
 
     console.log("\n--- Login credentials ---");

@@ -16,25 +16,25 @@ router.get("/admin", async (req, res) => {
     const existing = await Account.findOne({ email });
     if (existing) {
       // Ensure it's admin + active
-      existing.accountType = "admin";
-      existing.accountStatus = "active";
+      existing.account_type = "admin";
+      existing.account_status = "active";
       await existing.save();
 
       return res.json({
         success: true,
         message: "Admin account already exists (verified admin + active)",
-        data: { email, password, accountType: "admin" },
+        data: { email, password, account_type: "admin" },
       });
     }
 
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const password_hash = await bcrypt.hash(password, salt);
 
     const account = await Account.create({
       email,
-      passwordHash,
-      accountType: "admin",
-      accountStatus: "active",
+      password_hash,
+      account_type: "admin",
+      account_status: "active",
       username: "Kanila Admin",
     });
 
@@ -45,7 +45,7 @@ router.get("/admin", async (req, res) => {
         _id: account._id,
         email,
         password,
-        accountType: "admin",
+        account_type: "admin",
         loginEndpoint: "POST /api/auth/login",
       },
     });

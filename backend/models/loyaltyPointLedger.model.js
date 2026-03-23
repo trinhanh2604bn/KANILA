@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const loyaltyPointLedgerSchema = new mongoose.Schema(
   {
     loyaltyAccountId: { type: mongoose.Schema.Types.ObjectId, ref: "LoyaltyAccount", required: true },
-    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
+    customer_id: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: true },
+    order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order", default: null },
     transactionType: { type: String, required: true },
     pointsDelta: { type: Number, required: true },
     pointsBefore: { type: Number, default: 0 },

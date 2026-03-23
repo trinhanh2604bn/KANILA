@@ -14,7 +14,14 @@ const authMiddleware = (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach decoded user info to request
+    // Normalize JWT payload (legacy tokens used accountId)
+    if (!decoded.account_id && decoded.accountId) {
+      decoded.account_id = decoded.accountId;
+    }
+    if (!decoded.account_type && decoded.accountType) {
+      decoded.account_type = decoded.accountType;
+    }
+
     req.user = decoded;
     next();
   } catch (error) {
