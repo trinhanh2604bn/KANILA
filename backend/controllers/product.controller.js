@@ -1,7 +1,30 @@
 const Product = require("../models/product.model");
+const ProductMedia = require("../models/productMedia.model");
 const Brand = require("../models/brand.model");
 const Category = require("../models/category.model");
 const validateObjectId = require("../utils/validateObjectId");
+
+/** Attach `productMedia` from MongoDB for each product (primary + sort order). */
+async function attachProductMediaToProducts(products) {
+  if (!products || products.length === 0) return [];
+  const ids = products.map((p) => p._id);
+  const mediaList = await ProductMedia.find({ productId: { $in: ids } })
+    .sort({ isPrimary: -1, sortOrder: 1, createdAt: 1 })
+    .lean();
+
+  const byPid = {};
+  for (const m of mediaList) {
+    const pid = m.productId.toString();
+    if (!byPid[pid]) byPid[pid] = [];
+    byPid[pid].push(m);
+  }
+
+  return products.map((p) => {
+    const doc = typeof p.toObject === "function" ? p.toObject() : { ...p };
+    doc.productMedia = byPid[p._id.toString()] || [];
+    return doc;
+  });
+}
 
 // GET /api/products
 const getAllProducts = async (req, res) => {
@@ -11,11 +34,13 @@ const getAllProducts = async (req, res) => {
       .populate("categoryId", "categoryName categoryCode")
       .sort({ createdAt: -1 });
 
+    const data = await attachProductMediaToProducts(products);
+
     res.status(200).json({
       success: true,
       message: "Get all products successfully",
-      count: products.length,
-      data: products,
+      count: data.length,
+      data,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -39,10 +64,12 @@ const getProductById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
 
+    const [data] = await attachProductMediaToProducts([product]);
+
     res.status(200).json({
       success: true,
       message: "Get product successfully",
-      data: product,
+      data,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

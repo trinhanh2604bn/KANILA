@@ -50,7 +50,7 @@ const customerSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true }
+  { timestamps: true, collection: "customers" }
 );
 
 module.exports = mongoose.model("Customer", customerSchema);

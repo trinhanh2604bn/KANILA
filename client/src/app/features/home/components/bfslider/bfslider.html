@@ -1,0 +1,35 @@
+<section class="bfslider" aria-label="Before after comparison">
+  <div class="bfslider__inner">
+    <div class="bfslider__card">
+      <h2 class="bfslider__title">Biến Hóa Vẻ Đẹp Của Bạn</h2>
+      <p class="bfslider__desc">
+        Trải nghiệm sức mạnh của trang điểm - nơi từng đường lộ ánh sáng, kết hợp hoàn
+        hảo với bầu không khí nhẹ nhàng.
+      </p>
+      <button type="button" class="bfslider__cta">
+        Khám phá ngay
+      </button>
+    </div>
+
+    <div class="bfslider__comparison">
+      <div id="comparison">
+        <figure [style.backgroundImage]="'url(' + imgBefore + ')'">
+          <div
+            id="divisor"
+            [style.width.%]="csliderValue"
+            [style.backgroundImage]="'url(' + imgAfter + ')'"
+          ></div>
+        </figure>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          [value]="csliderValue"
+          (input)="moveDivisor($event)"
+          id="slider"
+          aria-label="Chuyển đổi trước/sau"
+        />
+      </div>
+    </div>
+  </div>
+</section>

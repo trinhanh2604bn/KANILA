@@ -1,0 +1,15 @@
+import { Component, Input } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+@Component({
+  selector: 'app-divider',
+  imports: [RouterLink],
+  templateUrl: './divider.html',
+  styleUrl: './divider.css',
+})
+export class Divider {
+  @Input() title: string = 'SẢN PHẨM MỚI';
+  @Input() buttonText: string = 'Xem tất cả';
+  /** Target for “Xem tất cả” (e.g. shop listing) */
+  @Input() ctaLink: string = '/shop';
+}

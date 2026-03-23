@@ -4,7 +4,7 @@
   "description": "E-commerce backend API for KANILA",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "nodemon index.js",
     "dev": "nodemon index.js"
   },
   "keywords": [],
@@ -19,6 +19,6 @@
     "mongoose": "^8.12.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.14"
   }
 }

@@ -1,0 +1,87 @@
+
+.nav-link-header {
+  color: var(--kanila-white);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: opacity 0.3s ease;
+  display: block;
+}
+
+.nav-link-header:hover {
+  color: var(--kanila-pink);
+  cursor: pointer;       
+  transition: all 0.2s ease;
+}
+
+
+.action-link {
+  color: var(--kanila-white);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.action-link:hover {
+  color: var(--kanila-pink);
+  cursor: pointer;       
+  transition: all 0.2s ease;
+}
+
+.small-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+
+.mega-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(15px);
+  transition: all 0.3s ease-in-out;
+  border-bottom: 3px solid var(--kanila-red);
+}
+
+.nav-item-mega:hover .mega-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+
+.mega-link {
+  color: var(--kanila-text);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.mega-link:hover {
+  color: var(--kanila-red);
+  padding-left: 5px;
+  cursor: pointer;       
+  transition: all 0.2s ease;
+}
+
+.mega-banner {
+  position: relative;
+  overflow: hidden;
+}
+
+.mega-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.4));
+}
+
+.mega-banner div {
+  position: relative;
+  z-index: 1;
+}

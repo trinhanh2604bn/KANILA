@@ -53,7 +53,8 @@ const accountSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true,
+    collection: "accounts" }
 );
 
 module.exports = mongoose.model("Account", accountSchema);

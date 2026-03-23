@@ -5,11 +5,17 @@ const Customer = require("../models/customer.model");
 
 // Helper: generate a simple customer code like CUS0001
 const generateCustomerCode = async () => {
-  const count = await Customer.countDocuments();
-  const nextNum = count + 1;
+  const lastCustomer = await Customer.findOne().sort({ createdAt: -1 });
+  
+  if (!lastCustomer || !lastCustomer.customerCode) {
+    return "CUS0001";
+  }
+
+  // Cắt bỏ chữ "CUS" và lấy phần số, sau đó cộng 1
+  const lastNum = parseInt(lastCustomer.customerCode.replace("CUS", ""), 10);
+  const nextNum = lastNum + 1;
   return `CUS${String(nextNum).padStart(4, "0")}`;
 };
-
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
@@ -79,15 +85,15 @@ const register = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log("DEBUG ERROR:", error); 
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: "Email already registered",
+        message: `Dữ liệu bị trùng: ${Object.keys(error.keyValue).join(", ")}`, 
       });
     }
     res.status(500).json({ success: false, message: error.message });
-  }
-};
+  }}
 
 // POST /api/auth/login
 const login = async (req, res) => {
@@ -208,8 +214,61 @@ const getMe = async (req, res) => {
   }
 };
 
+// POST /api/auth/check-email
+const checkEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const account = await Account.findOne({ email });
+
+    if (account) {
+      return res.status(200).json({ success: true, exists: true, message: "Email exists" });
+    } else {
+      return res.status(200).json({ success: true, exists: false, message: "Email not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/auth/reset-password
+const resetPassword = async (req, res) => {
+  try {
+    const { email, newPass } = req.body;
+
+    if (!email || !newPass) {
+      return res.status(400).json({ success: false, message: "Email and new password are required" });
+    }
+
+    const account = await Account.findOne({ email });
+    if (!account) {
+      return res.status(404).json({ success: false, message: "Account not found" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPass, salt);
+
+    account.passwordHash = passwordHash;
+    account.accountStatus = "active";
+    account.failedLoginCount = 0;
+    account.lockedUntil = null;
+
+    await account.save();
+
+    res.status(200).json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
+  checkEmail,     
+  resetPassword
 };

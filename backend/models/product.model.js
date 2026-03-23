@@ -29,6 +29,11 @@ const productSchema = new mongoose.Schema(
       required: [true, "Price is required"],
       min: [0, "Price must not be negative"],
     },
+    /** Optional list/original price for discount display (sale price = `price`) */
+    compareAtPrice: {
+      type: Number,
+      min: [0, "Compare-at price must not be negative"],
+    },
     imageUrl: {
       type: String,
       default: "",

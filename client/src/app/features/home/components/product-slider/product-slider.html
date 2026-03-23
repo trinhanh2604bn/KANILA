@@ -1,0 +1,54 @@
+<div class="product-slider-wrapper">
+  <div class="product-slider__stage">
+    <button
+      type="button"
+      class="product-slider__nav product-slider__nav--prev"
+      (click)="prev($event)"
+      [disabled]="!canGoPrev"
+      aria-label="Trang trước"
+    >
+      <i class="bi bi-chevron-left" aria-hidden="true"></i>
+    </button>
+
+    <div *ngIf="loading" class="product-slider__status">
+      Đang tải sản phẩm...
+    </div>
+
+    <ng-container *ngIf="!loading && !!errorMessage">
+      <div class="product-slider__status product-slider__status--error">
+        {{ errorMessage }}
+      </div>
+    </ng-container>
+
+    <div
+      *ngIf="!loading && !errorMessage"
+      class="product-list-container"
+    >
+      <app-product-card
+        *ngFor="let product of paginatedProducts; trackBy: trackByProductId"
+        [product]="product"
+      ></app-product-card>
+    </div>
+
+    <p
+      *ngIf="!loading && !errorMessage && paginatedProducts.length === 0"
+      class="product-slider__empty"
+    >
+      Không có sản phẩm để hiển thị.
+    </p>
+
+    <button
+      type="button"
+      class="product-slider__nav product-slider__nav--next"
+      (click)="next($event)"
+      [disabled]="!canGoNext"
+      aria-label="Trang sau"
+    >
+      <i class="bi bi-chevron-right" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <p *ngIf="totalPages > 1" class="product-slider__page-hint">
+    <span class="product-slider__page-hint-text">{{ currentPage }} / {{ totalPages }}</span>
+  </p>
+</div>
