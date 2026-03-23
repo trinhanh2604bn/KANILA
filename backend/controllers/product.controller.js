@@ -143,6 +143,11 @@ const createProduct = async (req, res) => {
       return res.status(404).json({ success: false, message: "Category not found" });
     }
 
+    // Sanitize slug and productCode: if they are empty strings, remove them 
+    // to allow MongoDB sparse index to skip them (preventing duplicate "" keys).
+    if (req.body.slug === "") delete req.body.slug;
+    if (req.body.productCode === "") delete req.body.productCode;
+
     const product = await Product.create(req.body);
 
     res.status(201).json({
@@ -197,6 +202,11 @@ const updateProduct = async (req, res) => {
       }
     }
 
+    // Sanitize slug and productCode: if they are empty strings, remove them 
+    // to allow MongoDB sparse index to skip them (preventing duplicate "" keys).
+    if (req.body.slug === "") delete req.body.slug;
+    if (req.body.productCode === "") delete req.body.productCode;
+
     const product = await Product.findByIdAndUpdate(id, req.body, {
       new: true,
       runValidators: true,
@@ -248,6 +258,11 @@ const patchProduct = async (req, res) => {
     const allowed = ["productStatus", "productName", "basePrice", "compareAtPrice", "categoryId", "brandId", "description", "shortDescription"];
     const updates = {};
     for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
+    
+    // Sanitize slug and productCode
+    if (updates.slug === "") delete updates.slug;
+    if (updates.productCode === "") delete updates.productCode;
+
     if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
     const product = await Product.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
       .populate("categoryId", "categoryName").populate("brandId", "brandName");
