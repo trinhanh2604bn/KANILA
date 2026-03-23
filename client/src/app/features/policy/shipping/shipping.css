@@ -1,0 +1,66 @@
+/* --- Khung chung --- */
+.policy-page {
+    max-width: 950px; 
+    margin: 0 auto;
+}
+
+.text-justify {
+    text-align: justify;
+}
+
+/* --- Hiệu ứng hover cho Box Intro --- */
+.highlight-box {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.highlight-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(107, 30, 46, 0.1) !important;
+}
+
+/* --- Tùy chỉnh Bảng (Table) --- */
+.custom-table thead th {
+    background-color: var(--kanila-pink); 
+    color: var(--kanila-red);
+    border-bottom: 2px solid var(--kanila-red);
+}
+
+.custom-table tbody tr {
+    transition: background-color 0.3s ease;
+}
+
+
+.custom-table tbody tr:hover td {
+    background-color: var(--kanila-bg) !important;
+}
+
+
+.custom-table td, .custom-table th {
+    border-color: rgba(107, 30, 46, 0.1); 
+    vertical-align: middle;
+}
+
+
+.time-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: transparent;
+    cursor: default;
+    transition: all 0.3s ease;
+}
+
+.time-item:hover {
+    background-color: var(--kanila-bg);
+    transform: translateX(10px);
+}
+
+
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}

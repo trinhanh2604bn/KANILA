@@ -1,0 +1,82 @@
+/* --- Khung chung --- */
+.feedback-page {
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.text-justify {
+    text-align: justify;
+}
+
+/* --- Tùy chỉnh màu sắc Labels --- */
+.form-label {
+    color: var(--kanila-text);
+}
+
+/* --- Tùy chỉnh ô nhập liệu (Inputs/Select/Textarea) --- */
+.custom-input {
+    border: 1px solid rgba(107, 30, 46, 0.2); /* Viền mờ màu kanila-red */
+    color: var(--kanila-text);
+    background-color: var(--kanila-white);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Đổi màu viền sang đỏ khi click vào ô nhập liệu */
+.custom-input:focus {
+    border-color: var(--kanila-red);
+    box-shadow: 0 0 0 0.25rem rgba(107, 30, 46, 0.15);
+    outline: none;
+}
+
+/* --- Tùy chỉnh nút Radio --- */
+.custom-radio .form-check-input {
+    border-color: rgba(107, 30, 46, 0.4);
+}
+
+.custom-radio .form-check-input:checked {
+    background-color: var(--kanila-red);
+    border-color: var(--kanila-red);
+}
+
+.custom-radio .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(107, 30, 46, 0.15);
+    border-color: var(--kanila-red);
+}
+
+/* --- Vùng Upload File --- */
+.file-upload-wrapper {
+    border: 2px dashed rgba(107, 30, 46, 0.3);
+    cursor: pointer;
+}
+
+.file-upload-wrapper:hover {
+    background-color: var(--kanila-bg) !important;
+    border-color: var(--kanila-red);
+}
+
+.btn-upload:hover {
+    background-color: var(--kanila-red) !important;
+    color: var(--kanila-white) !important;
+}
+
+/* --- Nút Submit --- */
+.btn-submit {
+    transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+.btn-submit:hover {
+    background-color: var(--kanila-text) !important; /* Đổi sang màu nâu đen khi hover cho sang trọng */
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(107, 30, 46, 0.25);
+}
+
+/* --- Animations --- */
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}

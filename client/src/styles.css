@@ -1,1 +1,35 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+    --kanila-pink: #F5A3B7;
+    --kanila-bg: #FFEBEE;
+    --kanila-text: #372B2B;
+    --kanila-red: #6B1E2E;
+    --kanila-white: #ffffff;
+  }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background-color: var(--kanila-bg);
+    color: var(--kanila-text);
+    margin: 0;
+    padding: 0;
+    font-size: 1rem; 
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h4, .h4-style {
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem); 
+    color: var(--kanila-red);
+    margin-bottom: 1rem;
+  }
+  
+  h5, .h5-style {
+    font-size: clamp(1.1rem, 2vw, 1.4rem); 
+    font-weight: 700;
+    color: var(--kanila-text);
+  }
+  
+  h6, .h6-style, p, span, li {
+    font-size: clamp(0.95rem, 1.5vw, 1.1rem); 
+    font-weight: 600;
+  }

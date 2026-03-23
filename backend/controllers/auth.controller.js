@@ -88,7 +88,7 @@ const register = async (req, res) => {
     );
 
     res.status(201).json({
-      success: true,
+success: true,
       message: "Registration successful",
       data: {
         token,
@@ -199,7 +199,7 @@ const login = async (req, res) => {
           account_type: account.account_type,
           last_login_at: account.last_login_at,
         },
-        customer: customer
+customer: customer
           ? {
               _id: customer._id,
               customer_code: customer.customer_code,
