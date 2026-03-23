@@ -12,6 +12,7 @@ export interface Product {
   _id: string;
   productName: string;
   productCode: string;
+  slug?: string;
   price: number;
   /** Legacy single image; used when no productMedia */
   imageUrl?: string;
@@ -21,6 +22,8 @@ export interface Product {
   averageRating: number;
   bought: number;
   stock: number;
+  isActive?: boolean;
+  productStatus?: 'active' | 'inactive';
   categoryId?: { _id: string; categoryName: string };
   brandId?: { _id: string; brandName: string };
   /** From API: GET /api/products — media from ProductMedia collection */

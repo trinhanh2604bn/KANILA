@@ -10,10 +10,9 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
   styleUrl: './catalog.css',
 })
 export class Catalog implements OnInit {
-  isSalePage: boolean = false; 
-  isScrolled: boolean = false; 
+  isSalePage: boolean = false;
+  isScrolled: boolean = false;
 
-  // TÔI ĐÃ THÊM THUỘC TÍNH 'slug' VÀO ĐÂY ĐỂ HIỂN THỊ LÊN URL CHO ĐẸP (VD: face, lips)
   categories = [
     { id: 'c1', slug: 'face', name: 'Khuôn mặt', subCategories: [{ id: 'c1_1', name: 'Kem nền' }, { id: 'c1_2', name: 'Phấn phủ' }, { id: 'c1_3', name: 'Kem lót' }] },
     { id: 'c2', slug: 'lips', name: 'Đôi môi', subCategories: [{ id: 'c2_1', name: 'Son thỏi' }, { id: 'c2_2', name: 'Son kem' }, { id: 'c2_3', name: 'Son dưỡng' }] },
@@ -21,7 +20,7 @@ export class Catalog implements OnInit {
     { id: 'c4', slug: 'cheeks', name: 'Đôi má', subCategories: [{ id: 'c4_1', name: 'Phấn má' }, { id: 'c4_2', name: 'Tạo khối' }, { id: 'c4_3', name: 'Highlight' }] },
     { id: 'c5', slug: 'gifts', name: 'Set quà', subCategories: [{ id: 'c5_1', name: 'Set mini' }, { id: 'c5_2', name: 'Set fullsize' }] }
   ];
-  
+
   brands = ['Dior', 'Gucci', 'MAC', 'Chanel', 'Romand', '3CE', 'Maybelline'];
   skinTypes = ['Da dầu', 'Da khô', 'Da nhạy cảm', 'Da hỗn hợp', 'Mọi loại da'];
 
@@ -37,50 +36,78 @@ export class Catalog implements OnInit {
     { id: 9, name: 'Son Dưỡng Dior Addict', brand: 'Dior', parentId: 'c2', subId: 'c2_3', skinType: 'Mọi loại da', price: 850000, oldPrice: null, isSale: false, sold: 500 },
     { id: 10, name: 'Kẻ mắt nước MAC', brand: 'MAC', parentId: 'c3', subId: 'c3_2', skinType: 'Da dầu', price: 450000, oldPrice: 550000, isSale: true, sold: 120 }
   ];
-  
+
   filteredProducts: any[] = [];
 
-  selectedParentCategory: any = null; 
-  selectedSubCategory: string | null = null; 
+  selectedParentCategory: any = null;
+  selectedSubCategory: string | null = null;
   selectedBrands: string[] = [];
   selectedSkinTypes: string[] = [];
   selectedPrice: { label: string, min: number, max: number } | null = null;
-  activeSort: string = 'popular'; 
+  activeSort: string = 'popular';
   openDropdown: string | null = null;
 
-  minPriceInput: number = 0;
-  maxPriceInput: number = 5000000; 
-  maxLimit: number = 5000000; 
+  selectedBrandFromHeader: string | null = null;
 
-  // NHÚNG THÊM Router ĐỂ CẬP NHẬT URL
+  minPriceInput: number = 0;
+  maxPriceInput: number = 5000000;
+  maxLimit: number = 5000000;
+
   constructor(private route: ActivatedRoute, private router: Router) {}
 
   ngOnInit() {
-    // 1. Lắng nghe thay đổi đường dẫn chính (/shop hay /sale)
     this.route.url.subscribe(urlSegments => {
       this.isSalePage = (urlSegments.length > 0 && urlSegments[0].path === 'sale');
     });
 
-    // 2. Lắng nghe tham số Query trên URL (vd: ?category=face&sub=c1_1)
     this.route.queryParams.subscribe(params => {
       const categorySlug = params['category'];
       const subCategoryId = params['sub'];
+      const rawBrandQuery = params['brand']; // Lấy tên thương hiệu từ URL (nguyên bản)
 
-      // Khôi phục Danh mục cha từ URL
-      if (categorySlug) {
-        this.selectedParentCategory = this.categories.find(c => c.slug === categorySlug) || null;
-      } else {
+      // --- GIẢI PHÁP 1: CHUẨN HÓA CHỮ HOA/THƯỜNG TỪ URL ---
+      let brandQuery = null;
+      if (rawBrandQuery) {
+        // Tìm xem trong mảng brands gốc có chữ nào giống y hệt không (bỏ qua hoa/thường)
+        const matchedBrand = this.brands.find(b => b.toLowerCase() === rawBrandQuery.toLowerCase());
+        // Nếu tìm thấy, dùng chữ chuẩn (VD: 'Dior'). Nếu không, dùng chữ gốc từ URL.
+        brandQuery = matchedBrand ? matchedBrand : rawBrandQuery;
+      }
+
+      if (!categorySlug && !subCategoryId && !brandQuery) {
+        this.selectedBrands = [];
+        this.selectedSkinTypes = [];
+        this.selectedPrice = null;
+        this.minPriceInput = 0;
+        this.maxPriceInput = this.maxLimit;
+        this.selectedBrandFromHeader = null;
         this.selectedParentCategory = null;
-      }
-
-      // Khôi phục Danh mục con từ URL
-      if (subCategoryId) {
-        this.selectedSubCategory = subCategoryId;
-      } else {
         this.selectedSubCategory = null;
+      } else {
+
+        if (brandQuery) {
+          this.selectedBrandFromHeader = brandQuery;
+          this.selectedBrands = [brandQuery];
+        } else {
+          if (this.selectedBrandFromHeader) {
+              this.selectedBrands = this.selectedBrands.filter(b => b !== this.selectedBrandFromHeader);
+          }
+          this.selectedBrandFromHeader = null;
+        }
+
+        if (categorySlug) {
+          this.selectedParentCategory = this.categories.find(c => c.slug === categorySlug) || null;
+        } else {
+          this.selectedParentCategory = null;
+        }
+
+        if (subCategoryId) {
+          this.selectedSubCategory = subCategoryId;
+        } else {
+          this.selectedSubCategory = null;
+        }
       }
 
-      // Gọi hàm lọc để hiển thị sản phẩm tương ứng
       this.applyLocalFilters();
     });
   }
@@ -98,19 +125,16 @@ export class Catalog implements OnInit {
     return '';
   }
 
-  // --- CÁC HÀM XỬ LÝ CLICK GIỜ SẼ CẬP NHẬT URL THAY VÌ CHỈ ĐỔI BIẾN LOCAL ---
-
   selectParentCategory(cat: any) {
-    // Đẩy tham số category lên URL (xóa sub category nếu có)
+    const newCatSlug = this.selectedParentCategory?.id === cat.id ? null : cat.slug;
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { category: cat.slug, sub: null },
-      queryParamsHandling: 'merge' // Giữ lại các tham số khác nếu có
+      queryParams: { category: newCatSlug, sub: null },
+      queryParamsHandling: 'merge'
     });
   }
 
   selectSubCategory(subId: string) {
-    // Khi click lại vào danh mục con đang chọn thì bỏ chọn
     const newSubId = this.selectedSubCategory === subId ? null : subId;
     this.router.navigate([], {
       relativeTo: this.route,
@@ -120,7 +144,20 @@ export class Catalog implements OnInit {
   }
 
   resetToAllProducts() {
-    // Xóa param category và sub khỏi URL
+    this.selectedBrands = [];
+    this.selectedSkinTypes = [];
+    this.selectedPrice = null;
+    this.minPriceInput = 0;
+    this.maxPriceInput = this.maxLimit;
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { category: null, sub: null, brand: null },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  clearCategoryFilter() {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { category: null, sub: null },
@@ -128,23 +165,42 @@ export class Catalog implements OnInit {
     });
   }
 
-  // --- LOGIC LỌC DỮ LIỆU ---
+  clearBrandFilter() {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { brand: null },
+      queryParamsHandling: 'merge'
+    });
+  }
+
   applyLocalFilters() {
     let temp = [...this.allProducts];
+
     if (this.isSalePage) temp = temp.filter(p => p.isSale === true);
+
     if (this.selectedSubCategory) temp = temp.filter(p => p.subId === this.selectedSubCategory);
     else if (this.selectedParentCategory) temp = temp.filter(p => p.parentId === this.selectedParentCategory.id);
-    if (this.selectedBrands.length > 0) temp = temp.filter(p => this.selectedBrands.includes(p.brand));
+
+    // --- GIẢI PHÁP 2: LỌC MẠNH TAY KHÔNG PHÂN BIỆT HOA THƯỜNG ---
+    if (this.selectedBrands.length > 0) {
+      // Ép mảng điều kiện lọc về dạng chữ thường
+      const lowerSelectedBrands = this.selectedBrands.map(b => b.toLowerCase());
+      // Lọc sản phẩm (ép tên brand sản phẩm về chữ thường để so sánh)
+      temp = temp.filter(p => lowerSelectedBrands.includes(p.brand.toLowerCase()));
+    }
+
     if (this.selectedSkinTypes.length > 0) temp = temp.filter(p => this.selectedSkinTypes.includes(p.skinType));
+
     temp = temp.filter(p => p.price >= this.minPriceInput && p.price <= this.maxPriceInput);
+
     if (this.activeSort === 'price_asc') temp.sort((a, b) => a.price - b.price);
     else if (this.activeSort === 'price_desc') temp.sort((a, b) => b.price - a.price);
     else if (this.activeSort === 'popular') temp.sort((a, b) => b.sold - a.sold);
-    else if (this.activeSort === 'hot_deal') temp.sort((a, b) => b.sold - a.sold).filter(p => p.sold > 500); 
+    else if (this.activeSort === 'hot_deal') temp.sort((a, b) => b.sold - a.sold).filter(p => p.sold > 500);
+
     this.filteredProducts = temp;
   }
 
-  // Các hàm còn lại giữ nguyên
   onMinPriceInput() { if (this.minPriceInput < 0) this.minPriceInput = 0; if (this.minPriceInput > this.maxPriceInput) this.minPriceInput = this.maxPriceInput; this.updatePriceLabel(); }
   onMaxPriceInput() { if (this.maxPriceInput > this.maxLimit) this.maxPriceInput = this.maxLimit; if (this.maxPriceInput < this.minPriceInput) this.maxPriceInput = this.minPriceInput; this.updatePriceLabel(); }
   updatePriceLabel() { this.selectedPrice = { label: `Giá: ${this.minPriceInput.toLocaleString('vi-VN')}đ - ${this.maxPriceInput.toLocaleString('vi-VN')}đ`, min: this.minPriceInput, max: this.maxPriceInput }; }
@@ -154,10 +210,25 @@ export class Catalog implements OnInit {
   toggleSkinType(type: string) { const index = this.selectedSkinTypes.indexOf(type); if (index > -1) this.selectedSkinTypes.splice(index, 1); else this.selectedSkinTypes.push(type); this.applyLocalFilters(); }
   selectSort(sortType: string) { this.activeSort = sortType; this.applyLocalFilters(); }
   removeFilter(type: string, value: any) { if (type === 'brand') this.selectedBrands = this.selectedBrands.filter(b => b !== value); else if (type === 'skin') this.selectedSkinTypes = this.selectedSkinTypes.filter(s => s !== value); else if (type === 'price') { this.selectedPrice = null; this.minPriceInput = 0; this.maxPriceInput = this.maxLimit; } this.applyLocalFilters(); }
-  clearAllFilters() { this.selectedBrands = []; this.selectedSkinTypes = []; this.selectedPrice = null; this.minPriceInput = 0; this.maxPriceInput = this.maxLimit; this.applyLocalFilters(); }
-  hasActiveFilters(): boolean { return this.selectedBrands.length > 0 || this.selectedSkinTypes.length > 0 || this.selectedPrice !== null; }
+
+  clearAllFilters() {
+    this.selectedSkinTypes = [];
+    this.selectedPrice = null;
+    this.minPriceInput = 0;
+    this.maxPriceInput = this.maxLimit;
+    if (this.selectedBrandFromHeader) {
+        this.selectedBrands = [this.selectedBrandFromHeader];
+    } else {
+        this.selectedBrands = [];
+    }
+    this.applyLocalFilters();
+  }
+
+  hasActiveFilters(): boolean {
+    const hasOtherBrands = this.selectedBrands.filter(b => b !== this.selectedBrandFromHeader).length > 0;
+    return hasOtherBrands || this.selectedSkinTypes.length > 0 || this.selectedPrice !== null;
+  }
 
   @HostListener('document:click')
   onDocumentClick() { this.openDropdown = null; }
 }
-
