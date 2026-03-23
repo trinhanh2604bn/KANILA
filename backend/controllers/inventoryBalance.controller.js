@@ -14,7 +14,7 @@ const getAllInventoryBalances = async (req, res) => {
   try {
     const balances = await InventoryBalance.find()
       .populate("warehouseId", "warehouseCode warehouseName")
-      .populate("variantId", "sku variantName")
+      .populate("variantId", "sku variantName productId")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -39,7 +39,7 @@ const getInventoryBalanceById = async (req, res) => {
 
     const balance = await InventoryBalance.findById(id)
       .populate("warehouseId", "warehouseCode warehouseName")
-      .populate("variantId", "sku variantName");
+      .populate("variantId", "sku variantName productId");
 
     if (!balance) {
       return res.status(404).json({ success: false, message: "Inventory balance not found" });
@@ -65,7 +65,7 @@ const getBalancesByWarehouseId = async (req, res) => {
     }
 
     const balances = await InventoryBalance.find({ warehouseId })
-      .populate("variantId", "sku variantName")
+      .populate("variantId", "sku variantName productId")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -90,6 +90,7 @@ const getBalancesByVariantId = async (req, res) => {
 
     const balances = await InventoryBalance.find({ variantId })
       .populate("warehouseId", "warehouseCode warehouseName")
+      .populate("variantId", "sku variantName productId")
       .sort({ createdAt: -1 });
 
     res.status(200).json({

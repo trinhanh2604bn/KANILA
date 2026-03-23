@@ -8,7 +8,7 @@ const getAllInventoryTransactions = async (req, res) => {
   try {
     const transactions = await InventoryTransaction.find()
       .populate("warehouseId", "warehouseCode warehouseName")
-      .populate("variantId", "sku variantName")
+      .populate("variantId", "sku variantName productId")
       .populate("performedByAccountId", "email")
       .sort({ createdAt: -1 });
 
@@ -34,7 +34,7 @@ const getInventoryTransactionById = async (req, res) => {
 
     const transaction = await InventoryTransaction.findById(id)
       .populate("warehouseId", "warehouseCode warehouseName")
-      .populate("variantId", "sku variantName")
+      .populate("variantId", "sku variantName productId")
       .populate("performedByAccountId", "email");
 
     if (!transaction) {
@@ -61,7 +61,7 @@ const getTransactionsByWarehouseId = async (req, res) => {
     }
 
     const transactions = await InventoryTransaction.find({ warehouseId })
-      .populate("variantId", "sku variantName")
+      .populate("variantId", "sku variantName productId")
       .populate("performedByAccountId", "email")
       .sort({ createdAt: -1 });
 

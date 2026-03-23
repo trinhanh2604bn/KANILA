@@ -2,8 +2,10 @@ export type StockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
 export type AdjustmentReason = 'restock' | 'damage' | 'return' | 'manual';
 
 export interface InventoryItem {
-  id: string; // usually maps to variantId
-  productId: string;
+  id: string; // InventoryBalance _id
+  variantId: string; // ProductVariant _id
+  warehouseId: string; // Warehouse _id
+  productId: string; // Product _id (via variant.productId)
   productName: string;
   sku: string;
   optionValues?: Record<string, string>;
