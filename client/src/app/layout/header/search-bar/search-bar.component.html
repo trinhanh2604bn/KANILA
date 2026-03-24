@@ -1,0 +1,102 @@
+<div class="search-box-wrap">
+  <form class="input-group position-relative" (submit)="onSubmit($event)">
+    <input
+      type="text"
+      class="form-control border-0 rounded-start-pill py-2 ps-4 shadow-none"
+      placeholder="Tìm sản phẩm, thương hiệu..."
+      [formControl]="keywordControl"
+      (focus)="onFocus()"
+      (keydown)="onKeydown($event)"
+    />
+    <button class="btn bg-white border-0 rounded-end-pill pe-4" type="submit">
+      <i class="bi bi-search" style="color: var(--kanila-red);"></i>
+    </button>
+
+    <div class="header-search-dropdown shadow-sm" *ngIf="isOpen">
+      <ng-container *ngIf="historySuggestions.length > 0">
+        <div class="search-group-title">Tìm gần đây</div>
+        <button
+          type="button"
+          class="header-search-item"
+          *ngFor="let item of historySuggestions"
+          [class.active]="isActive(item)"
+          (click)="selectSuggestion(item)"
+        >
+          <div class="header-search-text">
+            <div class="header-search-name">{{ item.label }}</div>
+          </div>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="productSuggestions.length > 0">
+        <div class="search-group-title">Sản phẩm</div>
+        <button
+          type="button"
+          class="header-search-item"
+          *ngFor="let item of productSuggestions"
+          [class.active]="isActive(item)"
+          (click)="selectSuggestion(item)"
+        >
+          <img *ngIf="item.imageUrl" [src]="item.imageUrl" [alt]="item.label" class="header-search-thumb" />
+          <div class="header-search-text">
+            <div class="header-search-name">{{ item.label }}</div>
+            <div class="header-search-meta" *ngIf="item.price != null">{{ item.price | number:'1.0-0' }}đ</div>
+          </div>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="categorySuggestions.length > 0">
+        <div class="search-group-title">Danh mục</div>
+        <button
+          type="button"
+          class="header-search-item"
+          *ngFor="let item of categorySuggestions"
+          [class.active]="isActive(item)"
+          (click)="selectSuggestion(item)"
+        >
+          <div class="header-search-text">
+            <div class="header-search-name">{{ item.label }}</div>
+          </div>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="brandSuggestions.length > 0">
+        <div class="search-group-title">Thương hiệu</div>
+        <button
+          type="button"
+          class="header-search-item"
+          *ngFor="let item of brandSuggestions"
+          [class.active]="isActive(item)"
+          (click)="selectSuggestion(item)"
+        >
+          <div class="header-search-text">
+            <div class="header-search-name">{{ item.label }}</div>
+          </div>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="keywordSuggestions.length > 0">
+        <div class="search-group-title">Từ khóa gợi ý</div>
+        <button
+          type="button"
+          class="header-search-item"
+          *ngFor="let item of keywordSuggestions"
+          [class.active]="isActive(item)"
+          (click)="selectSuggestion(item)"
+        >
+          <div class="header-search-text">
+            <div class="header-search-name">{{ item.label }}</div>
+          </div>
+        </button>
+      </ng-container>
+
+      <div class="search-empty" *ngIf="flatSuggestions.length === 0 && !domainRejected">
+        Không tìm thấy gợi ý phù hợp. Thử từ khóa khác.
+      </div>
+      <div class="search-empty" *ngIf="domainRejected">
+        Từ khóa có thể không thuộc sản phẩm mỹ phẩm. Gợi ý: {{ domainHints.join(', ') }}.
+      </div>
+    </div>
+  </form>
+</div>
+

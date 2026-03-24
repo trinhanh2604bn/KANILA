@@ -11,6 +11,7 @@ export const routes: Routes = [
       // { path: 'home', loadChildren: () => import('./features/home/home.routes').then((m) => m.HOME_ROUTES) },
       { path: 'auth', loadChildren: () => import('./features/auth').then((m) => m.AUTH_ROUTES) },
       { path: 'catalog', loadChildren: () => import('./features/catalog').then((m) => m.CATALOG_ROUTES) },
+      { path: 'brands', loadComponent: () => import('./features/catalog/pages/brand-page/brand-page').then((m) => m.CatalogBrandPageComponent) },
       { path: 'community', loadChildren: () => import('./features/community/community.routes').then((m) => m.COMMUNITY_ROUTES) },
       { path: 'content', loadChildren: () => import('./features/content/content.routes').then((m) => m.CONTENT_ROUTES) },
       { path: 'help-center', loadChildren: () => import('./features/help-center/help-center.routes').then((m) => m.HELP_CENTER_ROUTES) },

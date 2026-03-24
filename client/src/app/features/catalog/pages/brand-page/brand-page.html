@@ -35,7 +35,7 @@
               <div class="row g-4">
                   <div class="col-6 col-md-3 col-lg-2" *ngFor="let brand of group.brands">
 
-                      <a [routerLink]="['/catalog']" [queryParams]="{brand: brand.name}" class="brand-card text-decoration-none text-center d-block">
+                      <a [routerLink]="['/catalog']" [queryParams]="{ brand: brand.slug }" class="brand-card text-decoration-none text-center d-block">
 
                           <div class="brand-logo-box bg-white rounded-3 shadow-sm mb-3 d-flex align-items-center justify-content-center overflow-hidden transition-all">
                               <img [src]="brand.logoUrl" [alt]="brand.name" class="img-fluid p-2 p-md-3" (error)="onImageError($event, brand.name)">

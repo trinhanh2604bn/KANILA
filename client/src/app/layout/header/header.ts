@@ -1,23 +1,23 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged, forkJoin, takeUntil } from 'rxjs';
-import { HeaderBrandItem, HeaderCategoryItem, HeaderSearchProductItem } from '../../core/models/header.model';
+import { Subject, forkJoin, takeUntil } from 'rxjs';
+import { HeaderBrandItem, HeaderCategoryItem } from '../../core/models/header.model';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
-import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../features/cart/services/cart.service';
+import { SearchBarComponent } from './search-bar/search-bar.component';
 
 @Component({
   selector: 'app-header',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SearchBarComponent],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
 export class Header implements OnInit, OnDestroy {
   categories: HeaderCategoryItem[] = [];
   brands: HeaderBrandItem[] = [];
-  megaColumns: Array<{ title: string; items: HeaderCategoryItem[] }> = [];
+  megaColumns: Array<{ title: string; shortcutSlug: string; parent: HeaderCategoryItem; items: HeaderCategoryItem[] }> = [];
   topBrands: HeaderBrandItem[] = [];
   promoCards = [
     {
@@ -58,22 +58,15 @@ export class Header implements OnInit, OnDestroy {
     },
   ];
 
-  searchKeyword = '';
-  suggestions: HeaderSearchProductItem[] = [];
-  showSuggestions = false;
-  searchLoading = false;
-
   headerLoading = true;
   headerError = false;
   cartBadgeCount = 0;
 
   private readonly destroy$ = new Subject<void>();
-  private readonly searchInput$ = new Subject<string>();
 
   constructor(
     private readonly categoryService: CategoryService,
     private readonly brandService: BrandService,
-    private readonly productService: ProductService,
     private readonly cartService: CartService,
     private readonly router: Router
   ) {}
@@ -98,29 +91,6 @@ export class Header implements OnInit, OnDestroy {
         },
       });
 
-    this.searchInput$
-      .pipe(debounceTime(250), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe((keyword) => {
-        const q = keyword.trim();
-        if (!q) {
-          this.suggestions = [];
-          this.searchLoading = false;
-          return;
-        }
-
-        this.searchLoading = true;
-        this.productService.searchHeaderProducts(q, 6).pipe(takeUntil(this.destroy$)).subscribe({
-          next: (items) => {
-            this.suggestions = items;
-            this.searchLoading = false;
-          },
-          error: () => {
-            this.suggestions = [];
-            this.searchLoading = false;
-          },
-        });
-      });
-
     this.cartService.cartTotalQuantity$
       .pipe(takeUntil(this.destroy$))
       .subscribe((count) => {
@@ -131,30 +101,6 @@ export class Header implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  onSearchInput(value: string): void {
-    this.searchKeyword = value;
-    this.showSuggestions = true;
-    this.searchInput$.next(value);
-  }
-
-  onSearchFocus(): void {
-    this.showSuggestions = true;
-  }
-
-  onSearchBlur(): void {
-    setTimeout(() => {
-      this.showSuggestions = false;
-    }, 120);
-  }
-
-  onSearchSubmit(event: Event): void {
-    event.preventDefault();
-    const q = this.searchKeyword.trim();
-    if (!q) return;
-    this.showSuggestions = false;
-    this.router.navigate(['/search'], { queryParams: { q } });
   }
 
   onCategoryClick(item: HeaderCategoryItem, sub?: HeaderCategoryItem): void {
@@ -168,14 +114,44 @@ export class Header implements OnInit, OnDestroy {
     this.router.navigate(['/catalog'], { queryParams: { brand: item.slug } });
   }
 
-  onSuggestionClick(item: HeaderSearchProductItem): void {
-    this.showSuggestions = false;
-    const slugOrId = item.slug || item.id;
-    if (!slugOrId) return;
-    this.router.navigate(['/catalog', 'product', slugOrId]);
+  onMegaItemClick(parent: HeaderCategoryItem, item: HeaderCategoryItem): void {
+    if (parent.id === item.id) {
+      this.onCategoryClick(parent);
+      return;
+    }
+    this.onCategoryClick(parent, item);
   }
 
-  private buildMegaColumns(categories: HeaderCategoryItem[]): Array<{ title: string; items: HeaderCategoryItem[] }> {
+  onMegaColumnShortcutClick(categorySlug: string): void {
+    this.router.navigate(['/catalog'], { queryParams: { category: categorySlug } });
+  }
+
+  onTrendingClick(kind: 'new' | 'best' | 'liked'): void {
+    if (kind === 'new') {
+      this.router.navigate(['/catalog'], { queryParams: { sort: 'new' } });
+      return;
+    }
+    if (kind === 'best') {
+      this.router.navigate(['/catalog'], { queryParams: { sort: 'popular' } });
+      return;
+    }
+    this.router.navigate(['/catalog'], { queryParams: { rating: '5' } });
+  }
+
+  isCategoryShortcutActive(slug: string): boolean {
+    const category = this.getQueryParam('category');
+    return category === slug;
+  }
+
+  isTrendingActive(kind: 'new' | 'best' | 'liked'): boolean {
+    const sort = this.getQueryParam('sort');
+    const rating = this.getQueryParam('rating');
+    if (kind === 'new') return sort === 'new';
+    if (kind === 'best') return sort === 'popular';
+    return rating === '5';
+  }
+
+  private buildMegaColumns(categories: HeaderCategoryItem[]): Array<{ title: string; shortcutSlug: string; parent: HeaderCategoryItem; items: HeaderCategoryItem[] }> {
     const pickByKeyword = (keyword: string): HeaderCategoryItem | undefined => {
       return categories.find((c) => c.name.toLowerCase().includes(keyword));
     };
@@ -190,9 +166,22 @@ export class Header implements OnInit, OnDestroy {
     const merged = [...picked, ...fallback].slice(0, 4);
 
     const labels = ['Khuôn mặt', 'Đôi môi', 'Đôi mắt', 'Đôi má'];
+    
+    // ĐÃ CẬP NHẬT CHUẨN HÓA ĐƯỜNG DẪN Ở ĐÂY
+    const shortcutSlugs = ['khuon-mat', 'oi-moi', 'oi-mat', 'oi-ma']; 
+    
     return merged.map((c, i) => ({
       title: labels[i] ?? c.name,
+      shortcutSlug: shortcutSlugs[i] ?? c.slug,
+      parent: c,
       items: c.children.length ? c.children.slice(0, 6) : [c],
     }));
+  }
+
+  private getQueryParam(key: string): string | null {
+    const queryString = this.router.url.split('?')[1] ?? '';
+    if (!queryString) return null;
+    const params = new URLSearchParams(queryString);
+    return params.get(key);
   }
 }

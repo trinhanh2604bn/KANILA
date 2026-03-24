@@ -248,6 +248,9 @@
                 <div class="d-none d-md-block text-muted small">
                     Hiển thị <strong>{{ filteredProducts.length }}</strong> sản phẩm
                 </div>
+                <div class="text-muted small me-auto ms-3" *ngIf="searchKeyword">
+                    Kết quả cho "<strong>{{ searchKeyword }}</strong>"
+                </div>
                 
                 <div class="d-flex align-items-center gap-2 ms-auto sort-container">
                     <span class="text-muted small me-2 d-none d-sm-inline">Sắp xếp theo:</span>
@@ -278,10 +281,16 @@
             <div class="mb-4">
                <i class="bi bi-emoji-frown text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
             </div>
-            <h5 class="fw-bold mb-3" style="color: var(--kanila-text);">Rất tiếc, không tìm thấy sản phẩm!</h5>
-            <p class="text-muted mb-4">Thử thay đổi bộ lọc hoặc bỏ chọn bớt các tiêu chí nhé.</p>
+            <h5 class="fw-bold mb-3" style="color: var(--kanila-text);">
+                {{ searchKeyword ? 'Không tìm thấy sản phẩm phù hợp' : 'Rất tiếc, không tìm thấy sản phẩm!' }}
+            </h5>
+            <p class="text-muted mb-4">
+                {{ searchOutOfDomain
+                  ? ('Không tìm thấy sản phẩm cho "' + searchKeyword + '". Từ khóa này có thể không thuộc ngành mỹ phẩm. Gợi ý: ' + searchHints.join(', ') + '.')
+                  : (searchKeyword ? 'Thử tìm với từ khóa khác hoặc bỏ bớt bộ lọc.' : 'Thử thay đổi bộ lọc hoặc bỏ chọn bớt các tiêu chí nhé.') }}
+            </p>
             <button class="btn px-4 py-2 rounded-pill fw-bold" style="background-color: var(--kanila-red); color: white; border: none; box-shadow: 0 4px 10px rgba(107,30,46,0.2);" (click)="clearAllFilters()">
-                Xóa tất cả bộ lọc
+                {{ searchKeyword ? 'Xóa tìm kiếm và bộ lọc' : 'Xóa tất cả bộ lọc' }}
             </button>
         </div>
     </div>

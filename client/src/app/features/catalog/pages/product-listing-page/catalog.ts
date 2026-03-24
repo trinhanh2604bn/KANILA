@@ -31,6 +31,8 @@ interface CatalogProductRow {
   slug?: string;
   brand: string;
   brandSlug: string;
+  categoryName: string;
+  subCategoryName: string;
   parentSlug: string;
   subSlug?: string;
   skinTypes: string[];
@@ -48,6 +50,7 @@ interface CatalogProductRow {
   isSale: boolean;
   sold: number;
   imageUrl?: string;
+  description?: string;
 }
 
 @Component({
@@ -112,6 +115,15 @@ export class Catalog implements OnInit {
   suggestedSkinType: string | null = null;
 
   brandSearchText: string = ''; 
+  searchKeyword: string = '';
+  searchOutOfDomain = false;
+  readonly searchHints: string[] = ['son moi', 'phan phu', 'kem duong'];
+  private readonly domainKeywords = [
+    'my pham', 'makeup', 'skincare', 'son', 'son moi', 'phan', 'phan phu', 'phan mat', 'phan ma',
+    'kem', 'kem nen', 'kem duong', 'kem chong nang', 'duong', 'serum', 'toner', 'cushion', 'mascara',
+    'eyeliner', 'khoi', 'mat na', 'tay trang', 'sua rua mat', 'chong nang', 'duong am', 'lip', 'foundation',
+    'blush', 'powder', 'concealer', 'nuoc hoa hong'
+  ];
 
   private readonly filterState: CatalogFilterState = {
     categorySlug: null,
@@ -340,7 +352,7 @@ export class Catalog implements OnInit {
     this.updateRouteState({
       category: null, sub: null, brand: null, filterBrands: null, productType: null, skin: null,
       shade: null, finish: null, benefit: null, promotion: null, rating: null,
-      stock: null, size: null, minPrice: null, maxPrice: null, sort: null,
+      stock: null, size: null, minPrice: null, maxPrice: null, sort: null, search: null,
     });
   }
 
@@ -399,6 +411,31 @@ export class Catalog implements OnInit {
     }
     if (this.selectedSizes.length > 0) {
       temp = temp.filter((p) => p.sizes.some((s) => this.selectedSizes.includes(s)));
+    }
+
+    if (this.searchKeyword) {
+      const q = this.normalizeText(this.searchKeyword);
+      this.searchOutOfDomain = !this.isDomainRelevantQuery(q);
+      if (this.searchOutOfDomain) {
+        temp = [];
+      } else {
+      const qLoose = this.toLooseText(q);
+      temp = temp.filter((p) => {
+        const fields = [
+          p.name,
+          p.brand,
+          p.categoryName,
+          p.subCategoryName,
+          p.productType,
+          p.description ?? '',
+        ];
+        const normalizedFields = fields.map((x) => this.normalizeText(x));
+        const looseFields = normalizedFields.map((x) => this.toLooseText(x));
+        return normalizedFields.some((f) => this.isSearchMatch(f, q)) || looseFields.some((f) => this.isSearchMatch(f, qLoose));
+      });
+      }
+    } else {
+      this.searchOutOfDomain = false;
     }
 
     temp = temp.filter((p) => p.price >= this.minPriceInput && p.price <= this.maxPriceInput);
@@ -531,7 +568,7 @@ export class Catalog implements OnInit {
     this.updateRouteState({
       skin: null, minPrice: null, maxPrice: null, brand: null, filterBrands: null, productType: null,
       shade: null, finish: null, benefit: null, promotion: null, rating: null,
-      stock: null, size: null,
+      stock: null, size: null, search: null,
     });
   }
 
@@ -548,7 +585,8 @@ export class Catalog implements OnInit {
       this.selectedRatings.length > 0 ||
       this.selectedStockStatuses.length > 0 ||
       this.selectedSizes.length > 0 ||
-      !!this.selectedBrandFromHeader
+      !!this.selectedBrandFromHeader ||
+      !!this.searchKeyword
     );
   }
 
@@ -578,6 +616,7 @@ export class Catalog implements OnInit {
     const ratingParam = (params['rating'] ?? '').trim();
     const stockParam = (params['stock'] ?? '').trim();
     const sizeParam = (params['size'] ?? '').trim();
+    const searchParam = (params['search'] ?? '').trim();
     const sortParam = (params['sort'] ?? '').trim();
     const minPriceParam = Number(params['minPrice']);
     const maxPriceParam = Number(params['maxPrice']);
@@ -631,6 +670,7 @@ export class Catalog implements OnInit {
     this.minPriceInput = this.filterState.minPrice;
     this.maxPriceInput = this.filterState.maxPrice;
     this.activeSort = this.filterState.sort || 'default';
+    this.searchKeyword = searchParam;
     this.updatePriceLabel();
     if (this.minPriceInput === 0 && this.maxPriceInput === this.maxLimit) this.selectedPrice = null;
   }
@@ -693,6 +733,8 @@ export class Catalog implements OnInit {
           slug: p.slug,
           brand: brandName,
           brandSlug: this.slugify(brandName),
+          categoryName: categoryCtx.parentName,
+          subCategoryName: categoryCtx.subName ?? '',
           parentSlug: categoryCtx.parentSlug,
           subSlug: categoryCtx.subSlug,
           productType: categoryCtx.parentName,
@@ -710,15 +752,16 @@ export class Catalog implements OnInit {
           isSale: isDiscount,
           sold: p.bought ?? 0,
           imageUrl: this.resolveImage(p),
+          description: p.shortDescription ?? p.longDescription ?? '',
         };
       });
   }
 
-  private findCategoryContext(categoryId: string): { parentSlug: string; parentName: string; subSlug?: string } {
+  private findCategoryContext(categoryId: string): { parentSlug: string; parentName: string; subSlug?: string; subName?: string } {
     for (const top of this.categories) {
       if (top.id === categoryId) return { parentSlug: top.slug, parentName: top.name };
       const sub = top.subCategories.find((s) => s.id === categoryId);
-      if (sub) return { parentSlug: top.slug, parentName: top.name, subSlug: sub.slug };
+      if (sub) return { parentSlug: top.slug, parentName: top.name, subSlug: sub.slug, subName: sub.name };
     }
     return { parentSlug: '', parentName: '' };
   }
@@ -786,6 +829,53 @@ export class Catalog implements OnInit {
 
   private splitParam(raw: string): string[] {
     return raw ? raw.split(',').map((x) => decodeURIComponent(x.trim())).filter(Boolean) : [];
+  }
+
+  private normalizeText(value: string): string {
+    return (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private toLooseText(value: string): string {
+    return value.replace(/(.)\1+/g, '$1');
+  }
+
+  private isSearchMatch(field: string, keyword: string): boolean {
+    if (!keyword) return true;
+    if (!field) return false;
+    if (field.includes(keyword)) return true;
+    // Basic typo tolerance without broad overmatching.
+    const looseField = this.toLooseText(field);
+    const looseKeyword = this.toLooseText(keyword);
+    if (looseField.includes(looseKeyword)) return true;
+    // Token-level check only for meaningful token lengths to avoid random matches.
+    return field
+      .split(' ')
+      .filter((t) => t.length >= 4 && keyword.length >= 4)
+      .some((t) => this.toLooseText(t).includes(looseKeyword));
+  }
+
+  private isDomainRelevantQuery(keyword: string): boolean {
+    if (!keyword) return true;
+    if (keyword.length <= 2) return true;
+    if (this.domainKeywords.some((k) => k.includes(keyword) || keyword.includes(k))) return true;
+    return this.allProducts.some((p) => {
+      const fields = [
+        p.name,
+        p.brand,
+        p.categoryName,
+        p.subCategoryName,
+        p.productType,
+        p.description ?? '',
+      ].map((x) => this.normalizeText(x));
+      return fields.some((f) => f.includes(keyword) || this.toLooseText(f).includes(this.toLooseText(keyword)));
+    });
   }
 
   private toggleStringSelection(source: string[], value: string): string[] {
