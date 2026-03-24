@@ -1,3 +1,10 @@
 .a {
     background-color: var(--kanila-bg);
 }
+/* app-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+} */
