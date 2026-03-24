@@ -180,6 +180,55 @@
   padding: 20px 22px;
 }
 
+.address-card .card-head {
+  align-items: flex-start;
+}
+
+.addr-line-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  color: #4c1a30;
+}
+
+.addr-phone-inline {
+  font-weight: 700;
+  color: #6b2c44;
+}
+
+.addr-line-full {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #5a3d4a;
+  line-height: 1.5;
+}
+
+.default-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd8e8, #ffc8dd);
+  color: #7a1f45;
+}
+
+.addr-empty-copy {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #7a5565;
+  line-height: 1.45;
+}
+
+.address-card .addr-add-cta {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .skin-card {
   background: linear-gradient(180deg, #fff4f8 0%, #fff 70%);
 }
@@ -527,6 +576,18 @@
   align-items: center;
   padding: 0 12px;
   background: #fff;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.security-item:hover {
+  background: #fff7fb;
+}
+
+a.security-item {
+  cursor: pointer;
 }
 
 .profile-reco {

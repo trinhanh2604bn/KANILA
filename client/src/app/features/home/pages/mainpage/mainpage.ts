@@ -18,8 +18,8 @@ import { GlobalToastComponent } from '../../../../layout/global-toast/global-toa
 import { CheckoutService } from '../../../checkout/services/checkout.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { RecommendationService, RecommendedProductView } from '../../../../core/services/recommendation.service';
-import { RecommendationProductBlockComponent } from '../../../recommendations/components/recommendation-product-block/recommendation-product-block';
 import { ProfileHubService } from '../../../account/services/profile-hub.service';
+import { ProductCardComponent } from '../components/product-card/product-card';
 
 @Component({
   selector: 'app-mainpage',
@@ -33,7 +33,7 @@ import { ProfileHubService } from '../../../account/services/profile-hub.service
   Footer,
 Header,
 GlobalToastComponent,
-RecommendationProductBlockComponent],
+ProductCardComponent],
   templateUrl: './mainpage.html',
   styleUrl: './mainpage.css',
 })
@@ -47,6 +47,7 @@ export class Mainpage implements OnInit {
 
   previewProduct: Product | null = null;
   personalized: RecommendedProductView[] = [];
+  personalizedProducts: Product[] = [];
   personalizedLoading = false;
   personalizedError = '';
   hasSkinProfile = false;
@@ -254,6 +255,7 @@ export class Mainpage implements OnInit {
       this.recommendationService.getMyRecommendations('', 6, 'homepage').pipe(take(1)).subscribe({
         next: (items) => {
           this.personalized = items;
+          this.personalizedProducts = items.map((item) => this.toProductCardModel(item));
           this.personalizedLoading = false;
         },
         error: () => {
@@ -262,5 +264,23 @@ export class Mainpage implements OnInit {
         },
       });
     });
+  }
+
+  private toProductCardModel(item: RecommendedProductView): Product {
+    return {
+      _id: item.product._id || item.productId,
+      productName: item.product.productName || item.product.name || 'Sản phẩm',
+      productCode: 'RECO',
+      slug: item.product.slug || item.product._id || item.productId,
+      price: Number(item.product.price || 0),
+      imageUrl: item.product.imageUrl || item.product.image || '',
+      averageRating: Number(item.product.averageRating || item.product.rating || 0),
+      bought: Number(item.product.bought || 0),
+      stock: 999,
+      brandId: item.product.brandName || item.product.brand
+        ? { _id: '', brandName: String(item.product.brandName || item.product.brand || '') }
+        : undefined,
+      shortDescription: item.reasons?.[0] || '',
+    };
   }
 }

@@ -9,6 +9,9 @@ const {
   getMySkinProfile,
   patchMySkinProfile,
   getMyAddresses,
+  postMyAddress,
+  patchMyAddress,
+  deleteMyAddress,
   patchMyDefaultAddress,
   changeMyPassword,
   getMyProviders,
@@ -22,8 +25,11 @@ router.get("/profile-hub", authMiddleware, getProfileHub);
 router.patch("/profile", authMiddleware, patchMyProfile);
 router.get("/skin-profile", authMiddleware, getMySkinProfile);
 router.patch("/skin-profile", authMiddleware, patchMySkinProfile);
+router.post("/addresses", authMiddleware, postMyAddress);
 router.get("/addresses", authMiddleware, getMyAddresses);
 router.patch("/addresses/:id/default", authMiddleware, patchMyDefaultAddress);
+router.patch("/addresses/:id", authMiddleware, patchMyAddress);
+router.delete("/addresses/:id", authMiddleware, deleteMyAddress);
 router.post("/change-password", authMiddleware, changeMyPassword);
 router.get("/providers", authMiddleware, getMyProviders);
 

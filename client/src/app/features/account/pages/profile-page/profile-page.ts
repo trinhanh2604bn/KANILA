@@ -7,12 +7,23 @@ import { catchError, take } from 'rxjs/operators';
 import { AuthService } from '../../../../core/services/auth.service';
 import { RecommendationService, RecommendedProductView } from '../../../../core/services/recommendation.service';
 import { RecommendationProductBlockComponent } from '../../../recommendations/components/recommendation-product-block/recommendation-product-block';
+import { ToastService } from '../../../../core/services/toast.service';
+import { AddressManageModalComponent } from '../../components/address-manage-modal/address-manage-modal';
+import { ChangePasswordModalComponent } from '../../components/change-password-modal/change-password-modal';
 import { ProfileHubService } from '../../services/profile-hub.service';
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RecommendationProductBlockComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    RouterLinkActive,
+    RecommendationProductBlockComponent,
+    AddressManageModalComponent,
+    ChangePasswordModalComponent,
+  ],
   templateUrl: './profile-page.html',
   styleUrls: ['./profile-page.css'],
 })
@@ -44,7 +55,7 @@ export class ProfilePageComponent implements OnInit {
   orderCount = 0;
   wishlistCount = 0;
   couponCount = 0;
-  addressCount = 1;
+  addressCount = 0;
   pendingOrderCount = 0;
   avatarUrl = '';
   defaultAddressText = 'Chưa có địa chỉ mặc định';
@@ -57,6 +68,10 @@ export class ProfilePageComponent implements OnInit {
   recommendedProducts: RecommendedProductView[] = [];
   recommendationLoading = false;
   recommendationError = '';
+
+  addressModalOpen = false;
+  passwordModalOpen = false;
+
   readonly skinTypeOptions = ['Da dầu', 'Da khô', 'Da hỗn hợp', 'Da nhạy cảm'];
   readonly toneOptions = ['Tông tối', 'Tông trung bình', 'Tông sáng', 'Không chắc'];
   readonly eyeColorOptions = ['Nâu đậm', 'Nâu nhạt', 'Đen', 'Xám', 'Xanh', 'Không chắc'];
@@ -76,7 +91,8 @@ export class ProfilePageComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly profileHubService: ProfileHubService,
     private readonly recommendationService: RecommendationService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly toast: ToastService
   ) {
     const payload = this.decodeTokenPayload();
     const fullName = String(payload?.['full_name'] || payload?.['fullName'] || payload?.['username'] || '').trim();
@@ -103,6 +119,59 @@ export class ProfilePageComponent implements OnInit {
 
   get initials(): string {
     return (this.firstName[0] || 'K').toUpperCase();
+  }
+
+  get hasSavedAddress(): boolean {
+    return this.addressCount > 0;
+  }
+
+  openAddressModal(): void {
+    this.addressModalOpen = true;
+  }
+
+  onAddressModalOpen(v: boolean): void {
+    this.addressModalOpen = v;
+  }
+
+  onAddressesChanged(): void {
+    this.refreshAddressSummary();
+  }
+
+  openChangePasswordModal(): void {
+    this.passwordModalOpen = true;
+  }
+
+  onPasswordModalOpen(v: boolean): void {
+    this.passwordModalOpen = v;
+  }
+
+  onPasswordChanged(): void {
+    this.toast.success('Đã cập nhật mật khẩu thành công.');
+  }
+
+  private refreshAddressSummary(): void {
+    this.profileHubService
+      .getHub()
+      .pipe(take(1))
+      .subscribe({
+        next: (hub) => {
+          this.addressCount = Number(hub.stats?.addressCount || 0);
+          const da = hub.defaultAddress;
+          if (da) {
+            this.defaultAddressText = da.fullAddress || '';
+            this.defaultAddressName = da.recipientName || '';
+            this.defaultAddressPhone = da.phone || '';
+          } else {
+            this.defaultAddressText = 'Chưa có địa chỉ mặc định';
+            this.defaultAddressName = '';
+            this.defaultAddressPhone = '';
+          }
+          this.toast.success('Đã cập nhật địa chỉ.');
+        },
+        error: () => {
+          this.toast.error('Không thể làm mới địa chỉ. Vui lòng tải lại trang.');
+        },
+      });
   }
 
   toggleEdit(): void {
@@ -208,9 +277,15 @@ export class ProfilePageComponent implements OnInit {
       this.couponCount = Number(hub.stats?.couponCount || 0);
       this.addressCount = Number(hub.stats?.addressCount || 0);
 
-      this.defaultAddressText = hub.defaultAddress?.fullAddress || this.defaultAddressText;
-      this.defaultAddressName = hub.defaultAddress?.recipientName || '';
-      this.defaultAddressPhone = hub.defaultAddress?.phone || '';
+      if (hub.defaultAddress) {
+        this.defaultAddressText = hub.defaultAddress.fullAddress || '';
+        this.defaultAddressName = hub.defaultAddress.recipientName || '';
+        this.defaultAddressPhone = hub.defaultAddress.phone || '';
+      } else {
+        this.defaultAddressText = 'Chưa có địa chỉ mặc định';
+        this.defaultAddressName = '';
+        this.defaultAddressPhone = '';
+      }
 
       this.skinTypeSelections = Array.isArray(hub.skinProfile?.skinType) ? hub.skinProfile.skinType : [];
       this.skinTone = hub.skinProfile?.skinTone || '';

@@ -63,6 +63,8 @@ export class Header implements OnInit, OnDestroy {
   headerError = false;
   cartBadgeCount = 0;
   accountMenuOpen = false;
+  private cachedRoleToken = '';
+  private cachedAccountType = '';
 
   private readonly destroy$ = new Subject<void>();
 
@@ -125,6 +127,11 @@ export class Header implements OnInit, OnDestroy {
     return (parts[0]?.[0] || 'K').toUpperCase();
   }
 
+  get isAdminUser(): boolean {
+    const accountType = this.getCachedAccountType();
+    return accountType === 'admin' || accountType === 'super_admin';
+  }
+
   toggleAccountMenu(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -137,6 +144,8 @@ export class Header implements OnInit, OnDestroy {
 
   logout(): void {
     this.authService.logout();
+    this.cachedRoleToken = '';
+    this.cachedAccountType = '';
     this.accountMenuOpen = false;
     this.router.navigate(['/']);
   }
@@ -240,5 +249,14 @@ export class Header implements OnInit, OnDestroy {
     } catch {
       return null;
     }
+  }
+
+  private getCachedAccountType(): string {
+    const token = this.authService.getToken() || '';
+    if (!token) return '';
+    if (token === this.cachedRoleToken) return this.cachedAccountType;
+    this.cachedRoleToken = token;
+    this.cachedAccountType = this.authService.getAccountTypeFromToken();
+    return this.cachedAccountType;
   }
 }

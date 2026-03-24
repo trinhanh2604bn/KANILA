@@ -35,6 +35,12 @@ export interface RecommendationOverviewAnalytics {
   algorithm_versions: string[];
 }
 
+export interface RecommendationAnalyticsRow {
+  _id?: string;
+  count: number;
+  [key: string]: any;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RecommendationService {
   private readonly api = 'http://localhost:5000/api/recommendations';
@@ -73,6 +79,41 @@ export class RecommendationService {
     return this.http.get<any>('http://localhost:5000/api/admin/recommendations/analytics/overview').pipe(
       map((res) => (res?.data || null) as RecommendationOverviewAnalytics | null),
       catchError(() => of(null))
+    );
+  }
+
+  getAnalyticsTopReasons(): Observable<RecommendationAnalyticsRow[]> {
+    return this.http.get<any>('http://localhost:5000/api/admin/recommendations/analytics/top-reasons').pipe(
+      map((res) => (res?.data || []) as RecommendationAnalyticsRow[]),
+      catchError(() => of([]))
+    );
+  }
+
+  getAnalyticsTopProducts(): Observable<RecommendationAnalyticsRow[]> {
+    return this.http.get<any>('http://localhost:5000/api/admin/recommendations/analytics/top-products').pipe(
+      map((res) => (res?.data || []) as RecommendationAnalyticsRow[]),
+      catchError(() => of([]))
+    );
+  }
+
+  getAnalyticsTopBrands(): Observable<RecommendationAnalyticsRow[]> {
+    return this.http.get<any>('http://localhost:5000/api/admin/recommendations/analytics/top-brands').pipe(
+      map((res) => (res?.data || []) as RecommendationAnalyticsRow[]),
+      catchError(() => of([]))
+    );
+  }
+
+  getAnalyticsByContext(): Observable<RecommendationAnalyticsRow[]> {
+    return this.http.get<any>('http://localhost:5000/api/admin/recommendations/analytics/by-context').pipe(
+      map((res) => (res?.data || []) as RecommendationAnalyticsRow[]),
+      catchError(() => of([]))
+    );
+  }
+
+  getAnalyticsTimeline(): Observable<Array<{ date: string; count: number }>> {
+    return this.http.get<any>('http://localhost:5000/api/admin/recommendations/analytics/timeline').pipe(
+      map((res) => (res?.data || []) as Array<{ date: string; count: number }>),
+      catchError(() => of([]))
     );
   }
 }

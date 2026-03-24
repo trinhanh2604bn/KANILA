@@ -6,15 +6,31 @@
 <!-- Same horizontal margins as client layout: <main class="container py-2"> -->
 <main class="container py-2 mainpage-content">
   <section class="personalized-section" *ngIf="isAuthenticated() && hasSkinProfile">
-    <app-recommendation-product-block
-      title="Dành riêng cho làn da của bạn"
-      subtitle="Dựa trên hồ sơ làn da và sở thích chăm sóc da của bạn"
-      [items]="personalized"
-      [loading]="personalizedLoading"
-      [error]="personalizedError"
-      emptyText="Kanila đang học thêm sở thích của bạn để gợi ý chính xác hơn."
-      (retry)="retryPersonalized()"
-    />
+    <app-divider title="DÀNH RIÊNG CHO BẠN" buttonText="Xem thêm"></app-divider>
+    <p class="personalized-subtitle">Dựa trên hồ sơ làn da và sở thích chăm sóc da của bạn</p>
+
+    <div class="reco-loading" *ngIf="personalizedLoading">
+      <div class="reco-skeleton" *ngFor="let x of [1,2,3,4]"></div>
+    </div>
+
+    <div class="reco-error" *ngIf="!personalizedLoading && personalizedError">
+      <span>{{ personalizedError }}</span>
+      <button type="button" (click)="retryPersonalized()">Thử lại</button>
+    </div>
+
+    <div class="reco-empty" *ngIf="!personalizedLoading && !personalizedError && !personalizedProducts.length">
+      Kanila đang học thêm sở thích của bạn để gợi ý chính xác hơn.
+    </div>
+
+    <section class="catalog-page-reco" *ngIf="!personalizedLoading && !personalizedError && personalizedProducts.length">
+      <div class="catalog-products">
+        <div class="product-grid">
+          <div *ngFor="let p of personalizedProducts">
+            <app-product-card [product]="p"></app-product-card>
+          </div>
+        </div>
+      </div>
+    </section>
   </section>
   <section class="personalized-cta" *ngIf="isAuthenticated() && !hasSkinProfile">
     <h3>Kanila chọn riêng cho bạn</h3>

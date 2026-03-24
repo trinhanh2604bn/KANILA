@@ -189,10 +189,20 @@
         <header class="card-head">
           <div>
             <h2>Địa chỉ mặc định</h2>
-            <p *ngIf="defaultAddressName || defaultAddressPhone">{{ defaultAddressName }} <span *ngIf="defaultAddressPhone">- {{ defaultAddressPhone }}</span></p>
-            <p>{{ defaultAddressText }}</p>
+            <ng-container *ngIf="hasSavedAddress; else noAddr">
+              <p class="addr-line-name">
+                <span *ngIf="defaultAddressName">{{ defaultAddressName }}</span>
+                <span *ngIf="defaultAddressPhone" class="addr-phone-inline">{{ defaultAddressPhone }}</span>
+                <span class="default-badge" *ngIf="hasSavedAddress">Mặc định</span>
+              </p>
+              <p class="addr-line-full">{{ defaultAddressText }}</p>
+            </ng-container>
+            <ng-template #noAddr>
+              <p class="addr-empty-copy">Bạn chưa có địa chỉ giao hàng. Thêm ngay để thanh toán nhanh hơn.</p>
+            </ng-template>
           </div>
-          <a class="btn-ghost" routerLink="/account/addresses">Thay đổi</a>
+          <button type="button" class="btn-ghost" *ngIf="hasSavedAddress" (click)="openAddressModal()">Thay đổi</button>
+          <button type="button" class="btn-primary addr-add-cta" *ngIf="!hasSavedAddress" (click)="openAddressModal()">Thêm địa chỉ</button>
         </header>
       </section>
 
@@ -204,7 +214,7 @@
           </div>
         </header>
         <div class="security-actions">
-          <a routerLink="/account/security" class="security-item"><i class="bi bi-key"></i><span>Đổi mật khẩu</span></a>
+          <button type="button" class="security-item" (click)="openChangePasswordModal()"><i class="bi bi-key"></i><span>Đổi mật khẩu</span></button>
           <a routerLink="/account/security" class="security-item"><i class="bi bi-link-45deg"></i><span>Liên kết tài khoản mạng xã hội</span></a>
           <div class="security-meta">
             <span class="security-pill" [class.ok]="hasPassword">{{ hasPassword ? 'Mật khẩu: Đã thiết lập' : 'Mật khẩu: Chưa thiết lập' }}</span>
@@ -215,4 +225,16 @@
       </section>
     </main>
   </div>
+
+  <app-address-manage-modal
+    [open]="addressModalOpen"
+    (openChange)="onAddressModalOpen($event)"
+    (addressesChanged)="onAddressesChanged()"
+  />
+  <app-change-password-modal
+    [open]="passwordModalOpen"
+    [hasPassword]="hasPassword"
+    (openChange)="onPasswordModalOpen($event)"
+    (passwordChanged)="onPasswordChanged()"
+  />
 </section>

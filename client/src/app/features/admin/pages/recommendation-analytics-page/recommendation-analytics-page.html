@@ -1,0 +1,89 @@
+<section class="admin-reco-page">
+  <header class="hero">
+    <h1>Recommendation Analytics</h1>
+    <p>Theo dõi hiệu quả gợi ý sản phẩm theo hồ sơ làn da.</p>
+  </header>
+
+  <div class="state" *ngIf="loading">Đang tải dữ liệu analytics...</div>
+  <div class="state error" *ngIf="!loading && error">
+    {{ error }}
+    <button type="button" (click)="loadAnalytics()">Thử lại</button>
+  </div>
+  <div class="state" *ngIf="!loading && !error && !hasData">Chưa có dữ liệu recommendation.</div>
+
+  <ng-container *ngIf="!loading && !error && hasData">
+    <section class="cards" *ngIf="overview as ov">
+      <article class="card">
+        <h3>Total Impressions</h3>
+        <strong>{{ ov.total_impressions | number }}</strong>
+      </article>
+      <article class="card">
+        <h3>Unique Customers</h3>
+        <strong>{{ ov.unique_customers_recommended_to | number }}</strong>
+      </article>
+      <article class="card">
+        <h3>Products Served</h3>
+        <strong>{{ ov.total_recommended_products_served | number }}</strong>
+      </article>
+      <article class="card">
+        <h3>Algorithm</h3>
+        <strong>{{ ov.algorithm_versions[0] || 'rule_v1' }}</strong>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Top Reason Codes</h2>
+        <table>
+          <thead><tr><th>Reason</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let row of topReasons"><td>{{ row._id }}</td><td>{{ row.count }}</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="panel">
+        <h2>Top Recommended Products</h2>
+        <table>
+          <thead><tr><th>Product</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let row of topProducts"><td>{{ getProductRowName(row) }}</td><td>{{ row.count }}</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="panel">
+        <h2>Top Brands</h2>
+        <table>
+          <thead><tr><th>Brand</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let row of topBrands"><td>{{ getBrandRowName(row) }}</td><td>{{ row.count }}</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="panel">
+        <h2>By Context</h2>
+        <table>
+          <thead><tr><th>Context</th><th>Count</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let row of byContext"><td>{{ row._id }}</td><td>{{ row.count }}</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Daily Timeline (14 ngày gần nhất)</h2>
+      <div class="timeline">
+        <div class="bar-row" *ngFor="let row of timeline">
+          <span class="date">{{ row.date | date:'dd/MM' }}</span>
+          <div class="bar-wrap">
+            <div class="bar" [style.width.%]="(row.count / maxTimelineCount()) * 100"></div>
+          </div>
+          <span class="count">{{ row.count }}</span>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</section>

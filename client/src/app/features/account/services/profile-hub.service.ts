@@ -87,6 +87,14 @@ export class ProfileHubService {
     return this.http.patch<any>(`${this.api}/skin-profile`, body).pipe(map(() => void 0));
   }
 
+  changePassword(payload: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  }): Observable<void> {
+    return this.http.post<any>(`${this.api}/change-password`, payload).pipe(map(() => void 0));
+  }
+
   getSkinProfile(): Observable<{
     skin_type: string[];
     skin_tone: string;

@@ -66,9 +66,13 @@ export class AuthService {
   }
 
   isCustomerAccountFromToken(): boolean {
-    const payload = this.decodeJwtPayload(this.getToken());
-    const accountType = String(payload?.['account_type'] || payload?.['accountType'] || '').toLowerCase();
+    const accountType = this.getAccountTypeFromToken();
     return accountType === 'customer';
+  }
+
+  getAccountTypeFromToken(): string {
+    const payload = this.decodeJwtPayload(this.getToken());
+    return String(payload?.['account_type'] || payload?.['accountType'] || '').toLowerCase();
   }
 
   private decodeJwtPayload(token: string | null): Record<string, any> | null {

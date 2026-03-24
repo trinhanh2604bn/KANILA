@@ -62,6 +62,17 @@ const addressSchema = new mongoose.Schema(
       default: "",
       trim: true,
     },
+    address_type: {
+      type: String,
+      enum: ["home", "office", "other"],
+      default: "home",
+      trim: true,
+    },
+    address_note: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     is_default_shipping: {
       type: Boolean,
       default: false,
@@ -80,6 +91,13 @@ const addressSchema = new mongoose.Schema(
 addressSchema.virtual("address_id").get(function () {
   return this._id;
 });
+
+addressSchema.pre("save", function (next) {
+  if (!this.address_type) this.address_type = "home";
+  if (this.address_note == null) this.address_note = "";
+  next();
+});
+
 addressSchema.set("toJSON", { virtuals: true });
 addressSchema.set("toObject", { virtuals: true });
 

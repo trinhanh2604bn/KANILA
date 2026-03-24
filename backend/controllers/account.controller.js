@@ -67,8 +67,84 @@ const resolveAuthAccountAndCustomer = async (req) => {
   return { account, customer: createdCustomer };
 };
 
-const formatAddress = (a) =>
-  [a?.address_line_1, a?.address_line_2, a?.ward, a?.district, a?.city].filter(Boolean).join(", ");
+const countryLabel = (code) => {
+  const c = String(code || "").trim().toUpperCase();
+  if (c === "VN") return "Việt Nam";
+  return c || "";
+};
+
+const formatAddress = (a) => {
+  const line1 = [a?.address_line_1, a?.address_line_2].filter(Boolean).join(", ");
+  const tail = [a?.ward, a?.district, a?.city, countryLabel(a?.country_code)].filter(Boolean);
+  const parts = [line1 || a?.address_line_1, ...tail].filter(Boolean);
+  return parts.join(", ");
+};
+
+const normalizeAccountAddressBody = (body, { partial = false } = {}) => {
+  const g = (snake, camel, def) => {
+    if (body[snake] !== undefined) return body[snake];
+    if (body[camel] !== undefined) return body[camel];
+    return def;
+  };
+  const cityRaw = g("city", "city", partial ? undefined : undefined);
+  const province = g("province_or_city", "provinceOrCity", undefined);
+  const city = cityRaw !== undefined ? cityRaw : province;
+
+  const patch = {
+    address_label: g("address_label", "addressLabel", partial ? undefined : ""),
+    recipient_name: g("recipient_name", "recipientName", partial ? undefined : undefined),
+    phone: g("phone", "phone", partial ? undefined : undefined),
+    address_line_1: g("address_line_1", "addressLine1", partial ? undefined : undefined),
+    address_line_2: g("address_line_2", "addressLine2", partial ? undefined : ""),
+    ward: g("ward", "ward", partial ? undefined : ""),
+    district: g("district", "district", partial ? undefined : ""),
+    city,
+    country_code: g("country_code", "countryCode", partial ? undefined : "VN"),
+    postal_code: g("postal_code", "postalCode", partial ? undefined : ""),
+    address_type: g("address_type", "addressType", partial ? undefined : undefined),
+    address_note: g("address_note", "addressNote", partial ? undefined : ""),
+    is_default_shipping: g("is_default_shipping", "isDefaultShipping", partial ? undefined : undefined),
+    is_default_billing: g("is_default_billing", "isDefaultBilling", partial ? undefined : undefined),
+  };
+
+  if (partial) {
+    const out = {};
+    for (const [k, v] of Object.entries(patch)) {
+      if (v !== undefined) out[k] = v;
+    }
+    return out;
+  }
+
+  return {
+    address_label: patch.address_label ?? "",
+    recipient_name: patch.recipient_name,
+    phone: patch.phone,
+    address_line_1: patch.address_line_1,
+    address_line_2: patch.address_line_2 ?? "",
+    ward: patch.ward ?? "",
+    district: patch.district ?? "",
+    city: patch.city,
+    country_code: patch.country_code ?? "VN",
+    postal_code: patch.postal_code ?? "",
+    address_type: patch.address_type || "home",
+    address_note: patch.address_note ?? "",
+    is_default_shipping: !!patch.is_default_shipping,
+    is_default_billing: !!patch.is_default_billing,
+  };
+};
+
+const validateNewPasswordStrength = (password) => {
+  if (!password || password.length < 8) {
+    return "Mật khẩu mới phải có ít nhất 8 ký tự.";
+  }
+  if (!/[A-Za-zÀ-ỹ]/.test(password)) {
+    return "Mật khẩu mới phải có ít nhất một chữ cái.";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Mật khẩu mới phải có ít nhất một chữ số.";
+  }
+  return null;
+};
 
 const parsePreferenceValue = (value) => {
   if (value == null) return null;
@@ -381,7 +457,145 @@ const patchMyDefaultAddress = async (req, res) => {
     await Address.updateMany({ customer_id: customer._id, is_default_shipping: true }, { is_default_shipping: false });
     target.is_default_shipping = true;
     await target.save();
-    return res.status(200).json({ success: true, message: "Default address updated successfully" });
+    return res.status(200).json({
+      success: true,
+      message: "Default address updated successfully",
+      data: {
+        address: target,
+        fullAddress: formatAddress(target),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/account/addresses
+const postMyAddress = async (req, res) => {
+  try {
+    const { customer } = await resolveAuthAccountAndCustomer(req);
+    if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
+
+    const payload = normalizeAccountAddressBody(req.body, { partial: false });
+    const { recipient_name, phone, address_line_1, city } = payload;
+    if (!recipient_name || !phone || !address_line_1 || !city) {
+      return res.status(400).json({
+        success: false,
+        message: "Họ tên người nhận, số điện thoại, địa chỉ và tỉnh/thành phố là bắt buộc.",
+      });
+    }
+
+    const count = await Address.countDocuments({ customer_id: customer._id });
+    let isDefault = !!payload.is_default_shipping;
+    if (count === 0) isDefault = true;
+    if (isDefault) {
+      await Address.updateMany({ customer_id: customer._id }, { is_default_shipping: false });
+    }
+    const allowedTypes = ["home", "office", "other"];
+    const addressType = allowedTypes.includes(payload.address_type) ? payload.address_type : "home";
+
+    const doc = await Address.create({
+      customer_id: customer._id,
+      address_label: payload.address_label || "",
+      recipient_name: String(recipient_name).trim(),
+      phone: String(phone).trim(),
+      address_line_1: String(address_line_1).trim(),
+      address_line_2: String(payload.address_line_2 || "").trim(),
+      ward: String(payload.ward || "").trim(),
+      district: String(payload.district || "").trim(),
+      city: String(city).trim(),
+      country_code: (String(payload.country_code || "VN").trim().toUpperCase() || "VN").slice(0, 8),
+      postal_code: String(payload.postal_code || "").trim(),
+      address_type: addressType,
+      address_note: String(payload.address_note || "").trim(),
+      is_default_shipping: isDefault,
+      is_default_billing: !!payload.is_default_billing,
+    });
+
+    return res.status(201).json({ success: true, message: "Address created successfully", data: doc });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// PATCH /api/account/addresses/:id
+const patchMyAddress = async (req, res) => {
+  try {
+    const { customer } = await resolveAuthAccountAndCustomer(req);
+    if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid address ID" });
+    const existing = await Address.findOne({ _id: id, customer_id: customer._id });
+    if (!existing) return res.status(404).json({ success: false, message: "Address not found" });
+
+    const updates = normalizeAccountAddressBody(req.body, { partial: true });
+    if (updates.address_type && !["home", "office", "other"].includes(String(updates.address_type))) {
+      return res.status(400).json({ success: false, message: "Loại địa chỉ không hợp lệ." });
+    }
+    if (updates.is_default_shipping === true) {
+      await Address.updateMany(
+        { customer_id: customer._id, _id: { $ne: id }, is_default_shipping: true },
+        { is_default_shipping: false }
+      );
+    }
+
+    if (updates.address_label !== undefined) existing.address_label = String(updates.address_label || "").trim();
+    if (updates.recipient_name !== undefined) existing.recipient_name = String(updates.recipient_name || "").trim();
+    if (updates.phone !== undefined) existing.phone = String(updates.phone || "").trim();
+    if (updates.address_line_1 !== undefined) existing.address_line_1 = String(updates.address_line_1 || "").trim();
+    if (updates.address_line_2 !== undefined) existing.address_line_2 = String(updates.address_line_2 || "").trim();
+    if (updates.ward !== undefined) existing.ward = String(updates.ward || "").trim();
+    if (updates.district !== undefined) existing.district = String(updates.district || "").trim();
+    if (updates.city !== undefined) existing.city = String(updates.city || "").trim();
+    if (updates.country_code !== undefined) {
+      existing.country_code = String(updates.country_code || "VN").trim().toUpperCase().slice(0, 8) || "VN";
+    }
+    if (updates.postal_code !== undefined) existing.postal_code = String(updates.postal_code || "").trim();
+    if (updates.address_type !== undefined) {
+      const t = String(updates.address_type);
+      existing.address_type = ["home", "office", "other"].includes(t) ? t : existing.address_type;
+    }
+    if (updates.address_note !== undefined) existing.address_note = String(updates.address_note || "").trim();
+    if (updates.is_default_shipping !== undefined) existing.is_default_shipping = !!updates.is_default_shipping;
+    if (updates.is_default_billing !== undefined) existing.is_default_billing = !!updates.is_default_billing;
+
+    if (!existing.recipient_name || !existing.phone || !existing.address_line_1 || !existing.city) {
+      return res.status(400).json({
+        success: false,
+        message: "Họ tên người nhận, số điện thoại, địa chỉ và tỉnh/thành phố là bắt buộc.",
+      });
+    }
+
+    await existing.save();
+
+    return res.status(200).json({ success: true, message: "Address updated successfully", data: existing });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE /api/account/addresses/:id
+const deleteMyAddress = async (req, res) => {
+  try {
+    const { customer } = await resolveAuthAccountAndCustomer(req);
+    if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid address ID" });
+    const existing = await Address.findOne({ _id: id, customer_id: customer._id });
+    if (!existing) return res.status(404).json({ success: false, message: "Address not found" });
+
+    const wasDefault = !!existing.is_default_shipping;
+    await Address.deleteOne({ _id: id, customer_id: customer._id });
+
+    if (wasDefault) {
+      const next = await Address.findOne({ customer_id: customer._id }).sort({ updated_at: -1, created_at: -1 });
+      if (next) {
+        next.is_default_shipping = true;
+        await next.save();
+      }
+    }
+
+    return res.status(200).json({ success: true, message: "Address deleted successfully" });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -391,20 +605,47 @@ const patchMyDefaultAddress = async (req, res) => {
 const changeMyPassword = async (req, res) => {
   try {
     const { account } = await resolveAuthAccountAndCustomer(req);
-    if (!account) return res.status(404).json({ success: false, message: "Account not found" });
-    const currentPassword = String(req.body.currentPassword || "");
-    const newPassword = String(req.body.newPassword || "");
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: "currentPassword and newPassword are required" });
+    if (!account) return res.status(404).json({ success: false, message: "Không tìm thấy tài khoản." });
+
+    const hash = account.password_hash;
+    if (!hash || String(hash).length < 20) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Tài khoản chưa thiết lập mật khẩu đăng nhập. Vui lòng dùng liên kết mạng xã hội hoặc chức năng quên mật khẩu.",
+      });
     }
-    const passwordError = validatePassword(newPassword);
-    if (passwordError) return res.status(400).json({ success: false, message: passwordError });
-    const ok = await bcrypt.compare(currentPassword, String(account.password_hash || ""));
-    if (!ok) return res.status(400).json({ success: false, message: "Current password is incorrect" });
+
+    const currentPassword = String(req.body.currentPassword || "").trim();
+    const newPassword = String(req.body.newPassword || "").trim();
+    const confirmPassword = String(req.body.confirmPassword || "").trim();
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng nhập đầy đủ mật khẩu hiện tại, mật khẩu mới và xác nhận.",
+      });
+    }
+    if (confirmPassword !== newPassword) {
+      return res.status(400).json({ success: false, message: "Mật khẩu xác nhận không khớp." });
+    }
+    if (newPassword === currentPassword) {
+      return res.status(400).json({ success: false, message: "Mật khẩu mới phải khác mật khẩu hiện tại." });
+    }
+
+    const strengthErr = validateNewPasswordStrength(newPassword);
+    if (strengthErr) return res.status(400).json({ success: false, message: strengthErr });
+
+    const ok = await bcrypt.compare(currentPassword, String(hash));
+    if (!ok) {
+      return res.status(400).json({ success: false, message: "Mật khẩu hiện tại không đúng." });
+    }
+
     const salt = await bcrypt.genSalt(10);
     account.password_hash = await bcrypt.hash(newPassword, salt);
     await account.save();
-    return res.status(200).json({ success: true, message: "Password changed successfully" });
+
+    return res.status(200).json({ success: true, message: "Đã cập nhật mật khẩu thành công." });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -769,6 +1010,9 @@ module.exports = {
   getMySkinProfile,
   patchMySkinProfile,
   getMyAddresses,
+  postMyAddress,
+  patchMyAddress,
+  deleteMyAddress,
   patchMyDefaultAddress,
   changeMyPassword,
   getMyProviders,

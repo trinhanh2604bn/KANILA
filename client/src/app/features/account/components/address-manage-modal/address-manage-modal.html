@@ -1,0 +1,136 @@
+<div class="modal-root" *ngIf="open" role="dialog" aria-modal="true" aria-labelledby="addr-modal-title">
+  <button type="button" class="modal-backdrop" (click)="close()" aria-label="Đóng"></button>
+  <div class="modal-panel card-soft">
+    <header class="modal-head">
+      <div>
+        <h2 id="addr-modal-title">{{ mode === 'list' ? 'Địa chỉ của bạn' : editingId ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h2>
+        <p class="modal-sub">Quản lý địa chỉ giao hàng — mặc định được dùng khi đặt hàng.</p>
+      </div>
+      <button type="button" class="btn-icon" (click)="close()" aria-label="Đóng"><i class="bi bi-x-lg"></i></button>
+    </header>
+
+    <div class="modal-body">
+      <ng-container *ngIf="mode === 'list'">
+        <div class="banner-error" *ngIf="listError">{{ listError }}</div>
+        <div class="loading-row" *ngIf="loadingList">Đang tải...</div>
+
+        <div class="empty-addr" *ngIf="!loadingList && !addresses.length && !listError">
+          <p>Bạn chưa có địa chỉ nào.</p>
+          <button type="button" class="btn-primary sm" (click)="startAdd()">Thêm địa chỉ đầu tiên</button>
+        </div>
+
+        <ul class="addr-list" *ngIf="!loadingList && addresses.length">
+          <li class="addr-item" *ngFor="let a of addresses; trackBy: trackById">
+            <div class="addr-item-head">
+              <span class="addr-name">{{ a.recipient_name }}</span>
+              <span class="pill-default" *ngIf="a.is_default_shipping">Mặc định</span>
+              <span class="pill-type">{{ addressTypeLabel[a.address_type || 'home'] }}</span>
+            </div>
+            <p class="addr-phone">{{ a.phone }}</p>
+            <p class="addr-lines">{{ displayLine(a) }}</p>
+            <p class="addr-note" *ngIf="a.address_note"><em>Ghi chú:</em> {{ a.address_note }}</p>
+
+            <div class="addr-actions">
+              <button type="button" class="btn-ghost sm" *ngIf="!a.is_default_shipping" (click)="setDefault(a._id)" [disabled]="saving">
+                Đặt làm mặc định
+              </button>
+              <button type="button" class="btn-ghost sm" (click)="startEdit(a)" [disabled]="saving">Sửa</button>
+              <button type="button" class="btn-ghost sm danger" (click)="confirmDelete(a._id)" [disabled]="saving">Xóa</button>
+            </div>
+
+            <div class="delete-confirm" *ngIf="deleteConfirmId === a._id">
+              <p>Xóa địa chỉ này?</p>
+              <div class="row-btns">
+                <button type="button" class="btn-ghost sm" (click)="cancelDelete()">Hủy</button>
+                <button type="button" class="btn-primary sm danger" (click)="deleteAddress(a._id)">Xóa</button>
+              </div>
+            </div>
+          </li>
+        </ul>
+
+        <div class="modal-footer" *ngIf="!loadingList && addresses.length">
+          <button type="button" class="btn-primary" (click)="startAdd()" [disabled]="saving">Thêm địa chỉ mới</button>
+        </div>
+      </ng-container>
+
+      <form class="addr-form" *ngIf="mode === 'form'" (submit)="$event.preventDefault(); submitForm()">
+        <div class="banner-error" *ngIf="formError">{{ formError }}</div>
+
+        <label class="field">
+          <span>Họ và tên người nhận *</span>
+          <input name="recipientName" [(ngModel)]="form.recipientName" autocomplete="name" [class.invalid]="fieldErrors['recipientName']" />
+          <small *ngIf="fieldErrors['recipientName']" class="err">{{ fieldErrors['recipientName'] }}</small>
+        </label>
+
+        <label class="field">
+          <span>Số điện thoại *</span>
+          <input name="phone" [(ngModel)]="form.phone" autocomplete="tel" [class.invalid]="fieldErrors['phone']" />
+          <small *ngIf="fieldErrors['phone']" class="err">{{ fieldErrors['phone'] }}</small>
+        </label>
+
+        <label class="field">
+          <span>Địa chỉ (số nhà, đường) *</span>
+          <input name="addressLine1" [(ngModel)]="form.addressLine1" [class.invalid]="fieldErrors['addressLine1']" />
+          <small *ngIf="fieldErrors['addressLine1']" class="err">{{ fieldErrors['addressLine1'] }}</small>
+        </label>
+
+        <label class="field">
+          <span>Địa chỉ dòng 2</span>
+          <input name="addressLine2" [(ngModel)]="form.addressLine2" />
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Phường/Xã</span>
+            <input name="ward" [(ngModel)]="form.ward" />
+          </label>
+          <label class="field">
+            <span>Quận/Huyện</span>
+            <input name="district" [(ngModel)]="form.district" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Tỉnh/Thành phố *</span>
+          <input name="provinceOrCity" [(ngModel)]="form.provinceOrCity" [class.invalid]="fieldErrors['provinceOrCity']" />
+          <small *ngIf="fieldErrors['provinceOrCity']" class="err">{{ fieldErrors['provinceOrCity'] }}</small>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Quốc gia</span>
+            <select name="countryCode" [(ngModel)]="form.countryCode">
+              <option value="VN">Việt Nam</option>
+              <option value="US">United States</option>
+              <option value="SG">Singapore</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Mã bưu điện</span>
+            <input name="postalCode" [(ngModel)]="form.postalCode" />
+
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Loại địa chỉ</span>
+          <select name="addressType" [(ngModel)]="form.addressType">
+            <option value="home">Nhà riêng</option>
+            <option value="office">Văn phòng</option>
+            <option value="other">Khác</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Ghi chú giao hàng (tuỳ chọn)</span>
+          <textarea name="addressNote" [(ngModel)]="form.addressNote" rows="2"></textarea>
+        </label>
+
+        <div class="form-actions">
+          <button type="button" class="btn-ghost" (click)="backToList()" [disabled]="saving">Quay lại</button>
+          <button type="submit" class="btn-primary" [disabled]="saving">{{ saving ? 'Đang lưu...' : 'Lưu địa chỉ' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
