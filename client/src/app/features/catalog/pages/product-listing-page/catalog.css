@@ -8,7 +8,7 @@
   color: var(--kanila-red);
   font-weight: 700;
   white-space: nowrap;
-  font-size: 1.05rem; /* Thu nhỏ gọn gàng hơn */
+  font-size: 1.05rem; 
   letter-spacing: 0.5px;
   margin-right: 15px; 
 }
@@ -184,23 +184,23 @@
 .range-slider-wrapper input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--kanila-red); cursor: grab; pointer-events: auto; transition: transform 0.1s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 .range-slider-wrapper input[type="range"]::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.2); }
 
-/* --- Applied Filters Chips --- (ĐÃ THU NHỎ KÍCH THƯỚC CHỮ VÀ PADDING) */
+/* --- Applied Filters Chips --- */
 .applied-chip {
   background-color: var(--kanila-white);
   border: 1px solid #e0e0e0;
   color: var(--kanila-text);
-  padding: 3px 8px; /* Giảm padding */
+  padding: 3px 8px; 
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
   margin-bottom: 0;
 }
 .chip-text {
-  font-size: 0.75rem; /* Thu nhỏ chữ */
+  font-size: 0.75rem; 
   font-weight: 500;
 }
 .applied-chip i {
-  font-size: 0.9rem; /* Icon nhỏ lại */
+  font-size: 0.9rem; 
   opacity: 0.5;
   cursor: pointer;
   margin-left: 4px;
@@ -225,14 +225,10 @@
   box-shadow: 0 2px 8px rgba(107, 30, 46, 0.08);
 }
 
-/* --- Animations & Card --- */
-.fade-in-up { opacity: 0; animation: fadeInUp 0.5s ease-out forwards; }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+/* --- Animations --- */
+.fade-in-up { opacity: 0; animation: fadeIn 0.5s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-.product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(107, 30, 46, 0.1) !important; border-color: rgba(107,30,46,0.3) !important; }
-.product-card:hover .img-placeholder img { transform: scale(1.05); transition: all 0.3s ease; }
-.product-title { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* --- BREADCRUMB --- */
 .breadcrumb-link { color: var(--kanila-text); opacity: 0.7; cursor: pointer; text-decoration: none; font-weight: normal; }
@@ -282,10 +278,9 @@
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  pointer-events: none; /* Tránh click nhầm khi đang ẩn */
+  pointer-events: none; 
 }
 
-/* Hover khi cuộn sẽ xổ xuống mượt mà */
 .sticky-filter-wrapper.collapsed:hover .advanced-filters {
   opacity: 1;
   visibility: visible;
@@ -300,4 +295,53 @@
     flex: 0 0 20%;
     width: 20%;
   }
+}
+
+/* --- PAGINATION CUSTOM CSS --- */
+.pagination-custom .page-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(107,30,46,0.15);
+  background: white;
+  color: var(--kanila-text);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.pagination-custom .page-btn:hover:not(:disabled) {
+  border-color: var(--kanila-red);
+  color: var(--kanila-red);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(107,30,46,0.1);
+}
+
+.pagination-custom .page-btn.active {
+  background: var(--kanila-red);
+  color: white;
+  border-color: var(--kanila-red);
+  box-shadow: 0 4px 8px rgba(107,30,46,0.25);
+  transform: translateY(-2px);
+}
+
+.pagination-custom .page-btn.dots {
+  border: none;
+  background: transparent;
+  color: #adb5bd;
+  cursor: default;
+}
+
+.pagination-custom .page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f8f9fa;
+}
+
+.pagination-custom .nav-btn i {
+  font-size: 1.1rem;
+  margin-top: 2px;
 }

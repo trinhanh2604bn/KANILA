@@ -79,6 +79,14 @@ export class Catalog implements OnInit {
 
   allProducts: CatalogProductRow[] = [];
   filteredProducts: CatalogProductRow[] = [];
+  
+  displayProducts: Product[] = [];
+
+  // --- BIẾN PHÂN TRANG (PAGINATION) ---
+  currentPage: number = 1;
+  itemsPerPage: number = 25; 
+  totalPages: number = 1;
+  pagesArray: (number | string)[] = []; 
 
   selectedParentCategory: CatalogCategoryItem | null = null;
   selectedSubCategory: string | null = null;
@@ -201,6 +209,57 @@ export class Catalog implements OnInit {
     this.isScrolled = window.scrollY > 200;
   }
 
+  // --- LOGIC PHÂN TRANG (PAGINATION) ---
+  goToPage(page: number | string) {
+    if (typeof page === 'string') return; 
+    if (page < 1 || page > this.totalPages || page === this.currentPage) return;
+    this.currentPage = page;
+    this.updateDisplayProducts();
+    window.scrollTo({ top: 150, behavior: 'smooth' });
+  }
+
+  updateDisplayProducts() {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    const pageProducts = this.filteredProducts.slice(startIndex, endIndex);
+    
+    this.displayProducts = pageProducts.map(p => this.toProductCardProduct(p));
+    this.generatePagination();
+  }
+
+  generatePagination() {
+    const current = this.currentPage;
+    const last = this.totalPages;
+    const delta = 2; 
+    const left = current - delta;
+    const right = current + delta + 1;
+    const range = [];
+    const rangeWithDots: (number | string)[] = [];
+    
+    // FIX LỖI TypeScript TS2454 Ở ĐÂY
+    let l: number | undefined; 
+
+    for (let i = 1; i <= last; i++) {
+      if (i === 1 || i === last || (i >= left && i < right)) {
+        range.push(i);
+      }
+    }
+
+    for (let i of range) {
+      if (l !== undefined) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push('...');
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+    this.pagesArray = rangeWithDots;
+  }
+  // ---------------------------------
+
   get filteredBrandOptions(): string[] {
     if (!this.brandSearchText) return this.brands;
     const lowerSearch = this.brandSearchText.toLowerCase();
@@ -303,7 +362,6 @@ export class Catalog implements OnInit {
       temp = temp.filter((p) => p.parentSlug === parentSlug);
     }
 
-    // --- LOGIC MỚI: Gộp cả Brand từ Header và Brand từ Dropdown để lọc ---
     let activeBrandsToFilter = [...this.selectedBrands];
     if (this.selectedBrandFromHeader && !activeBrandsToFilter.includes(this.selectedBrandFromHeader)) {
         activeBrandsToFilter.push(this.selectedBrandFromHeader);
@@ -354,6 +412,10 @@ export class Catalog implements OnInit {
     }
 
     this.filteredProducts = temp;
+    
+    this.totalPages = Math.ceil(this.filteredProducts.length / this.itemsPerPage) || 1;
+    this.currentPage = 1; 
+    this.updateDisplayProducts();
   }
 
   onMinPriceInput() {
@@ -389,7 +451,6 @@ export class Catalog implements OnInit {
     const next = [...this.selectedBrands];
     if (index > -1) next.splice(index, 1);
     else next.push(brand);
-    // --- SỬA Ở ĐÂY: Lưu vào tham số filterBrands thay vì brand ---
     this.updateRouteState({ filterBrands: this.toBrandParam(next) });
   }
 
@@ -441,7 +502,6 @@ export class Catalog implements OnInit {
 
   removeFilter(type: string, value: string | null) {
     if (type === 'brand' && value) {
-      // --- SỬA Ở ĐÂY: Xóa từ tham số filterBrands ---
       this.updateRouteState({ filterBrands: this.toBrandParam(this.selectedBrands.filter((b) => b !== value)) });
     } else if (type === 'skin' && value) {
       this.updateRouteState({ skin: this.selectedSkinTypes.filter((s) => s !== value).join(',') || null });
@@ -506,7 +566,6 @@ export class Catalog implements OnInit {
     const categorySlug = (params['category'] ?? '').trim() || null;
     const subSlug = (params['sub'] ?? '').trim() || null;
     
-    // --- LOGIC MỚI LẤY TỪ URL ĐỂ PHÂN BIỆT RÕ RÀNG ---
     const headerBrandParam = (params['brand'] ?? '').trim();
     const filterBrandsParam = (params['filterBrands'] ?? '').trim();
 
@@ -523,7 +582,6 @@ export class Catalog implements OnInit {
     const minPriceParam = Number(params['minPrice']);
     const maxPriceParam = Number(params['maxPrice']);
 
-    // Tách chuỗi URL thành mảng
     const headerBrandSlugs = headerBrandParam ? headerBrandParam.split(',').map((b) => b.trim()).filter(Boolean) : [];
     const filterBrandSlugs = filterBrandsParam ? filterBrandsParam.split(',').map((b) => b.trim()).filter(Boolean) : [];
 
@@ -558,7 +616,6 @@ export class Catalog implements OnInit {
     this.selectedParentCategory = this.categories.find((c) => c.slug === this.filterState.categorySlug) ?? null;
     this.selectedSubCategory = this.filterState.subCategorySlug;
     
-    // Gán vào 2 biến tách biệt (Header chỉ lấy 1 hãng, Filter lấy nhiều hãng)
     this.selectedBrandFromHeader = headerBrandNames.length > 0 ? headerBrandNames[0] : null;
     this.selectedBrands = filterBrandNames;
     
@@ -578,7 +635,6 @@ export class Catalog implements OnInit {
     if (this.minPriceInput === 0 && this.maxPriceInput === this.maxLimit) this.selectedPrice = null;
   }
 
-  // Dùng Record<string, any> để TypeScript không báo lỗi khi truyền tham số mới
   private updateRouteState(next: Record<string, any>) {
     this.router.navigate([], {
       relativeTo: this.route,

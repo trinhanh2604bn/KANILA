@@ -187,8 +187,6 @@
                             </div>
                         </div>
                         
-                         
-  
                     </div>
                 </section>
   
@@ -236,41 +234,44 @@
                         </button>
                     </div>
                 </section>
-  
-                <section class="catalog-section section-sort border-top">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between pt-2 pb-2">
-                        
-                        <div class="d-none d-md-block text-muted small">
-                            Hiển thị <strong>{{ filteredProducts.length }}</strong> sản phẩm
-                        </div>
-                        
-                        <div class="d-flex align-items-center gap-2 ms-auto sort-container">
-                            <span class="text-muted small me-2 d-none d-sm-inline">Sắp xếp theo:</span>
-                            <div class="position-relative d-inline-block">
-                                <button class="btn-sort-dropdown transition-all d-flex align-items-center justify-content-between"
-                                        (click)="toggleDropdown('sortGlobal', $event)">
-                                    <span class="fw-bold" style="color: var(--kanila-red);">{{ getSortLabel(activeSort) }}</span>
-                                    <i class="bi bi-chevron-down ms-2" style="font-size: 0.8rem; color: var(--kanila-text);"></i>
-                                </button>
-                                
-                                <div class="dropdown-panel shadow-sm rounded-3 py-2 px-0" style="min-width: 180px; right: 0; left: auto;" *ngIf="openDropdown === 'sortGlobal'" (click)="$event.stopPropagation()">
-                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'default'" (click)="selectSort('default')">Mặc định</button>
-                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'popular'" (click)="selectSort('popular')">Bán chạy</button>
-                                    <button *ngIf="!isSalePage" class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'hot_deal'" (click)="selectSort('hot_deal')">Deal HOT</button>
-                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_asc'" (click)="selectSort('price_asc')">Giá Thấp - Cao</button>
-                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_desc'" (click)="selectSort('price_desc')">Giá Cao - Thấp</button>
-                                </div>
-                            </div>
-                        </div>
-  
-                    </div>
-                </section>
-  
             </div>
         </div>
-    </div> <div class="row g-4 mt-1">
-        <div class="col-6 col-md-4 catalog-col-5" *ngFor="let p of filteredProducts">
-            <app-product-card [product]="toProductCardProduct(p)"></app-product-card>
+    </div> 
+    
+
+    <!-- Hiển thị sản phẩm -->
+    <div class="row g-4 mt-1">
+
+        <section class="catalog-section section-sort border-top">
+            <div class="d-flex flex-wrap align-items-center justify-content-between pt-2 pb-2">
+                
+                <div class="d-none d-md-block text-muted small">
+                    Hiển thị <strong>{{ filteredProducts.length }}</strong> sản phẩm
+                </div>
+                
+                <div class="d-flex align-items-center gap-2 ms-auto sort-container">
+                    <span class="text-muted small me-2 d-none d-sm-inline">Sắp xếp theo:</span>
+                    <div class="position-relative d-inline-block">
+                        <button class="btn-sort-dropdown transition-all d-flex align-items-center justify-content-between"
+                                (click)="toggleDropdown('sortGlobal', $event)">
+                            <span class="fw-bold" style="color: var(--kanila-red);">{{ getSortLabel(activeSort) }}</span>
+                            <i class="bi bi-chevron-down ms-2" style="font-size: 0.8rem; color: var(--kanila-text);"></i>
+                        </button>
+                        
+                        <div class="dropdown-panel shadow-sm rounded-3 py-2 px-0" style="min-width: 180px; right: 0; left: auto;" *ngIf="openDropdown === 'sortGlobal'" (click)="$event.stopPropagation()">
+                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'default'" (click)="selectSort('default')">Mặc định</button>
+                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'popular'" (click)="selectSort('popular')">Bán chạy</button>
+                            <button *ngIf="!isSalePage" class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'hot_deal'" (click)="selectSort('hot_deal')">Deal HOT</button>
+                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_asc'" (click)="selectSort('price_asc')">Giá Thấp - Cao</button>
+                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_desc'" (click)="selectSort('price_desc')">Giá Cao - Thấp</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="col-6 col-md-4 catalog-col-5" *ngFor="let p of displayProducts">
+            <app-product-card [product]="p"></app-product-card>
         </div>
   
         <div class="col-12 text-center py-5 my-5" *ngIf="filteredProducts.length === 0">
@@ -283,6 +284,32 @@
                 Xóa tất cả bộ lọc
             </button>
         </div>
+    </div>
+
+    <div class="d-flex justify-content-center align-items-center mt-5 mb-4 w-100" *ngIf="totalPages > 1">
+        <ul class="pagination-custom d-flex gap-2 list-unstyled mb-0">
+            <li>
+                <button class="page-btn nav-btn" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </li>
+
+            <li *ngFor="let page of pagesArray">
+                <button class="page-btn transition-all"
+                        [class.active]="page === currentPage"
+                        [class.dots]="page === '...'"
+                        [disabled]="page === '...'"
+                        (click)="goToPage(page)">
+                    {{ page }}
+                </button>
+            </li>
+
+            <li>
+                <button class="page-btn nav-btn" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </li>
+        </ul>
     </div>
     </ng-container>
   </div>
