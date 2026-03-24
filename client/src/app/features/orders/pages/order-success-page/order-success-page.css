@@ -279,6 +279,52 @@ h3 {
   margin-top: 8px;
 }
 
+.reco-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reco-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reco-card {
+  border: 1px solid #f1dce6;
+  border-radius: 12px;
+  padding: 8px;
+  background: #fffdfd;
+}
+
+.reco-card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.reco-card small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #9d6f82;
+}
+
+.reco-card p {
+  margin: 2px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #58273d;
+}
+
+.reco-card strong {
+  color: #b31657;
+}
+
 @media (max-width: 1024px) {
   .hero-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -315,6 +361,10 @@ h3 {
   }
 
   .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reco-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -4,6 +4,7 @@ const OrderAddress = require("../models/orderAddress.model");
 const OrderTotal = require("../models/orderTotal.model");
 const Customer = require("../models/customer.model");
 const OrderStatusHistory = require("../models/orderStatusHistory.model");
+const Account = require("../models/account.model");
 const validateObjectId = require("../utils/validateObjectId");
 const { pickCustomerId } = require("../utils/pickCustomerRef");
 const { normalizeOrderBody } = require("../utils/orderNormalize");
@@ -11,6 +12,37 @@ const { validateStatusTransition } = require("../utils/orderStatusGuard");
 
 const CUST_POP = "customer_code full_name account_id";
 const CUST_POP_SHORT = "customer_code full_name";
+
+const generateCustomerCode = async () => {
+  const base = await Customer.countDocuments();
+  for (let i = 1; i < 9999; i += 1) {
+    const code = `CUS${String(base + i).padStart(4, "0")}`;
+    // eslint-disable-next-line no-await-in-loop
+    const exists = await Customer.findOne({ customer_code: code }).select("_id").lean();
+    if (!exists) return code;
+  }
+  return `CUS${Date.now()}`;
+};
+
+const resolveAuthCustomer = async (req) => {
+  const accountId = req.user?.account_id || req.user?.accountId;
+  if (!accountId || !validateObjectId(accountId)) return null;
+
+  let customer = await Customer.findOne({ account_id: accountId });
+  if (customer) return customer;
+
+  const account = await Account.findById(accountId).select("_id account_type email username");
+  if (!account || account.account_type !== "customer") return null;
+  customer = await Customer.create({
+    account_id: account._id,
+    customer_code: await generateCustomerCode(),
+    full_name: account.username || account.email || "Customer",
+    first_name: "",
+    last_name: "",
+    customer_status: "active",
+  });
+  return customer;
+};
 
 function applyStatusGuards(existing, body) {
   const checks = [];
@@ -135,6 +167,50 @@ const getOrdersByCustomerId = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/orders/me/:id
+const getMyOrderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid order ID" });
+    }
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) {
+      return res.status(403).json({ success: false, message: "Customer account required" });
+    }
+
+    const order = await Order.findOne({ _id: id, customer_id: customer._id })
+      .populate("customer_id", CUST_POP_SHORT)
+      .populate("checkout_session_id");
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    const [items, addresses, totals, status_history] = await Promise.all([
+      OrderItem.find({ order_id: id })
+        .populate("variant_id", "sku variantName")
+        .populate("product_id", "productName productCode")
+        .sort({ created_at: -1 }),
+      OrderAddress.find({ order_id: id }).sort({ created_at: -1 }),
+      OrderTotal.find({ order_id: id }),
+      OrderStatusHistory.find({ order_id: id })
+        .populate("changed_by_account_id", "email")
+        .sort({ changed_at: -1 }),
+    ]);
+
+    const payload = order.toObject();
+    payload.items = items;
+    payload.order_addresses = addresses;
+    payload.order_totals = totals;
+    payload.order_total = totals[0] || null;
+    payload.status_history = status_history;
+
+    return res.status(200).json({ success: true, message: "Get my order successfully", data: payload });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -290,6 +366,7 @@ module.exports = {
   getAllOrders,
   getOrderById,
   getOrdersByCustomerId,
+  getMyOrderById,
   createOrder,
   updateOrder,
   patchOrder,

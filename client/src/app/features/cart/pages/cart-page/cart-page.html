@@ -1,4 +1,10 @@
 <section class="cart-page">
+  <div class="flow-steps" aria-label="Checkout flow">
+    <span class="step is-active">1. Giỏ hàng</span>
+    <span class="step">2. Thanh toán</span>
+    <span class="step">3. Hoàn tất</span>
+  </div>
+
   <header class="cart-header">
     <a routerLink="/catalog" class="continue-shopping-link">← Tiếp tục mua sắm</a>
     <div>
@@ -11,7 +17,15 @@
     </div>
   </header>
 
-  <ng-container *ngIf="hasItems; else emptyCart">
+  <ng-container *ngIf="isLoading">
+    <div class="cart-skeleton-grid">
+      <div class="sk-line"></div>
+      <div class="sk-line"></div>
+      <div class="sk-card" *ngFor="let i of [1,2,3]"></div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="!isLoading && hasItems; else emptyCart">
     <div class="cart-layout">
       <div class="cart-left">
         <div class="bulk-actions">
@@ -19,7 +33,7 @@
             <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll($any($event.target).checked)" />
             <span>Chọn tất cả</span>
           </label>
-          <button type="button" class="bulk-remove" (click)="removeSelected()" [disabled]="!selectedCount">
+          <button type="button" class="bulk-remove" (click)="requestRemoveSelected()" [disabled]="!selectedCount">
             Xóa sản phẩm đã chọn
           </button>
         </div>
@@ -68,7 +82,7 @@
               <button
                 type="button"
                 class="danger icon-btn"
-                (click)="removeItem(item.id)"
+                (click)="requestRemoveItem(item.id)"
                 [attr.aria-label]="'Remove'"
                 title="Remove item"
               >
@@ -76,9 +90,9 @@
               </button>
             </div>
             <div class="item-qty" [class.pulse]="qtyPulseItemId === item.id">
-              <button type="button" (click)="updateQty(item.id, -1)" [disabled]="item.quantity === 1">-</button>
+              <button type="button" (click)="updateQty(item.id, -1)" [disabled]="item.quantity === 1 || busyItemId === item.id">-</button>
               <span>{{ item.quantity }}</span>
-              <button type="button" (click)="updateQty(item.id, 1)">+</button>
+              <button type="button" (click)="updateQty(item.id, 1)" [disabled]="busyItemId === item.id">+</button>
             </div>
           </div>
         </article>
@@ -92,7 +106,9 @@
             <label for="promo-code">Mã ưu đãi</label>
             <div class="promo-row">
               <input id="promo-code" type="text" placeholder="Nhập mã giảm giá" [(ngModel)]="promoInput" />
-              <button type="button" (click)="applyPromo()">Áp dụng</button>
+              <button type="button" (click)="applyPromo()" [disabled]="isPromoApplying">
+                {{ isPromoApplying ? 'Đang áp dụng...' : 'Áp dụng' }}
+              </button>
             </div>
             <p *ngIf="appliedPromoCode">Đã áp dụng: <strong>{{ appliedPromoCode }}</strong></p>
           </div>
@@ -115,8 +131,8 @@
             <strong>{{ total | number }}đ</strong>
           </div>
 
-          <button type="button" class="checkout-btn" (click)="goCheckout()" [disabled]="!selectedCount">
-            Thanh toán ngay
+          <button type="button" class="checkout-btn" (click)="goCheckout()" [disabled]="!selectedCount || isCheckoutNavigating">
+            {{ isCheckoutNavigating ? 'Đang chuyển...' : '🔒 Thanh toán ngay' }}
           </button>
           <p class="summary-note" *ngIf="amountToFreeShip > 0">
             Mua thêm {{ amountToFreeShip | number }}đ để được miễn phí vận chuyển.
@@ -162,7 +178,9 @@
         <p>Tổng thanh toán</p>
         <strong>{{ total | number }}đ</strong>
       </div>
-      <button type="button" (click)="goCheckout()" [disabled]="!selectedCount">Thanh toán</button>
+      <button type="button" (click)="goCheckout()" [disabled]="!selectedCount || isCheckoutNavigating">
+        {{ isCheckoutNavigating ? 'Đang chuyển...' : 'Thanh toán' }}
+      </button>
     </div>
   </ng-container>
 
@@ -176,4 +194,24 @@
   </ng-template>
 
   <div class="cart-toast" [class.show]="!!uiToast">{{ uiToast }}</div>
+
+  <div class="undo-snack" [class.show]="undoSnackOpen">
+    <span>Đã xóa sản phẩm.</span>
+    <button type="button" (click)="undoRemove()">Hoàn tác</button>
+  </div>
+
+  <div class="confirm-overlay" *ngIf="confirmModalOpen">
+    <div class="confirm-modal">
+      <h4>{{ confirmMode === 'single' ? 'Xóa sản phẩm này?' : 'Xóa các sản phẩm đã chọn?' }}</h4>
+      <p>
+        {{ confirmMode === 'single'
+          ? 'Bạn có thể hoàn tác trong vài giây sau khi xóa.'
+          : 'Các sản phẩm đã chọn sẽ bị xóa. Bạn có thể hoàn tác ngay sau đó.' }}
+      </p>
+      <div class="confirm-actions">
+        <button type="button" class="btn-soft" (click)="cancelRemove()">Hủy</button>
+        <button type="button" class="btn-danger" (click)="confirmRemove()">Xóa</button>
+      </div>
+    </div>
+  </div>
 </section>

@@ -66,6 +66,8 @@ export class Header implements OnInit, OnDestroy {
   headerLoading = true;
   headerError = false;
   cartBadgeCount = 0;
+  badgeBump = false;
+  private badgeTimer: ReturnType<typeof setTimeout> | null = null;
 
   private readonly destroy$ = new Subject<void>();
   private readonly searchInput$ = new Subject<string>();
@@ -124,11 +126,21 @@ export class Header implements OnInit, OnDestroy {
     this.cartService.cartTotalQuantity$
       .pipe(takeUntil(this.destroy$))
       .subscribe((count) => {
-        this.cartBadgeCount = Math.max(0, Number(count || 0));
+        const nextCount = Math.max(0, Number(count || 0));
+        if (nextCount !== this.cartBadgeCount && nextCount > 0) {
+          this.badgeBump = false;
+          if (this.badgeTimer) clearTimeout(this.badgeTimer);
+          setTimeout(() => (this.badgeBump = true), 0);
+          this.badgeTimer = setTimeout(() => {
+            this.badgeBump = false;
+          }, 360);
+        }
+        this.cartBadgeCount = nextCount;
       });
   }
 
   ngOnDestroy(): void {
+    if (this.badgeTimer) clearTimeout(this.badgeTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }

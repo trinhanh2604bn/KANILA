@@ -8,6 +8,8 @@ import { CartService } from '../../services/cart.service';
 
 interface CartItem {
   id: string;
+  productId: string;
+  variantId: string | null;
   brand: string;
   name: string;
   variant: string;
@@ -17,6 +19,7 @@ interface CartItem {
   image: string;
   selected: boolean;
   inWishlist: boolean;
+  stockStatus: string;
 }
 
 interface CartRecoItem {
@@ -44,6 +47,16 @@ export class CartPageComponent {
   discount = 0;
   uiToast = '';
   qtyPulseItemId: string | null = null;
+  isLoading = true;
+  isPromoApplying = false;
+  isCheckoutNavigating = false;
+  busyItemId: string | null = null;
+  confirmModalOpen = false;
+  confirmMode: 'single' | 'selected' = 'single';
+  confirmItemId: string | null = null;
+  undoSnackOpen = false;
+  private undoTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastRemovedItems: CartItem[] = [];
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   cartItems: CartItem[] = [];
@@ -129,8 +142,10 @@ export class CartPageComponent {
     const item = this.cartItems.find((x) => x.id === itemId);
     if (!item) return;
     const nextQty = Math.max(1, item.quantity + delta);
+    this.busyItemId = itemId;
     this.cartService.updateCartItemQuantity(itemId, nextQty).pipe(take(1)).subscribe(() => {
       this.showToast('Đã cập nhật số lượng');
+      this.busyItemId = null;
     });
     this.qtyPulseItemId = itemId;
     setTimeout(() => {
@@ -138,21 +153,85 @@ export class CartPageComponent {
     }, 220);
   }
 
-  removeItem(itemId: string): void {
-    const ok = window.confirm('Bạn có muốn xóa sản phẩm này khỏi giỏ hàng?');
-    if (!ok) return;
+  requestRemoveItem(itemId: string): void {
+    this.confirmMode = 'single';
+    this.confirmItemId = itemId;
+    this.confirmModalOpen = true;
+  }
+
+  requestRemoveSelected(): void {
+    if (!this.selectedItems.length) return;
+    this.confirmMode = 'selected';
+    this.confirmItemId = null;
+    this.confirmModalOpen = true;
+  }
+
+  cancelRemove(): void {
+    this.confirmModalOpen = false;
+    this.confirmItemId = null;
+  }
+
+  confirmRemove(): void {
+    if (this.confirmMode === 'single' && this.confirmItemId) {
+      this.removeSingle(this.confirmItemId);
+    } else {
+      this.removeSelectedConfirmed();
+    }
+    this.confirmModalOpen = false;
+    this.confirmItemId = null;
+  }
+
+  private removeSingle(itemId: string): void {
+    const target = this.cartItems.find((x) => x.id === itemId);
+    if (!target) return;
+    this.busyItemId = itemId;
+    this.lastRemovedItems = [{ ...target }];
     this.cartService.removeCartItem(itemId).pipe(take(1)).subscribe(() => {
       this.showToast('Đã xóa sản phẩm khỏi giỏ hàng');
+      this.busyItemId = null;
+      this.openUndoSnack();
     });
   }
 
-  removeSelected(): void {
+  private removeSelectedConfirmed(): void {
     if (!this.selectedItems.length) return;
-    const ok = window.confirm('Xóa tất cả sản phẩm đã chọn?');
-    if (!ok) return;
+    this.lastRemovedItems = this.selectedItems.map((x) => ({ ...x }));
     this.cartService.removeSelectedItems().pipe(take(1)).subscribe(() => {
       this.showToast('Đã xóa các sản phẩm đã chọn');
+      this.openUndoSnack();
     });
+  }
+
+  undoRemove(): void {
+    if (!this.lastRemovedItems.length) return;
+    const queue = [...this.lastRemovedItems];
+    this.undoSnackOpen = false;
+    if (this.undoTimer) clearTimeout(this.undoTimer);
+
+    const replay = (idx: number): void => {
+      if (idx >= queue.length) {
+        this.showToast('Đã khôi phục sản phẩm');
+        this.lastRemovedItems = [];
+        return;
+      }
+      const item = queue[idx];
+      this.cartService.addToCart({
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        productName: item.name,
+        brandName: item.brand,
+        variantLabel: item.variant,
+        imageUrl: item.image,
+        unitPrice: item.price,
+        compareAtPrice: item.oldPrice ?? null,
+        stockStatus: item.stockStatus || 'in_stock',
+      }).pipe(take(1)).subscribe({
+        next: () => replay(idx + 1),
+        error: () => replay(idx + 1),
+      });
+    };
+    replay(0);
   }
 
   toggleWishlist(itemId: string): void {
@@ -168,14 +247,22 @@ export class CartPageComponent {
   applyPromo(): void {
     const code = this.promoInput.trim().toUpperCase();
     if (!code) return;
-    this.appliedPromoCode = code;
-    this.discount = Math.round(this.subtotal * 0.1);
-    this.showToast(`Áp dụng mã ${code} thành công`);
+    this.isPromoApplying = true;
+    setTimeout(() => {
+      this.appliedPromoCode = code;
+      this.discount = Math.round(this.subtotal * 0.1);
+      this.isPromoApplying = false;
+      this.showToast(`Áp dụng mã ${code} thành công`);
+    }, 220);
   }
 
   goCheckout(): void {
     if (!this.selectedItems.length) return;
-    this.router.navigate(['/checkout']);
+    this.isCheckoutNavigating = true;
+    setTimeout(() => {
+      this.router.navigate(['/checkout']);
+      this.isCheckoutNavigating = false;
+    }, 120);
   }
 
   private showToast(message: string): void {
@@ -186,9 +273,21 @@ export class CartPageComponent {
     }, 1600);
   }
 
+  private openUndoSnack(): void {
+    if (!this.lastRemovedItems.length) return;
+    this.undoSnackOpen = true;
+    if (this.undoTimer) clearTimeout(this.undoTimer);
+    this.undoTimer = setTimeout(() => {
+      this.undoSnackOpen = false;
+      this.lastRemovedItems = [];
+    }, 4500);
+  }
+
   private applyCart(cart: CartNormalized): void {
     this.cartItems = cart.items.map((item) => ({
       id: item.cartItemId,
+      productId: item.productId,
+      variantId: item.variantId,
       brand: item.brandName,
       name: item.productName,
       variant: item.variantLabel,
@@ -198,8 +297,10 @@ export class CartPageComponent {
       image: item.imageUrl || 'assets/images/banner/nen.png',
       selected: item.selected,
       inWishlist: false,
+      stockStatus: item.stockStatus,
     }));
     this.shippingFee = cart.summary.shippingFee;
     this.discount = cart.summary.discountTotal;
+    this.isLoading = false;
   }
 }

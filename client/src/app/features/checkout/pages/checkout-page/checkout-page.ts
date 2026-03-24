@@ -1,10 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { take } from 'rxjs/operators';
-import { CartNormalized } from '../../../cart/models/cart.model';
+import { forkJoin, of } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import { CartService } from '../../../cart/services/cart.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import {
+  CheckoutSessionView,
+  PaymentMethodOption as PaymentMethodApiOption,
+  ShippingMethodOption as ShippingMethodApiOption,
+} from '../../models/checkout.model';
+import { CheckoutService } from '../../services/checkout.service';
 
 interface CheckoutLineItem {
   id: string;
@@ -34,31 +41,33 @@ interface PaymentMethodOption {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './checkout-page.html',
-  styleUrl: './checkout-page.css',
+  styleUrls: ['./checkout-page.css'],
 })
-export class CheckoutPageComponent {
+export class CheckoutPageComponent implements OnInit {
   readonly freeShippingThreshold = 499000;
-  readonly shippingMethods: ShippingMethodOption[] = [
-    { id: 'standard', label: 'Giao tiêu chuẩn', eta: '2-3 ngày làm việc', fee: 30000 },
-    { id: 'fast', label: 'Giao nhanh', eta: '1-2 ngày làm việc', fee: 45000 },
-    { id: 'express', label: 'Giao hỏa tốc nội thành', eta: 'Trong ngày', fee: 70000 },
+  shippingMethods: ShippingMethodOption[] = [
+    { id: '', label: 'Giao tiêu chuẩn', eta: '2-3 ngày làm việc', fee: 30000 },
   ];
-  readonly paymentMethods: PaymentMethodOption[] = [
-    { id: 'cod', label: 'Thanh toán khi nhận hàng', subtitle: 'COD an toàn và tiện lợi', icon: 'bi-cash-coin' },
-    { id: 'bank', label: 'Chuyển khoản ngân hàng', subtitle: 'Xác nhận nhanh qua hệ thống', icon: 'bi-bank2' },
-    { id: 'ewallet', label: 'Ví điện tử', subtitle: 'MoMo, ZaloPay, VNPay', icon: 'bi-wallet2' },
+  paymentMethods: PaymentMethodOption[] = [
+    { id: '', label: 'Thanh toán khi nhận hàng', subtitle: 'COD an toàn và tiện lợi', icon: 'bi-cash-coin' },
   ];
 
   cartItems: CheckoutLineItem[] = [];
   subtotal = 0;
   baseDiscount = 0;
-  selectedShippingId = 'standard';
-  selectedPaymentId = 'cod';
+  shippingFeeFromSession = 0;
+  sessionGrandTotal = 0;
+  selectedShippingId = '';
+  selectedPaymentId = '';
   voucherInput = '';
   appliedVoucher = '';
   voucherDiscount = 0;
+  checkoutSessionId: string | null = null;
   placingOrder = false;
+  isSyncingSession = false;
   formSubmitted = false;
+  checkoutIssues: string[] = [];
+  uiHint = '';
 
   contactName = '';
   phone = '';
@@ -69,10 +78,26 @@ export class CheckoutPageComponent {
 
   constructor(
     private readonly cartService: CartService,
+    private readonly checkoutService: CheckoutService,
+    private readonly toast: ToastService,
     private readonly router: Router
-  ) {
-    this.cartService.cartState$.subscribe((cart) => this.applyCart(cart));
-    this.cartService.getCurrentCart().pipe(take(1)).subscribe();
+  ) {}
+
+  ngOnInit(): void {
+    forkJoin({
+      shipping: this.checkoutService.getShippingMethods().pipe(catchError(() => of<ShippingMethodApiOption[]>([]))),
+      payment: this.checkoutService.getPaymentMethods().pipe(catchError(() => of<PaymentMethodApiOption[]>([]))),
+    }).subscribe(({ shipping, payment }) => {
+      if (shipping.length) {
+        this.shippingMethods = shipping.map((m) => this.toUiShippingMethod(m));
+        this.selectedShippingId = this.shippingMethods[0].id;
+      }
+      if (payment.length) {
+        this.paymentMethods = payment.map((m) => this.toUiPaymentMethod(m));
+        this.selectedPaymentId = this.paymentMethods[0].id;
+      }
+      this.bootstrapCheckoutSession();
+    });
   }
 
   get selectedShipping(): ShippingMethodOption {
@@ -80,9 +105,7 @@ export class CheckoutPageComponent {
   }
 
   get shippingFee(): number {
-    if (!this.cartItems.length) return 0;
-    if (this.subtotal >= this.freeShippingThreshold) return 0;
-    return this.selectedShipping.fee;
+    return this.shippingFeeFromSession;
   }
 
   get totalDiscount(): number {
@@ -94,11 +117,15 @@ export class CheckoutPageComponent {
   }
 
   get grandTotal(): number {
-    return Math.max(0, this.subtotal - this.totalDiscount + this.shippingFee);
+    return this.sessionGrandTotal || Math.max(0, this.subtotal - this.totalDiscount + this.shippingFee);
   }
 
   get savingsTotal(): number {
     return this.totalDiscount;
+  }
+
+  get showShimmerSkeleton(): boolean {
+    return this.isSyncingSession && !this.checkoutSessionId;
   }
 
   get invalidName(): boolean {
@@ -117,50 +144,163 @@ export class CheckoutPageComponent {
   applyVoucher(): void {
     const code = this.voucherInput.trim().toUpperCase();
     if (!code) return;
-    this.appliedVoucher = code;
-    this.voucherDiscount = Math.round(this.subtotal * 0.08);
+    this.uiHint = 'Đang kiểm tra mã ưu đãi...';
+    this.syncCheckoutSession({ couponCode: code });
   }
 
   clearVoucher(): void {
     this.appliedVoucher = '';
     this.voucherInput = '';
     this.voucherDiscount = 0;
+    this.syncCheckoutSession({ couponCode: null });
   }
 
   placeOrder(): void {
     this.formSubmitted = true;
     if (this.invalidName || this.invalidPhone || this.invalidAddress || !this.cartItems.length) return;
+    if (!this.checkoutSessionId) {
+      this.toast.error('Không thể tạo phiên thanh toán. Vui lòng thử lại.');
+      return;
+    }
     this.placingOrder = true;
-    setTimeout(() => {
-      this.placingOrder = false;
-      this.router.navigate(['/orders', 'success'], {
-        state: {
-          subtotal: this.subtotal,
-          discount: this.totalDiscount,
-          shippingFee: this.shippingFee,
-          grandTotal: this.grandTotal,
-          paymentMethod: this.paymentMethods.find((m) => m.id === this.selectedPaymentId)?.label || 'COD',
-          shippingMethod: this.selectedShipping.label,
-          contactName: this.contactName,
-          phone: this.phone,
-          address: `${this.addressLine}, ${this.district}, ${this.city}`,
-          items: this.cartItems,
-        },
-      });
-    }, 450);
+    this.checkoutService.placeOrder(this.checkoutSessionId, this.note || '').pipe(take(1)).subscribe({
+      next: (result) => {
+        this.cartService.getCurrentCart().pipe(take(1)).subscribe();
+        this.placingOrder = false;
+        this.router.navigate(['/orders', 'success'], {
+          state: {
+            orderId: result.orderId,
+            orderNumber: result.orderNumber,
+          },
+        });
+      },
+      error: (err) => {
+        this.placingOrder = false;
+        const issues = this.checkoutService.mapIssues(err);
+        this.checkoutIssues = issues.map((x) => x.message);
+        this.toast.error(this.checkoutIssues[0] || 'Đặt hàng thất bại. Vui lòng thử lại.');
+      },
+    });
   }
 
-  private applyCart(cart: CartNormalized): void {
-    const selectedItems = cart.items.filter((item) => item.selected);
-    this.cartItems = selectedItems.map((item) => ({
+  onShippingMethodChange(): void {
+    this.syncCheckoutSession({ shippingMethodId: this.selectedShippingId });
+  }
+
+  onPaymentMethodChange(): void {
+    this.syncCheckoutSession({ paymentMethodId: this.selectedPaymentId });
+  }
+
+  onPhoneInput(): void {
+    this.phone = this.phone.replace(/[^\d]/g, '').slice(0, 11);
+  }
+
+  private bootstrapCheckoutSession(): void {
+    this.checkoutService.prepareCheckout().pipe(take(1)).subscribe((ready) => {
+      if (!ready.success) {
+        this.checkoutIssues = ready.issues.map((x) => x.message);
+        return;
+      }
+      this.syncCheckoutSession();
+    });
+  }
+
+  private syncCheckoutSession(overrides: {
+    shippingMethodId?: string | null;
+    paymentMethodId?: string | null;
+    couponCode?: string | null;
+  } = {}): void {
+    this.isSyncingSession = true;
+    this.checkoutIssues = [];
+    const payload = {
+      shippingMethodId: overrides.shippingMethodId !== undefined ? overrides.shippingMethodId : this.selectedShippingId || null,
+      paymentMethodId: overrides.paymentMethodId !== undefined ? overrides.paymentMethodId : this.selectedPaymentId || null,
+      couponCode: overrides.couponCode !== undefined ? overrides.couponCode : this.appliedVoucher || null,
+      shippingAddress:
+        this.contactName && this.phone && this.addressLine && this.city
+          ? {
+              recipientName: this.contactName,
+              phone: this.phone,
+              addressLine1: this.addressLine,
+              district: this.district,
+              city: this.city,
+              countryCode: 'VN',
+            }
+          : undefined,
+    };
+
+    const req$ = this.checkoutSessionId
+      ? this.checkoutService.updateCheckoutSession(this.checkoutSessionId, payload)
+      : this.checkoutService.createCheckoutSession(payload);
+
+    req$.pipe(take(1)).subscribe({
+      next: (session) => {
+        this.isSyncingSession = false;
+        this.applySession(session);
+        this.uiHint = 'Thông tin thanh toán đã được cập nhật.';
+      },
+      error: (err) => {
+        this.isSyncingSession = false;
+        const issues = this.checkoutService.mapIssues(err);
+        this.checkoutIssues = issues.map((x) => x.message);
+        this.uiHint = '';
+      },
+    });
+  }
+
+  private applySession(session: CheckoutSessionView): void {
+    this.checkoutSessionId = session.sessionId;
+    this.appliedVoucher = session.appliedCouponCode || '';
+    this.voucherInput = session.appliedCouponCode || this.voucherInput;
+    this.cartItems = session.selectedItems.map((item) => ({
       id: item.cartItemId,
       name: item.productName,
-      variant: item.variantLabel,
+      variant: item.variantName,
       image: item.imageUrl || 'assets/images/banner/nen.png',
       quantity: item.quantity,
       price: item.unitPrice,
     }));
-    this.subtotal = selectedItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-    this.baseDiscount = cart.summary.discountTotal;
+    this.subtotal = session.subtotal;
+    this.shippingFeeFromSession = session.shippingFee;
+    this.baseDiscount = session.discount;
+    this.voucherDiscount = 0;
+    this.sessionGrandTotal = session.total;
+
+    if (session.selectedShippingMethodId) this.selectedShippingId = session.selectedShippingMethodId;
+    if (session.selectedPaymentMethodId) this.selectedPaymentId = session.selectedPaymentMethodId;
+    if (session.shippingAddress) {
+      this.contactName = session.shippingAddress.recipient_name || this.contactName;
+      this.phone = session.shippingAddress.phone || this.phone;
+      this.addressLine = session.shippingAddress.address_line_1 || this.addressLine;
+      this.district = session.shippingAddress.district || this.district;
+      this.city = session.shippingAddress.city || this.city;
+    }
+  }
+
+  private toUiShippingMethod(method: ShippingMethodApiOption): ShippingMethodOption {
+    const level = String(method.service_level || '').toLowerCase();
+    const fee = level.includes('express') ? 45000 : 30000;
+    const eta = level.includes('express') ? '1 ngày làm việc' : '2-3 ngày làm việc';
+    return {
+      id: method._id,
+      label: method.shipping_method_name,
+      eta,
+      fee,
+    };
+  }
+
+  private toUiPaymentMethod(method: PaymentMethodApiOption): PaymentMethodOption {
+    const type = String(method.method_type || '').toLowerCase();
+    const icon = type.includes('bank') || type.includes('transfer')
+      ? 'bi-bank2'
+      : type.includes('wallet')
+        ? 'bi-wallet2'
+        : 'bi-cash-coin';
+    return {
+      id: method._id,
+      label: method.payment_method_name,
+      subtitle: type.includes('cod') ? 'Thanh toán khi nhận hàng' : 'Thanh toán online',
+      icon,
+    };
   }
 }

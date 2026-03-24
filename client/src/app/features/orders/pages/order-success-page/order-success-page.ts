@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { take } from 'rxjs/operators';
+import { CheckoutService } from '../../../checkout/services/checkout.service';
 
 interface OrderedItem {
   id: string;
@@ -12,6 +14,13 @@ interface OrderedItem {
   lineTotal: number;
 }
 
+interface RecoItem {
+  name: string;
+  brand: string;
+  price: number;
+  image: string;
+}
+
 @Component({
   selector: 'app-order-success-page',
   standalone: true,
@@ -20,10 +29,10 @@ interface OrderedItem {
   styleUrls: ['./order-success-page.css'],
 })
 export class OrderSuccessPageComponent {
-  readonly orderNumber = `KAN-${Date.now().toString().slice(-8)}`;
-  readonly orderDate = new Date();
+  orderNumber = `KAN-${Date.now().toString().slice(-8)}`;
+  orderDate = new Date();
   readonly estimatedDelivery = this.addDays(new Date(), 3);
-  readonly paymentStatus = 'Đã xác nhận';
+  paymentStatus = 'Đã xác nhận';
   readonly timeline = [
     { label: 'Đã đặt hàng', done: true },
     { label: 'Đã xác nhận', done: false },
@@ -31,20 +40,32 @@ export class OrderSuccessPageComponent {
     { label: 'Đang giao', done: false },
     { label: 'Hoàn tất', done: false },
   ];
+  readonly recommendations: RecoItem[] = [
+    { name: 'Glow Cushion Foundation', brand: 'KLAIRS', price: 390000, image: 'assets/images/banner/new_product.png' },
+    { name: 'Velvet Blush Palette', brand: '3CE', price: 320000, image: 'assets/images/banner/bestseller.png' },
+    { name: 'Hydra Lip Oil', brand: 'COCOON', price: 260000, image: 'assets/images/banner/all-product.png' },
+  ];
 
-  readonly subtotal: number;
-  readonly discount: number;
-  readonly shippingFee: number;
-  readonly totalPaid: number;
-  readonly paymentMethod: string;
-  readonly shippingMethod: string;
-  readonly customerName: string;
-  readonly customerPhone: string;
-  readonly shippingAddress: string;
-  readonly orderedItems: OrderedItem[];
+  subtotal = 0;
+  discount = 0;
+  shippingFee = 0;
+  totalPaid = 0;
+  paymentMethod = 'Thanh toán khi nhận hàng';
+  shippingMethod = 'Giao tiêu chuẩn';
+  customerName = 'Ngọc Ánh';
+  customerPhone = '09xxxxxxxx';
+  shippingAddress = 'TP. Ho Chi Minh';
+  orderedItems: OrderedItem[] = [];
+  isLoading = true;
 
-  constructor(private readonly router: Router) {
+  constructor(
+    private readonly router: Router,
+    private readonly route: ActivatedRoute,
+    private readonly checkoutService: CheckoutService
+  ) {
     const state = (this.router.getCurrentNavigation()?.extras?.state || history.state || {}) as any;
+    const routeOrderId = this.route.snapshot.queryParamMap.get('id') || '';
+    const orderId = state?.orderId || routeOrderId || '';
 
     this.subtotal = Number(state?.subtotal || 1290000);
     this.discount = Number(state?.discount || 120000);
@@ -88,6 +109,39 @@ export class OrderSuccessPageComponent {
           lineTotal: Number((x.price || 0) * (x.quantity || 1)),
         }))
       : fallback;
+
+    this.orderNumber = state?.orderNumber || this.orderNumber;
+    if (!orderId) {
+      this.isLoading = false;
+      return;
+    }
+    this.checkoutService.getOrderById(orderId).pipe(take(1)).subscribe((order) => {
+      this.isLoading = false;
+      if (!order) return;
+      this.orderNumber = order.order_number || this.orderNumber;
+      this.orderDate = order.placed_at ? new Date(order.placed_at) : this.orderDate;
+      this.paymentStatus = order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán';
+      this.orderedItems = (order.items || []).map((item) => ({
+        id: item._id,
+        brand: 'KANILA',
+        name: item.product_name_snapshot,
+        variant: item.variant_name_snapshot,
+        image: 'assets/images/banner/nen.png',
+        quantity: Number(item.quantity || 1),
+        lineTotal: Number(item.line_total_amount || 0),
+      }));
+      this.subtotal = Number(order.order_total?.subtotal_amount || this.subtotal);
+      this.discount = Number(order.order_total?.order_discount_amount || this.discount);
+      this.shippingFee = Number(order.order_total?.shipping_fee_amount || this.shippingFee);
+      this.totalPaid = Number(order.order_total?.grand_total_amount || this.totalPaid);
+
+      const shipping = (order.order_addresses || []).find((x) => x.address_type === 'shipping');
+      if (shipping) {
+        this.customerName = shipping.recipient_name || this.customerName;
+        this.customerPhone = shipping.phone || this.customerPhone;
+        this.shippingAddress = [shipping.address_line_1, shipping.district, shipping.city].filter(Boolean).join(', ');
+      }
+    });
   }
 
   continueShopping(): void {

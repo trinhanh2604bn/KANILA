@@ -1,5 +1,9 @@
 <main class="success-page">
   <div class="success-shell">
+    <section class="card" *ngIf="isLoading">
+      <p class="notify-note">Đang tải thông tin đơn hàng...</p>
+    </section>
+
     <section class="success-hero card">
       <div class="success-icon"><i class="bi bi-check2-circle"></i></div>
       <h1>Đặt hàng thành công</h1>
@@ -34,6 +38,7 @@
           <span>{{ step.label }}</span>
         </div>
       </div>
+      <p class="notify-note">Bước tiếp theo: chúng tôi sẽ xác nhận đơn và gửi thông tin vận chuyển sớm nhất qua SMS/email.</p>
     </section>
 
     <div class="layout">
@@ -95,5 +100,20 @@
         </article>
       </aside>
     </div>
+
+    <section class="card">
+      <div class="reco-head">
+        <h3>Có thể bạn sẽ thích</h3>
+        <button type="button" class="text-link" (click)="continueShopping()">Xem thêm</button>
+      </div>
+      <div class="reco-grid">
+        <article class="reco-card" *ngFor="let item of recommendations">
+          <img [src]="item.image" [alt]="item.name" />
+          <small>{{ item.brand }}</small>
+          <p>{{ item.name }}</p>
+          <strong>{{ item.price | number }}đ</strong>
+        </article>
+      </div>
+    </section>
   </div>
 </main>

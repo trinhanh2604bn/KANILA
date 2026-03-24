@@ -17,40 +17,61 @@
       </div>
     </section>
 
+    <p class="checkout-context">Bạn đang ở bước thanh toán cuối cùng. Kiểm tra thông tin trước khi đặt đơn.</p>
+
     <div class="checkout-layout">
+      <section class="checkout-skeleton-layout" *ngIf="showShimmerSkeleton">
+        <article class="checkout-card">
+          <div class="shimmer-line w-30"></div>
+          <div class="shimmer-line"></div>
+          <div class="shimmer-line"></div>
+          <div class="shimmer-line w-60"></div>
+        </article>
+        <article class="checkout-card">
+          <div class="shimmer-line w-40"></div>
+          <div class="shimmer-card" *ngFor="let x of [1,2,3]"></div>
+        </article>
+        <article class="summary-card">
+          <div class="shimmer-line w-50"></div>
+          <div class="shimmer-row" *ngFor="let x of [1,2,3,4]"></div>
+          <div class="shimmer-button"></div>
+        </article>
+      </section>
+
+      <ng-container *ngIf="!showShimmerSkeleton">
       <section class="checkout-left">
         <article class="checkout-card">
           <header class="card-head">
-            <h2><i class="bi bi-geo-alt"></i> Shipping Information</h2>
+            <h2><i class="bi bi-geo-alt"></i> Thông tin giao hàng</h2>
             <button type="button" class="text-link">Change</button>
           </header>
 
           <div class="form-grid">
             <label class="field">
-              <span>Full name</span>
+              <span>Họ và tên</span>
               <input type="text" [(ngModel)]="contactName" [class.invalid]="invalidName" placeholder="Nguyen Anh" />
-              <small class="error" *ngIf="invalidName">Please enter recipient name.</small>
+              <small class="error" *ngIf="invalidName">Vui lòng nhập tên người nhận.</small>
             </label>
 
             <label class="field">
-              <span>Phone number</span>
-              <input type="tel" [(ngModel)]="phone" [class.invalid]="invalidPhone" placeholder="09xxxxxxxx" />
-              <small class="error" *ngIf="invalidPhone">Please enter a valid phone number.</small>
+              <span>Số điện thoại</span>
+              <input type="tel" [(ngModel)]="phone" (ngModelChange)="onPhoneInput()" [class.invalid]="invalidPhone" placeholder="09xxxxxxxx" />
+              <small class="error" *ngIf="invalidPhone">Vui lòng nhập số điện thoại hợp lệ.</small>
             </label>
 
             <label class="field field--full">
-              <span>Address</span>
+              <span>Địa chỉ</span>
               <input type="text" [(ngModel)]="addressLine" [class.invalid]="invalidAddress" placeholder="Street, ward, district..." />
-              <small class="error" *ngIf="invalidAddress">Address is required (min 8 characters).</small>
+              <small class="error" *ngIf="invalidAddress">Địa chỉ chưa đầy đủ (tối thiểu 8 ký tự).</small>
             </label>
 
             <label class="field">
-              <span>City</span>
+              <span>Tỉnh/Thành phố</span>
               <input type="text" [(ngModel)]="city" />
             </label>
 
             <label class="field">
-              <span>District</span>
+              <span>Quận/Huyện</span>
               <input type="text" [(ngModel)]="district" />
             </label>
           </div>
@@ -58,11 +79,11 @@
 
         <article class="checkout-card">
           <header class="card-head">
-            <h2><i class="bi bi-truck"></i> Shipping Method</h2>
+            <h2><i class="bi bi-truck"></i> Phương thức giao hàng</h2>
           </header>
           <div class="method-grid">
             <label class="method-card" *ngFor="let method of shippingMethods" [class.selected]="selectedShippingId === method.id">
-              <input type="radio" name="shippingMethod" [value]="method.id" [(ngModel)]="selectedShippingId" />
+              <input type="radio" name="shippingMethod" [value]="method.id" [(ngModel)]="selectedShippingId" (ngModelChange)="onShippingMethodChange()" />
               <div class="method-meta">
                 <strong>{{ method.label }}</strong>
                 <span>{{ method.eta }}</span>
@@ -74,11 +95,11 @@
 
         <article class="checkout-card">
           <header class="card-head">
-            <h2><i class="bi bi-credit-card-2-front"></i> Payment Method</h2>
+            <h2><i class="bi bi-credit-card-2-front"></i> Phương thức thanh toán</h2>
           </header>
           <div class="method-grid">
             <label class="method-card payment" *ngFor="let method of paymentMethods" [class.selected]="selectedPaymentId === method.id">
-              <input type="radio" name="paymentMethod" [value]="method.id" [(ngModel)]="selectedPaymentId" />
+              <input type="radio" name="paymentMethod" [value]="method.id" [(ngModel)]="selectedPaymentId" (ngModelChange)="onPaymentMethodChange()" />
               <i class="bi method-icon" [class]="method.icon"></i>
               <div class="method-meta">
                 <strong>{{ method.label }}</strong>
@@ -90,25 +111,31 @@
 
         <article class="checkout-card">
           <header class="card-head">
-            <h2><i class="bi bi-ticket-perforated"></i> Voucher</h2>
+            <h2><i class="bi bi-ticket-perforated"></i> Mã ưu đãi</h2>
           </header>
 
           <div class="voucher-row">
-            <input type="text" [(ngModel)]="voucherInput" placeholder="Enter voucher code" />
-            <button type="button" (click)="applyVoucher()">Apply</button>
+            <input type="text" [(ngModel)]="voucherInput" placeholder="Nhập mã giảm giá" />
+            <button type="button" (click)="applyVoucher()" [disabled]="isSyncingSession">Apply</button>
           </div>
 
           <div class="voucher-applied" *ngIf="appliedVoucher">
-            <span>Applied: <strong>{{ appliedVoucher }}</strong></span>
+            <span>Đã áp dụng: <strong>{{ appliedVoucher }}</strong></span>
             <span class="discount">-{{ voucherDiscount | number }}đ</span>
-            <button type="button" class="text-link" (click)="clearVoucher()">Remove</button>
+            <button type="button" class="text-link" (click)="clearVoucher()">Gỡ</button>
           </div>
         </article>
       </section>
 
       <aside class="checkout-right">
         <article class="summary-card">
-          <h3>Order Summary</h3>
+          <h3>Tóm tắt đơn hàng</h3>
+
+          <div class="free-ship ok" *ngIf="uiHint">{{ uiHint }}</div>
+          <div class="free-ship" *ngIf="isSyncingSession">Đang cập nhật tổng tiền...</div>
+          <div class="checkout-issues" *ngIf="checkoutIssues.length">
+            <p *ngFor="let issue of checkoutIssues">{{ issue }}</p>
+          </div>
 
           <div class="summary-lines" *ngIf="cartItems.length; else emptyCheckout">
             <div class="line-item" *ngFor="let item of cartItems">
@@ -121,34 +148,35 @@
             </div>
           </div>
           <ng-template #emptyCheckout>
-            <p class="empty-text">No selected items yet. Please go back to cart and select items.</p>
+            <p class="empty-text">Bạn chưa chọn sản phẩm nào từ giỏ hàng.</p>
           </ng-template>
 
           <div class="price-block">
-            <div><span>Subtotal</span><span>{{ subtotal | number }}đ</span></div>
-            <div><span>Savings</span><span class="accent">-{{ savingsTotal | number }}đ</span></div>
-            <div><span>Shipping</span><span>{{ shippingFee | number }}đ</span></div>
+            <div><span>Tạm tính</span><span>{{ subtotal | number }}đ</span></div>
+            <div><span>Tiết kiệm</span><span class="accent">-{{ savingsTotal | number }}đ</span></div>
+            <div><span>Phí vận chuyển</span><span>{{ shippingFee | number }}đ</span></div>
             <div class="free-ship" *ngIf="amountToFreeShipping > 0">
-              Add {{ amountToFreeShipping | number }}đ more for free shipping.
+              Mua thêm {{ amountToFreeShipping | number }}đ để được miễn phí vận chuyển.
             </div>
             <div class="free-ship ok" *ngIf="amountToFreeShipping === 0 && subtotal > 0">
-              You have unlocked free shipping.
+              Bạn đã đủ điều kiện miễn phí vận chuyển.
             </div>
-            <div class="total-row"><span>Total</span><strong>{{ grandTotal | number }}đ</strong></div>
+            <div class="total-row"><span>Tổng thanh toán</span><strong>{{ grandTotal | number }}đ</strong></div>
           </div>
 
-          <button type="button" class="cta-btn" [disabled]="placingOrder || !cartItems.length" (click)="placeOrder()">
+          <button type="button" class="cta-btn" [disabled]="placingOrder || isSyncingSession || !cartItems.length" (click)="placeOrder()">
             <i class="bi bi-shield-lock"></i>
-            {{ placingOrder ? 'Processing...' : 'Place Secure Order' }}
+            {{ placingOrder ? 'Đang xử lý đơn...' : 'Đặt hàng an toàn' }}
           </button>
 
           <div class="trust-badges">
-            <span><i class="bi bi-patch-check"></i> Authentic products</span>
-            <span><i class="bi bi-arrow-counterclockwise"></i> Easy returns</span>
-            <span><i class="bi bi-lock"></i> Secure payment</span>
+            <span><i class="bi bi-patch-check"></i> Sản phẩm chính hãng</span>
+            <span><i class="bi bi-arrow-counterclockwise"></i> Đổi trả linh hoạt</span>
+            <span><i class="bi bi-lock"></i> Thanh toán bảo mật SSL</span>
           </div>
         </article>
       </aside>
+      </ng-container>
     </div>
   </div>
 
@@ -157,7 +185,7 @@
       <small>Total</small>
       <strong>{{ grandTotal | number }}đ</strong>
     </div>
-    <button type="button" [disabled]="placingOrder || !cartItems.length" (click)="placeOrder()">
+    <button type="button" [disabled]="placingOrder || isSyncingSession || !cartItems.length" (click)="placeOrder()">
       <i class="bi bi-shield-lock"></i> Checkout
     </button>
   </div>

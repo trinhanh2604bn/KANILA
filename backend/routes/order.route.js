@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { getAllOrders, getOrderById, getOrdersByCustomerId, createOrder, updateOrder, patchOrder, deleteOrder } = require("../controllers/order.controller");
+const authMiddleware = require("../middlewares/auth.middleware");
+const { getAllOrders, getOrderById, getOrdersByCustomerId, getMyOrderById, createOrder, updateOrder, patchOrder, deleteOrder } = require("../controllers/order.controller");
+router.get("/me/:id", authMiddleware, getMyOrderById);
 router.get("/", getAllOrders);
 router.get("/customer/:customer_id", getOrdersByCustomerId);
 router.get("/:id", getOrderById);

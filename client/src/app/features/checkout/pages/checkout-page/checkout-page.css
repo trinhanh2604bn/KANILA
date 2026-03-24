@@ -13,6 +13,12 @@
   margin: 0 auto;
 }
 
+.checkout-context {
+  margin: -8px 0 14px;
+  color: #8d6173;
+  font-size: 13px;
+}
+
 .checkout-progress {
   display: flex;
   align-items: center;
@@ -68,6 +74,66 @@
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
   gap: 20px;
   align-items: start;
+}
+
+.checkout-skeleton-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 20px;
+}
+
+.shimmer-line,
+.shimmer-card,
+.shimmer-row,
+.shimmer-button {
+  position: relative;
+  overflow: hidden;
+  background: #f6e8ee;
+  border-radius: 12px;
+}
+
+.shimmer-line::after,
+.shimmer-card::after,
+.shimmer-row::after,
+.shimmer-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: checkoutShimmer 1.15s linear infinite;
+}
+
+.shimmer-line {
+  height: 14px;
+  margin-bottom: 10px;
+}
+
+.shimmer-line.w-30 { width: 30%; }
+.shimmer-line.w-40 { width: 40%; }
+.shimmer-line.w-50 { width: 50%; }
+.shimmer-line.w-60 { width: 60%; }
+
+.shimmer-card {
+  height: 56px;
+  margin-bottom: 10px;
+}
+
+.shimmer-row {
+  height: 44px;
+  margin-bottom: 8px;
+}
+
+.shimmer-button {
+  height: 48px;
+  border-radius: 14px;
+  margin-top: 12px;
+}
+
+@keyframes checkoutShimmer {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .checkout-left {
@@ -182,6 +248,11 @@
   box-shadow: 0 8px 20px rgba(210, 69, 125, 0.16);
 }
 
+.method-card input:focus-visible {
+  outline: 2px solid #d2457d;
+  outline-offset: 2px;
+}
+
 .method-card input {
   margin: 0;
 }
@@ -236,6 +307,11 @@
   color: #9f295a;
   font-weight: 700;
   padding: 0 14px;
+}
+
+.voucher-row button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .voucher-applied {
@@ -345,6 +421,22 @@
   background: #ecfdf3;
 }
 
+.checkout-issues {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  border-radius: 10px;
+  background: #fff4f4;
+  border: 1px solid #f7d0d0;
+  padding: 8px 10px;
+}
+
+.checkout-issues p {
+  margin: 0;
+  font-size: 12px;
+  color: #b42323;
+}
+
 .total-row {
   border-top: 1px dashed #f0d9e2;
   padding-top: 8px;
@@ -376,6 +468,7 @@
 
 .cta-btn:disabled {
   opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .trust-badges {
@@ -429,6 +522,10 @@
 
 @media (max-width: 1024px) {
   .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-skeleton-layout {
     grid-template-columns: 1fr;
   }
 
