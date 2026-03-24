@@ -97,7 +97,7 @@
               <button
                 type="button"
                 class="anhbg__action anhbg__action--buy"
-                (click)="goToDetail(p, $event)"
+                (click)="buyNow(p, $event)"
               >
                 Mua ngay
               </button>
@@ -182,7 +182,7 @@
                   <button
                     type="button"
                     class="btn-primary"
-                    (click)="$event.stopPropagation()"
+                    (click)="buyNow(pp, $event)"
                   >
                     Mua ngay
                   </button>

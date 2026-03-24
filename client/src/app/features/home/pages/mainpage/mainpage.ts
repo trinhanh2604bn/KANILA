@@ -14,6 +14,7 @@ import { Product } from '../../../../core/models/product.model';
 import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { GlobalToastComponent } from '../../../../layout/global-toast/global-toast';
+import { CheckoutService } from '../../../checkout/services/checkout.service';
 
 @Component({
   selector: 'app-mainpage',
@@ -45,6 +46,7 @@ export class Mainpage implements OnInit {
     private readonly router: Router,
     private readonly cartService: CartService,
     private readonly toast: ToastService,
+    private readonly checkoutService: CheckoutService,
   ) {}
 
   ngOnInit(): void {
@@ -169,5 +171,31 @@ export class Mainpage implements OnInit {
         if (err) this.toast.error(err.message);
         else this.toast.success('Đã thêm sản phẩm vào giỏ hàng.');
       });
+  }
+
+  buyNow(product: Product, e: Event): void {
+    e.stopPropagation();
+    const productId = product._id;
+    if (!productId) {
+      this.toast.warning('Sản phẩm không hợp lệ.');
+      return;
+    }
+    if ((product.stock ?? 0) <= 0) {
+      this.toast.warning('Sản phẩm hiện không còn khả dụng.');
+      return;
+    }
+    this.checkoutService.setBuyNowContext({
+      productId,
+      variantId: null,
+      quantity: 1,
+      productName: product.productName,
+      variantName: product.productCode || 'Default',
+      imageUrl: this.getFeaturedImage(product),
+      unitPrice: product.price || 0,
+      compareAtPrice: product.compareAtPrice ?? null,
+      brandName: product.brandId?.brandName || '',
+      stockStatus: (product.stock ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+    });
+    this.router.navigate(['/checkout'], { queryParams: { mode: 'buy_now' } });
   }
 }

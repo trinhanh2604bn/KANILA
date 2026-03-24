@@ -4,6 +4,8 @@ import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { CartService } from '../../cart/services/cart.service';
 import {
+  BuyNowCheckoutContext,
+  BuyNowCheckoutItem,
   CheckoutIssue,
   CheckoutSessionUpdatePayload,
   CheckoutSessionView,
@@ -19,6 +21,7 @@ export class CheckoutService {
   private readonly shippingMethodApi = 'http://localhost:5000/api/shipping-methods';
   private readonly paymentMethodApi = 'http://localhost:5000/api/payment-methods';
   private readonly ordersApi = 'http://localhost:5000/api/orders';
+  private readonly buyNowStorageKey = 'kanila_buy_now_checkout';
 
   constructor(
     private readonly http: HttpClient,
@@ -71,6 +74,31 @@ export class CheckoutService {
       map((res) => (res?.data || null) as OrderDetailView),
       catchError(() => of(null))
     );
+  }
+
+  setBuyNowContext(item: BuyNowCheckoutItem): void {
+    const payload: BuyNowCheckoutContext = {
+      source: 'buy_now',
+      createdAt: new Date().toISOString(),
+      items: [item],
+    };
+    sessionStorage.setItem(this.buyNowStorageKey, JSON.stringify(payload));
+  }
+
+  getBuyNowContext(): BuyNowCheckoutContext | null {
+    try {
+      const raw = sessionStorage.getItem(this.buyNowStorageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as BuyNowCheckoutContext;
+      if (parsed?.source !== 'buy_now' || !Array.isArray(parsed.items) || !parsed.items.length) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  clearBuyNowContext(): void {
+    sessionStorage.removeItem(this.buyNowStorageKey);
   }
 
   mapIssues(err: any): CheckoutIssue[] {

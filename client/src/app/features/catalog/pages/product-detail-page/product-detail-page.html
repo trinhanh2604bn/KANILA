@@ -101,7 +101,7 @@
           <button class="cta primary" [class.loading]="isAddingToCart" (click)="addToCartFeedback()">
             {{ isAddingToCart ? 'Đang thêm...' : 'Thêm vào giỏ' }}
           </button>
-          <button class="cta secondary">Mua ngay</button>
+          <button class="cta secondary" (click)="buyNow()">Mua ngay</button>
           <button class="wishlist-btn" aria-label="Yêu thích">♡</button>
         </div>
 
@@ -347,6 +347,6 @@
       <h4>{{ productName }}</h4>
       <p>{{ selectedShade.name }} · {{ currentPrice | number }}đ</p>
     </div>
-    <button>Thêm vào giỏ</button>
+    <button (click)="addToCartFeedback()">Thêm vào giỏ</button>
   </aside>
 </section>

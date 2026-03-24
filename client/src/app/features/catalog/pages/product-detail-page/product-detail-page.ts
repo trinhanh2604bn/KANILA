@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { ProductDetailContentSections, ProductDetailData } from '../../models/product-detail.model';
 import { ProductDetailService } from '../../services/product-detail.service';
@@ -8,6 +8,7 @@ import { ProductCardComponent } from '../../../home/pages/components/product-car
 import { Product } from '../../../../core/models/product.model';
 import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { CheckoutService } from '../../../checkout/services/checkout.service';
 
 interface PdpShade {
   id: string;
@@ -243,9 +244,11 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   constructor(
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly detailService: ProductDetailService,
     private readonly cartService: CartService,
-    private readonly toast: ToastService
+    private readonly toast: ToastService,
+    private readonly checkoutService: CheckoutService
   ) {}
 
   ngOnInit(): void {
@@ -387,6 +390,39 @@ export class CatalogProductDetailPageComponent implements OnInit {
     setTimeout(() => {
       this.isAddingToCart = false;
     }, 700);
+  }
+
+  buyNow(): void {
+    if (!this.productId) {
+      this.toast.warning('Sản phẩm không hợp lệ.');
+      return;
+    }
+    if (!this.selectedShadeId || !this.selectedShade) {
+      this.toast.warning('Vui lòng chọn phân loại sản phẩm.');
+      return;
+    }
+    if (!Number.isFinite(this.quantity) || this.quantity <= 0) {
+      this.toast.warning('Số lượng không hợp lệ.');
+      return;
+    }
+    if (this.stockText.toLowerCase().includes('hết')) {
+      this.toast.warning('Sản phẩm hiện không còn khả dụng.');
+      return;
+    }
+
+    this.checkoutService.setBuyNowContext({
+      productId: this.productId,
+      variantId: this.selectedShadeId || null,
+      quantity: this.quantity,
+      productName: this.productName,
+      variantName: this.selectedShade?.name || 'Default',
+      imageUrl: this.gallery[0]?.url || '',
+      unitPrice: this.currentPrice,
+      compareAtPrice: this.oldPrice,
+      brandName: this.brandName,
+      stockStatus: this.stockText.toLowerCase().includes('hết') ? 'out_of_stock' : 'in_stock',
+    });
+    this.router.navigate(['/checkout'], { queryParams: { mode: 'buy_now' } });
   }
 
   setTab(tab: (typeof this.infoTabs)[number]): void {

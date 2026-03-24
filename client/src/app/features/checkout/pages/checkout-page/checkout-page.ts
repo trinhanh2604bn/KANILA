@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
+  BuyNowCheckoutContext,
   CheckoutSessionView,
   PaymentMethodOption as PaymentMethodApiOption,
   ShippingMethodOption as ShippingMethodApiOption,
@@ -68,6 +69,8 @@ export class CheckoutPageComponent implements OnInit {
   formSubmitted = false;
   checkoutIssues: string[] = [];
   uiHint = '';
+  checkoutMode: 'cart' | 'buy_now' = 'cart';
+  buyNowContext: BuyNowCheckoutContext | null = null;
 
   contactName = '';
   phone = '';
@@ -80,7 +83,8 @@ export class CheckoutPageComponent implements OnInit {
     private readonly cartService: CartService,
     private readonly checkoutService: CheckoutService,
     private readonly toast: ToastService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -96,7 +100,7 @@ export class CheckoutPageComponent implements OnInit {
         this.paymentMethods = payment.map((m) => this.toUiPaymentMethod(m));
         this.selectedPaymentId = this.paymentMethods[0].id;
       }
-      this.bootstrapCheckoutSession();
+      this.initializeCheckoutMode();
     });
   }
 
@@ -105,6 +109,11 @@ export class CheckoutPageComponent implements OnInit {
   }
 
   get shippingFee(): number {
+    if (this.checkoutMode === 'buy_now') {
+      if (!this.subtotal) return 0;
+      const selectedFee = this.selectedShipping?.fee ?? 30000;
+      return this.subtotal >= this.freeShippingThreshold ? 0 : selectedFee;
+    }
     return this.shippingFeeFromSession;
   }
 
@@ -117,6 +126,9 @@ export class CheckoutPageComponent implements OnInit {
   }
 
   get grandTotal(): number {
+    if (this.checkoutMode === 'buy_now') {
+      return Math.max(0, this.subtotal - this.totalDiscount + this.shippingFee);
+    }
     return this.sessionGrandTotal || Math.max(0, this.subtotal - this.totalDiscount + this.shippingFee);
   }
 
@@ -144,11 +156,21 @@ export class CheckoutPageComponent implements OnInit {
   applyVoucher(): void {
     const code = this.voucherInput.trim().toUpperCase();
     if (!code) return;
+    if (this.checkoutMode === 'buy_now') {
+      this.appliedVoucher = code;
+      this.voucherDiscount = Math.round(this.subtotal * 0.1);
+      this.uiHint = 'Đã áp dụng mã ưu đãi cho Mua ngay.';
+      return;
+    }
     this.uiHint = 'Đang kiểm tra mã ưu đãi...';
     this.syncCheckoutSession({ couponCode: code });
   }
 
   clearVoucher(): void {
+    if (this.checkoutMode === 'buy_now') {
+      this.uiHint = '';
+      return;
+    }
     this.appliedVoucher = '';
     this.voucherInput = '';
     this.voucherDiscount = 0;
@@ -156,6 +178,10 @@ export class CheckoutPageComponent implements OnInit {
   }
 
   placeOrder(): void {
+    if (this.checkoutMode === 'buy_now') {
+      this.toast.warning('Đơn Mua ngay đang ở chế độ xem trước thanh toán. Vui lòng thêm vào giỏ để đặt đơn lúc này.');
+      return;
+    }
     this.formSubmitted = true;
     if (this.invalidName || this.invalidPhone || this.invalidAddress || !this.cartItems.length) return;
     if (!this.checkoutSessionId) {
@@ -184,12 +210,51 @@ export class CheckoutPageComponent implements OnInit {
   }
 
   onShippingMethodChange(): void {
+    if (this.checkoutMode === 'buy_now') return;
     this.syncCheckoutSession({ shippingMethodId: this.selectedShippingId });
   }
 
   onPaymentMethodChange(): void {
+    if (this.checkoutMode === 'buy_now') return;
     this.syncCheckoutSession({ paymentMethodId: this.selectedPaymentId });
   }
+  private initializeCheckoutMode(): void {
+    const requestedMode = String(this.route.snapshot.queryParamMap.get('mode') || '').toLowerCase();
+    const context = this.checkoutService.getBuyNowContext();
+    if (requestedMode === 'buy_now' && context?.items?.length) {
+      this.checkoutMode = 'buy_now';
+      this.buyNowContext = context;
+      this.applyBuyNowContext(context);
+      return;
+    }
+    this.checkoutMode = 'cart';
+    this.buyNowContext = null;
+    this.bootstrapCheckoutSession();
+  }
+
+  private applyBuyNowContext(context: BuyNowCheckoutContext): void {
+    const item = context.items[0];
+    this.checkoutSessionId = null;
+    this.appliedVoucher = '';
+    this.voucherInput = '';
+    this.voucherDiscount = 0;
+    this.baseDiscount = 0;
+    this.shippingFeeFromSession = 0;
+    this.sessionGrandTotal = 0;
+    this.checkoutIssues = [];
+    this.isSyncingSession = false;
+    this.cartItems = [{
+      id: `${item.productId}-${item.variantId || 'default'}`,
+      name: item.productName,
+      variant: item.variantName || 'Default',
+      image: item.imageUrl || 'assets/images/banner/nen.png',
+      quantity: Number(item.quantity || 1),
+      price: Number(item.unitPrice || 0),
+    }];
+    this.subtotal = this.cartItems.reduce((sum, x) => sum + x.quantity * x.price, 0);
+    this.uiHint = 'Bạn đang thanh toán nhanh với 1 sản phẩm đã chọn từ trang sản phẩm.';
+  }
+
 
   onPhoneInput(): void {
     this.phone = this.phone.replace(/[^\d]/g, '').slice(0, 11);
