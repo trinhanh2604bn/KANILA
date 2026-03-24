@@ -2,6 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { take } from 'rxjs';
+import { CartNormalized } from '../../models/cart.model';
+import { CartService } from '../../services/cart.service';
 
 interface CartItem {
   id: string;
@@ -43,43 +46,7 @@ export class CartPageComponent {
   qtyPulseItemId: string | null = null;
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-  cartItems: CartItem[] = [
-    {
-      id: 'c1',
-      brand: 'KLAIRS',
-      name: 'Maybelline New York Falsies False Lashes',
-      variant: 'N15 Light Neutral · 8ml',
-      price: 180000,
-      oldPrice: 220000,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1587752866088-43b67e3ec05f?auto=format&fit=crop&w=800&q=80',
-      selected: true,
-      inWishlist: false,
-    },
-    {
-      id: 'c2',
-      brand: 'COCOON VIETNAM',
-      name: 'Innisfree My Palette My Blush',
-      variant: 'Warm Rose · Full size',
-      price: 160000,
-      oldPrice: 190000,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
-      selected: true,
-      inWishlist: false,
-    },
-    {
-      id: 'c3',
-      brand: '3CE',
-      name: 'Soft Matte Lip Velvet',
-      variant: 'Shade Speak Up · 4g',
-      price: 290000,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80',
-      selected: false,
-      inWishlist: true,
-    },
-  ];
+  cartItems: CartItem[] = [];
 
   readonly recommendedProducts: CartRecoItem[] = [
     {
@@ -105,7 +72,17 @@ export class CartPageComponent {
     },
   ];
 
-  constructor(private readonly router: Router) {}
+  constructor(
+    private readonly router: Router,
+    public readonly cartService: CartService
+  ) {
+    this.cartService.cartState$.subscribe((cart) => this.applyCart(cart));
+    this.cartService.cartError$.subscribe((err) => {
+      if (!err) return;
+      this.showToast(err.message);
+    });
+    this.cartService.getCurrentCart().pipe(take(1)).subscribe();
+  }
 
   get hasItems(): boolean {
     return this.cartItems.length > 0;
@@ -141,35 +118,41 @@ export class CartPageComponent {
   }
 
   toggleSelectAll(checked: boolean): void {
-    this.cartItems = this.cartItems.map((item) => ({ ...item, selected: checked }));
-    this.showToast(checked ? 'Đã chọn tất cả sản phẩm' : 'Đã bỏ chọn tất cả');
+    this.cartService.toggleSelectAll(checked).pipe(take(1)).subscribe();
+  }
+
+  toggleItemSelected(itemId: string, selected: boolean): void {
+    this.cartService.toggleCartItemSelection(itemId, selected).pipe(take(1)).subscribe();
   }
 
   updateQty(itemId: string, delta: number): void {
-    this.cartItems = this.cartItems.map((item) => {
-      if (item.id !== itemId) return item;
-      return { ...item, quantity: Math.max(1, item.quantity + delta) };
+    const item = this.cartItems.find((x) => x.id === itemId);
+    if (!item) return;
+    const nextQty = Math.max(1, item.quantity + delta);
+    this.cartService.updateCartItemQuantity(itemId, nextQty).pipe(take(1)).subscribe(() => {
+      this.showToast('Đã cập nhật số lượng');
     });
     this.qtyPulseItemId = itemId;
     setTimeout(() => {
       if (this.qtyPulseItemId === itemId) this.qtyPulseItemId = null;
     }, 220);
-    this.showToast('Đã cập nhật số lượng');
   }
 
   removeItem(itemId: string): void {
     const ok = window.confirm('Bạn có muốn xóa sản phẩm này khỏi giỏ hàng?');
     if (!ok) return;
-    this.cartItems = this.cartItems.filter((item) => item.id !== itemId);
-    this.showToast('Đã xóa sản phẩm khỏi giỏ hàng');
+    this.cartService.removeCartItem(itemId).pipe(take(1)).subscribe(() => {
+      this.showToast('Đã xóa sản phẩm khỏi giỏ hàng');
+    });
   }
 
   removeSelected(): void {
     if (!this.selectedItems.length) return;
     const ok = window.confirm('Xóa tất cả sản phẩm đã chọn?');
     if (!ok) return;
-    this.cartItems = this.cartItems.filter((item) => !item.selected);
-    this.showToast('Đã xóa các sản phẩm đã chọn');
+    this.cartService.removeSelectedItems().pipe(take(1)).subscribe(() => {
+      this.showToast('Đã xóa các sản phẩm đã chọn');
+    });
   }
 
   toggleWishlist(itemId: string): void {
@@ -201,5 +184,22 @@ export class CartPageComponent {
     this.toastTimer = setTimeout(() => {
       this.uiToast = '';
     }, 1600);
+  }
+
+  private applyCart(cart: CartNormalized): void {
+    this.cartItems = cart.items.map((item) => ({
+      id: item.cartItemId,
+      brand: item.brandName,
+      name: item.productName,
+      variant: item.variantLabel,
+      price: item.unitPrice,
+      oldPrice: item.compareAtPrice ?? undefined,
+      quantity: item.quantity,
+      image: item.imageUrl || 'assets/images/banner/nen.png',
+      selected: item.selected,
+      inWishlist: false,
+    }));
+    this.shippingFee = cart.summary.shippingFee;
+    this.discount = cart.summary.discountTotal;
   }
 }

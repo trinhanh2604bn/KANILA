@@ -6,6 +6,8 @@ import { ProductDetailContentSections, ProductDetailData } from '../../models/pr
 import { ProductDetailService } from '../../services/product-detail.service';
 import { ProductCardComponent } from '../../../home/pages/components/product-card/product-card';
 import { Product } from '../../../../core/models/product.model';
+import { CartService } from '../../../cart/services/cart.service';
+import { ToastService } from '../../../../core/services/toast.service';
 
 interface PdpShade {
   id: string;
@@ -241,7 +243,9 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   constructor(
     private readonly route: ActivatedRoute,
-    private readonly detailService: ProductDetailService
+    private readonly detailService: ProductDetailService,
+    private readonly cartService: CartService,
+    private readonly toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -347,6 +351,38 @@ export class CatalogProductDetailPageComponent implements OnInit {
   }
 
   addToCartFeedback(): void {
+    if (!this.productId) {
+      this.toast.warning('Sản phẩm không hợp lệ.');
+      return;
+    }
+    if (!this.selectedShadeId || !this.selectedShade) {
+      this.toast.warning('Vui lòng chọn phân loại sản phẩm.');
+      return;
+    }
+    if (!Number.isFinite(this.quantity) || this.quantity <= 0) {
+      this.toast.warning('Số lượng không hợp lệ.');
+      return;
+    }
+
+    const variantId = this.selectedShadeId || null;
+    this.cartService
+      .addToCart({
+        productId: this.productId,
+        variantId,
+        quantity: this.quantity,
+        productName: this.productName,
+        brandName: this.brandName,
+        variantLabel: this.selectedShade?.name || 'Default',
+        imageUrl: this.gallery[0]?.url || '',
+        unitPrice: this.currentPrice,
+        compareAtPrice: this.oldPrice,
+        stockStatus: this.stockText.toLowerCase().includes('hết') ? 'out_of_stock' : 'in_stock',
+      })
+      .subscribe(() => {
+        const err = this.cartService.getCurrentError();
+        if (err) this.toast.error(err.message);
+        else this.toast.success('Đã thêm sản phẩm vào giỏ hàng.');
+      });
     this.isAddingToCart = true;
     setTimeout(() => {
       this.isAddingToCart = false;

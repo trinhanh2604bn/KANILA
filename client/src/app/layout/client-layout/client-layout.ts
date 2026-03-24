@@ -2,10 +2,11 @@ import { Component } from '@angular/core';
 import { Header } from '../header/header';
 import { RouterOutlet } from '@angular/router';
 import { Footer } from "../footer/footer";
+import { GlobalToastComponent } from '../global-toast/global-toast';
 
 @Component({
   selector: 'app-client-layout',
-  imports: [Header, RouterOutlet, Footer],
+  imports: [Header, RouterOutlet, Footer, GlobalToastComponent],
   templateUrl: './client-layout.html',
   styleUrl: './client-layout.css',
 })

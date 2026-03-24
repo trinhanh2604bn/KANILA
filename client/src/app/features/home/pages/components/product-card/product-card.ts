@@ -2,6 +2,8 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Product } from '../../../../../core/models/product.model';
+import { CartService } from '../../../../cart/services/cart.service';
+import { ToastService } from '../../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-product-card',
@@ -15,7 +17,11 @@ export class ProductCardComponent {
 
   showPreview = false;
 
-  constructor(private router: Router) {}
+  constructor(
+    private readonly router: Router,
+    private readonly cartService: CartService,
+    private readonly toast: ToastService
+  ) {}
 
   /** Primary image: ProductMedia (isPrimary / sortOrder) then legacy imageUrl */
   get primaryImageUrl(): string {
@@ -81,7 +87,26 @@ export class ProductCardComponent {
 
   addToCart(e: Event): void {
     e.stopPropagation();
-    // Cart integration can call a service here
+    const productId = this.product?._id;
+    if (!productId) return;
+    this.cartService
+      .addToCart({
+        productId,
+        variantId: null,
+        quantity: 1,
+        productName: this.product?.productName,
+        brandName: this.product?.brandId?.brandName || '',
+        variantLabel: this.product?.productCode || 'Default',
+        imageUrl: this.primaryImageUrl,
+        unitPrice: this.product?.price || 0,
+        compareAtPrice: this.product?.compareAtPrice ?? null,
+        stockStatus: (this.product?.stock ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+      })
+      .subscribe(() => {
+        const err = this.cartService.getCurrentError();
+        if (err) this.toast.error(err.message);
+        else this.toast.success('Đã thêm sản phẩm vào giỏ hàng.');
+      });
   }
 
   goToDetail(e: Event): void {

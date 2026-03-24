@@ -11,6 +11,9 @@ import { Brand } from '../components/brand/brand';
 import { Roya } from '../components/roya/roya';
 import { ProductService } from '../../../../core/services/product.service';
 import { Product } from '../../../../core/models/product.model';
+import { CartService } from '../../../cart/services/cart.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { GlobalToastComponent } from '../../../../layout/global-toast/global-toast';
 
 @Component({
   selector: 'app-mainpage',
@@ -22,7 +25,8 @@ import { Product } from '../../../../core/models/product.model';
     Brand,
     Roya,
   Footer,
-Header],
+Header,
+GlobalToastComponent],
   templateUrl: './mainpage.html',
   styleUrl: './mainpage.css',
 })
@@ -39,6 +43,8 @@ export class Mainpage implements OnInit {
   constructor(
     private readonly productService: ProductService,
     private readonly router: Router,
+    private readonly cartService: CartService,
+    private readonly toast: ToastService,
   ) {}
 
   ngOnInit(): void {
@@ -141,8 +147,27 @@ export class Mainpage implements OnInit {
     }
   }
 
-  addToCart(_product: Product, e: Event): void {
-    // Cart integration is not implemented in this page yet.
+  addToCart(product: Product, e: Event): void {
     e.stopPropagation();
+    const productId = product._id;
+    if (!productId) return;
+    this.cartService
+      .addToCart({
+        productId,
+        quantity: 1,
+        variantId: null,
+        productName: product.productName,
+        brandName: product.brandId?.brandName || '',
+        variantLabel: product.productCode || 'Default',
+        imageUrl: this.getFeaturedImage(product),
+        unitPrice: product.price || 0,
+        compareAtPrice: product.compareAtPrice ?? null,
+        stockStatus: (product.stock ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+      })
+      .subscribe(() => {
+        const err = this.cartService.getCurrentError();
+        if (err) this.toast.error(err.message);
+        else this.toast.success('Đã thêm sản phẩm vào giỏ hàng.');
+      });
   }
 }

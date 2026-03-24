@@ -5,6 +5,18 @@ const mongoose = require("mongoose");
  */
 const cartItemSchema = new mongoose.Schema(
   {
+    line_key: {
+      type: String,
+      required: [true, "Line key is required"],
+      trim: true,
+      index: true,
+    },
+    product_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      default: null,
+      index: true,
+    },
     cart_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Cart",
@@ -31,10 +43,34 @@ const cartItemSchema = new mongoose.Schema(
       required: [true, "Variant name snapshot is required"],
       trim: true,
     },
+    brand_name_snapshot: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    image_url_snapshot: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    compare_at_price_amount: {
+      type: Number,
+      default: 0,
+      min: [0, "Compare at price must not be negative"],
+    },
+    stock_status: {
+      type: String,
+      default: "in_stock",
+      trim: true,
+    },
     quantity: {
       type: Number,
       required: [true, "Quantity is required"],
       min: [1, "Quantity must be at least 1"],
+    },
+    selected: {
+      type: Boolean,
+      default: true,
     },
     unit_price_amount: {
       type: Number,
@@ -65,6 +101,8 @@ const cartItemSchema = new mongoose.Schema(
     collection: "cart_items",
   }
 );
+
+cartItemSchema.index({ cart_id: 1, line_key: 1 }, { unique: true, name: "ux_cart_line_key" });
 
 cartItemSchema.virtual("cart_item_id").get(function () {
   return this._id;

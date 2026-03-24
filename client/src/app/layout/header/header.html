@@ -131,8 +131,13 @@
           <a routerLink="/cart" class="action-link d-flex flex-column align-items-center position-relative">
             <i class="bi bi-bag fs-5"></i>
             <span class="small-label">Giỏ hàng</span>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-white text-dark" 
-                  style="font-size: 0.6rem; transform: translate(-50%, -20%) !important;">0</span>
+            <span
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-white text-dark"
+              style="font-size: 0.6rem; transform: translate(-50%, -20%) !important;"
+              *ngIf="cartBadgeCount > 0"
+            >
+              {{ cartBadgeCount }}
+            </span>
           </a>
           <a routerLink="/auth/login" class="action-link d-flex flex-column align-items-center">
             <i class="bi bi-person fs-5"></i>
