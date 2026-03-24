@@ -10,6 +10,7 @@ export interface ProductVariant {
   sku: string;
   barcode: string;
   variantName: string;
+  imageUrl?: string;
   variantStatus: 'active' | 'inactive';
   weightGrams: number;
   volumeMl: number;

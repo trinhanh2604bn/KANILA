@@ -1,0 +1,57 @@
+.catalog-page {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  background-color: var(--color-beige);
+  transition: gap 0.3s ease;
+  min-width: 1200px;
+}
+
+/* ==== LEFT FILTER ==== */
+.catalog-filter {
+  position: sticky;
+  top: 20px; /* Bỏ var(--header-height) đi cho đơn giản */
+  height: fit-content;
+    margin-left: 10px;
+  margin-top: 10px;
+}
+
+/* ==== RIGHT PRODUCT GRID ==== */
+.catalog-title {
+  font-family: var(--font-family-base);
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 800;
+  color: var(--kanila-red);
+  padding: 5px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 992px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 576px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 992px) {
+  .catalog-page {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    gap: 16px;
+  }
+}

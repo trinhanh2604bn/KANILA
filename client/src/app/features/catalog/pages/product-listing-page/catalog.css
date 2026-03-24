@@ -1,0 +1,311 @@
+/* --- Danh mục lớn (Hàng 1) --- */
+.category-scroll-wrapper::-webkit-scrollbar {
+  height: 4px;
+}
+.category-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(107, 30, 46, 0.2);
+  border-radius: 10px;
+}
+
+.btn-category {
+  background-color: var(--kanila-white);
+  color: var(--kanila-text);
+  border: 1px solid rgba(107, 30, 46, 0.2);
+  padding: 10px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-family: var(--font-nunito, sans-serif);
+}
+
+.btn-category:hover, .btn-category.active {
+  border-color: var(--kanila-red);
+  color: var(--kanila-red);
+  box-shadow: 0 4px 10px rgba(107, 30, 46, 0.1);
+}
+
+.catalog-section + .catalog-section {
+  margin-top: 10px;
+}
+
+.section-title {
+  letter-spacing: 0.01em;
+}
+
+/* --- Các nút Lọc tiêu chí (Hàng 2) --- */
+.btn-filter {
+  background-color: var(--kanila-white);
+  color: var(--kanila-text);
+  border: 1px solid rgba(107, 30, 46, 0.4);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.btn-filter:hover, .btn-filter.active {
+  background-color: var(--kanila-bg);
+  border-color: var(--kanila-red);
+  color: var(--kanila-red);
+}
+
+.filter-chip {
+  box-shadow: 0 1px 0 rgba(107, 30, 46, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 30, 46, 0.1);
+}
+
+/* --- Bảng xổ xuống (Dropdown Panel) --- */
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  background-color: var(--kanila-white);
+  border: 1px solid rgba(107, 30, 46, 0.1);
+  min-width: 220px;
+  z-index: 1000;
+  animation: fadeInDown 0.2s ease-out;
+}
+
+.skin-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(107, 30, 46, 0.2);
+  font-size: 0.85rem;
+  color: var(--kanila-text);
+}
+
+.skin-suggest-btn {
+  border: 1px solid rgba(107, 30, 46, 0.25);
+  border-radius: 20px;
+  color: var(--kanila-red);
+  background: #fff;
+}
+
+.skin-suggest-btn:hover {
+  border-color: var(--kanila-red);
+  color: var(--kanila-red);
+}
+
+.price-dropdown {
+  width: 400px;
+  max-width: 90vw;
+}
+
+/* --- Custom Checkbox --- */
+.custom-checkbox input {
+  accent-color: var(--kanila-red);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.custom-checkbox span {
+  color: var(--kanila-text);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.custom-checkbox:hover span {
+  color: var(--kanila-red);
+}
+
+/* --- Tùy chỉnh input số (Giá) --- */
+.custom-price-input::-webkit-outer-spin-button,
+.custom-price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.custom-price-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  border-right: none;
+  color: var(--kanila-text);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.custom-price-input:focus { border-color: var(--kanila-red); box-shadow: none; }
+
+
+/* --- THANH TRƯỢT KÉP CSS MA THUẬT (Dual Range Slider) --- */
+.range-slider-wrapper {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  margin: 25px 0 15px 0;
+}
+
+.range-track {
+  position: absolute;
+  height: 100%;
+  top: 0;
+  background-color: var(--kanila-red);
+  border-radius: 5px;
+  pointer-events: none;
+}
+
+.range-slider-wrapper input[type="range"] {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  top: 0;
+  left: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  margin: 0;
+  outline: none;
+  pointer-events: none;
+}
+
+.range-slider-wrapper input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--kanila-red);
+  cursor: grab;
+  pointer-events: auto;
+  transition: transform 0.1s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.range-slider-wrapper input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+}
+
+/* --- Tag đang lọc (Hàng 3) --- */
+.filter-tag {
+  background-color: var(--kanila-white);
+  border: 1px solid var(--kanila-red);
+  color: var(--kanila-red);
+  font-size: 0.9rem;
+  box-shadow: 0 1px 6px rgba(107, 30, 46, 0.08);
+}
+
+.filter-tag i {
+  color: rgba(107, 30, 46, 0.5);
+}
+
+.filter-tag i:hover {
+  color: var(--kanila-red);
+}
+
+/* --- Nút Sắp xếp (Hàng 4) --- */
+.btn-sort {
+  background-color: transparent;
+  color: var(--kanila-text);
+  border: 1px solid rgba(107, 30, 46, 0.2);
+  padding: 6px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.btn-sort:hover, .btn-sort.active {
+  border-color: var(--kanila-red);
+  color: var(--kanila-red);
+  box-shadow: 0 3px 10px rgba(107, 30, 46, 0.12);
+}
+
+/* --- Animations --- */
+.fade-in-up {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Hover cho Card Sản Phẩm --- */
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(107, 30, 46, 0.15) !important;
+  border-color: var(--kanila-red) !important;
+}
+
+.product-card:hover .img-placeholder i {
+  transform: scale(1.1);
+  color: var(--kanila-red) !important;
+  transition: all 0.3s ease;
+}
+
+/* --- BREADCRUMB CSS --- */
+.breadcrumb-link { color: var(--kanila-text); opacity: 0.7; cursor: pointer; text-decoration: none; font-weight: normal; }
+.breadcrumb-link:hover { color: var(--kanila-red); opacity: 1; }
+.breadcrumb-active { color: var(--kanila-red); font-weight: 700; cursor: default; }
+.breadcrumb-chevron { color: var(--kanila-text); opacity: 0.4; font-size: 0.85rem; }
+
+/* --- KHỐI NEO BỘ LỌC (STICKY WRAPPER) CƠ BẢN --- */
+.sticky-filter-wrapper {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 100px; /* Giữ nguyên khoảng cách nhường chỗ cho Header */
+  z-index: 100;
+  background-color: var(--kanila-bg);
+  padding-top: 10px;
+  padding-bottom: 5px;
+  margin-left: -15px;
+  margin-right: -15px;
+  padding-left: 15px;
+  padding-right: 15px;
+  border-radius: 10px
+}
+
+.product-count-pill {
+  border: 1px solid rgba(107, 30, 46, 0.22);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--kanila-red);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* --- HIỆU ỨNG THU GỌN VÀ HOVER MA THUẬT --- */
+.advanced-filters {
+  max-height: 800px; /* Đủ cao để chứa Hàng 2,3,4 */
+  opacity: 1;
+  transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+/* KHI ĐÃ CUỘN XUỐNG VÀ KHÔNG HOVER CHUỘT -> Thu nhỏ */
+.sticky-filter-wrapper.collapsed:not(:hover) .advanced-filters {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Thay đổi một chút bóng đổ khi bị thu nhỏ cho thanh thoát */
+.sticky-filter-wrapper.collapsed:not(:hover) {
+  box-shadow: 0 4px 2px -2px rgba(107, 30, 46, 0.1);
+  padding-bottom: 0px;
+}
+
+/* Khi mở rộng (Hover hoặc chưa cuộn) -> Cho phép Dropdown tràn ra ngoài */
+.sticky-filter-wrapper:hover .advanced-filters,
+.sticky-filter-wrapper:not(.collapsed) .advanced-filters {
+  overflow: visible;
+}
+
+/* Hover mượt mà cho toàn bộ thẻ sticky */
+.transition-all {
+  transition: all 0.3s ease;
+}
+

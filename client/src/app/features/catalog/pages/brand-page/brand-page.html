@@ -1,0 +1,57 @@
+<div class="brands-page container py-4 fade-in-up">
+
+  <div class="breadcrumb d-flex align-items-center mb-4" style="font-size: 1.05rem;">
+      <a routerLink="/" class="breadcrumb-link transition-all d-flex align-items-center">
+          <i class="bi bi-house-door-fill me-2"></i> Trang chủ
+      </a>
+      <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
+      <span class="breadcrumb-active transition-all">Thương hiệu</span>
+  </div>
+
+  <div class="text-center mb-5">
+      <h2 class="fw-bold text-uppercase" style="color: var(--kanila-text); letter-spacing: 1px;">
+          XEM TẤT CẢ {{ totalBrands }} THƯƠNG HIỆU
+      </h2>
+  </div>
+
+  <div class="alphabet-nav-wrapper py-3 mb-5 border-top border-bottom bg-white sticky-top">
+      <div class="d-flex flex-wrap justify-content-center gap-2 gap-md-3">
+          <button *ngFor="let letter of alphabets"
+                  class="btn-alphabet transition-all fw-bold"
+                  (click)="scrollToLetter(letter)">
+              {{ letter }}
+          </button>
+      </div>
+  </div>
+
+  <div class="brands-content">
+      <ng-container *ngFor="let group of groupedBrands">
+          <div [id]="'letter-' + group.letter" class="brand-group-section mb-5">
+
+              <h4 class="letter-title mb-4 pb-2 border-bottom" style="color: var(--kanila-red); font-weight: 800;">
+                  {{ group.letter }}
+              </h4>
+
+              <div class="row g-4">
+                  <div class="col-6 col-md-3 col-lg-2" *ngFor="let brand of group.brands">
+
+                      <a [routerLink]="['/catalog']" [queryParams]="{brand: brand.name}" class="brand-card text-decoration-none text-center d-block">
+
+                          <div class="brand-logo-box bg-white rounded-3 shadow-sm mb-3 d-flex align-items-center justify-content-center overflow-hidden transition-all">
+                              <img [src]="brand.logoUrl" [alt]="brand.name" class="img-fluid p-2 p-md-3" (error)="onImageError($event, brand.name)">
+                          </div>
+
+                          <span class="brand-name fw-bold text-uppercase transition-all" style="color: var(--kanila-text); font-size: 0.9rem;">
+                              {{ brand.name }}
+                          </span>
+
+                      </a>
+
+                  </div>
+              </div>
+
+          </div>
+      </ng-container>
+  </div>
+
+</div>

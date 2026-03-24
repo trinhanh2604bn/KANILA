@@ -1,0 +1,44 @@
+
+.policy-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.text-justify {
+    text-align: justify;
+}
+
+
+.return-conditions li {
+    line-height: 1.8;
+}
+
+.policy-sub-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: transparent;
+}
+
+.policy-sub-item:hover {
+    background-color: var(--kanila-bg);
+}
+
+
+.note-section {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.note-section:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(107, 30, 46, 0.15) !important;
+}
+
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}

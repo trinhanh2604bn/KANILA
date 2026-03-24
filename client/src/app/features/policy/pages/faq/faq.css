@@ -1,0 +1,85 @@
+/* --- Khung chung --- */
+.faq-page {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.text-justify {
+    text-align: justify;
+}
+
+/* --- Tùy chỉnh FAQ Item --- */
+.faq-item {
+    border: 1px solid rgba(107, 30, 46, 0.1); /* Viền mờ màu kanila-red */
+    background-color: var(--kanila-white);
+    transition: all 0.3s ease;
+    overflow: hidden; /* Chặn nội dung tràn ra khi đóng */
+}
+
+/* Hiệu ứng khi lướt chuột qua câu hỏi */
+.faq-question {
+    cursor: pointer;
+    background-color: var(--kanila-white);
+    color: var(--kanila-text);
+}
+
+.faq-question:hover {
+    background-color: var(--kanila-bg);
+    color: var(--kanila-red);
+}
+
+.faq-question i {
+    color: var(--kanila-pink);
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.faq-question:hover i {
+    color: var(--kanila-red);
+}
+
+
+.faq-item.active {
+    border-color: var(--kanila-red);
+    box-shadow: 0 5px 15px rgba(107, 30, 46, 0.1) !important;
+}
+
+.faq-item.active .faq-question {
+    background-color: var(--kanila-bg);
+    color: var(--kanila-red);
+}
+
+.faq-item.active .faq-question i {
+    color: var(--kanila-red);
+    transform: rotate(180deg); 
+}
+
+
+.faq-answer {
+    max-height: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease-in-out;
+}
+
+.faq-answer.show {
+    max-height: 300px;
+    opacity: 1;
+    visibility: visible;
+}
+
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+.btn:hover {
+    background-color: var(--kanila-text) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(107, 30, 46, 0.2);
+}

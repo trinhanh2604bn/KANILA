@@ -1,0 +1,25 @@
+<header class="section-header">
+  <div class="section-header__row">
+    <div class="section-header__title-wrap">
+      <img
+        class="section-header__deco section-header__deco--left"
+        src="assets/images/divider/Provider1_l.png"
+        alt=""
+        width="200"
+        height="auto"
+      />
+      <h2 class="section-header__title">{{ title }}</h2>
+      <img
+        class="section-header__deco section-header__deco--right"
+        src="assets/images/divider/Provider1_r.png"
+        alt=""
+        width="200"
+        height="auto"
+      />
+    </div>
+    <a [routerLink]="ctaLink" class="section-header__cta">
+      <span>{{ buttonText }}</span>
+      <span class="section-header__cta-chevron" aria-hidden="true">»</span>
+    </a>
+  </div>
+</header>

@@ -1,0 +1,7 @@
+.search-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f4f4f4;
+}

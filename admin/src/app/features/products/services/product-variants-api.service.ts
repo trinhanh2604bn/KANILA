@@ -26,6 +26,7 @@ export class ProductVariantsApiService {
     productId: string;
     sku: string;
     variantName: string;
+    imageUrl?: string;
     barcode?: string;
     variantStatus?: 'active' | 'inactive';
     weightGrams?: number;
@@ -41,6 +42,7 @@ export class ProductVariantsApiService {
       productId: string;
       sku: string;
       variantName: string;
+      imageUrl: string;
       barcode: string;
       variantStatus: 'active' | 'inactive';
       weightGrams: number;
@@ -75,6 +77,7 @@ export class ProductVariantsApiService {
             productId,
             sku: (v.sku ?? '').trim().toUpperCase(),
             variantName: (v.variantName ?? '').trim() || v.sku,
+            imageUrl: v.imageUrl ?? '',
             barcode: v.barcode ?? '',
             variantStatus: (v.variantStatus ?? 'active') as 'active' | 'inactive',
             weightGrams: v.weightGrams ?? 0,
@@ -99,6 +102,7 @@ export class ProductVariantsApiService {
       sku: raw.sku ?? '',
       barcode: raw.barcode ?? '',
       variantName: raw.variantName ?? '',
+      imageUrl: raw.imageUrl ?? '',
       variantStatus: raw.variantStatus === 'inactive' ? 'inactive' : 'active',
       weightGrams: raw.weightGrams ?? 0,
       volumeMl: raw.volumeMl ?? 0,

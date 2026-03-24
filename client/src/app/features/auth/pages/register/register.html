@@ -1,0 +1,47 @@
+<div class="auth-page-wrapper">
+    <div class="auth-card">
+      <h4 class="text-center mb-4 fw-bold" style="color: var(--kanila-red)">Đăng Ký</h4>
+      
+      <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
+        <div class="mb-3">
+          <input type="text" formControlName="fullName" placeholder="Họ và tên (*)" class="form-control">
+        </div>
+  
+        <div class="mb-3">
+          <input type="text" formControlName="phone" placeholder="Số điện thoại (*)" class="form-control"
+                 [class.input-error]="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
+          <small class="text-danger-kanila" *ngIf="registerForm.get('phone')?.invalid && registerForm.get('phone')?.touched">
+            Số điện thoại 10 số, bắt đầu bằng số 0!
+          </small>
+        </div>
+  
+        <div class="mb-3">
+          <input type="email" formControlName="email" placeholder="Email (*)" class="form-control"
+                 [class.input-error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+          <small class="text-danger-kanila" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            Email không đúng định dạng!
+          </small>
+        </div>
+  
+        <div class="mb-3">
+          <input type="password" formControlName="password" placeholder="Nhập mật khẩu (*)" class="form-control"
+                 [class.input-error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+          <small class="text-danger-kanila" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.errors?.['minlength']">
+            Mật khẩu yêu cầu tối thiểu 8 ký tự!
+          </small>
+        </div>
+  
+        <div class="mb-4">
+          <input type="password" formControlName="confirmPassword" placeholder="Nhập lại mật khẩu (*)" 
+                 class="form-control" [class.input-error]="isPasswordMismatch">
+          <small class="text-danger-kanila" *ngIf="isPasswordMismatch">Mật khẩu không khớp!</small>
+        </div>
+  
+        <button type="submit" class="btn btn-kanila w-100 py-2 fw-bold" style="height: 55px; font-size: 1.1rem">ĐĂNG KÝ</button>
+        
+        <p class="mt-4 text-center h6 mb-0">
+          Bạn đã có tài khoản? Đăng nhập <a routerLink="/auth/login" class="h6"  style="color: var(--kanila-red)"> tại đây</a>
+        </p>
+      </form>
+    </div>
+</div>

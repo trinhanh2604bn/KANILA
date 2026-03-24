@@ -286,6 +286,7 @@ export class ProductFormPageComponent implements OnInit {
         sku: `${base}-NEW`.toUpperCase(),
         barcode: '',
         variantName: 'New variant',
+        imageUrl: '',
         variantStatus: 'active',
         weightGrams: 0,
         volumeMl: 0,
@@ -327,6 +328,7 @@ export class ProductFormPageComponent implements OnInit {
         sku: `${baseCode}-${combo.join('-')}`.toUpperCase().replace(/\s+/g, '-'),
         barcode: '',
         variantName,
+        imageUrl: '',
         variantStatus: 'active' as const,
         weightGrams: 0,
         volumeMl: 0,
@@ -348,6 +350,27 @@ export class ProductFormPageComponent implements OnInit {
       (acc, b) => acc.flatMap((prefix) => b.map((val) => [...prefix, val])),
       [[]]
     );
+  }
+
+  async onVariantImageAdd(event: Event, variantId: string): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    
+    input.value = ''; // Reset
+    
+    const dataUrl = await this.readFileAsDataUrl(file);
+    let final = dataUrl;
+    try {
+      final = await this.compressImageDataUrl(dataUrl, 400, 0.72); // smaller for variant thumbnails
+    } catch (e) {
+      console.warn('Variant image compression failed', e);
+    }
+    
+    this.variants.update((vs) =>
+      vs.map((v) => (v.id === variantId ? { ...v, imageUrl: final } : v))
+    );
+    this.dirtyVariants.update((s) => new Set(s).add(variantId));
   }
 
   // --- Inline edit ---

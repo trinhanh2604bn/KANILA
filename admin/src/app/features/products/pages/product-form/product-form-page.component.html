@@ -200,6 +200,7 @@
                 <table class="variants-table data-table">
                   <thead>
                     <tr>
+                      <th class="col-image">Image</th>
                       <th>Name</th>
                       <th>SKU</th>
                       <th>Barcode</th>
@@ -213,6 +214,18 @@
                   <tbody>
                     @for (v of variants(); track v.id) {
                       <tr class="variant-row" [class.dirty-row]="dirtyVariants().has(v.id)" [class.error-row]="!v.variantName.trim() || !v.sku.trim()">
+                        <td class="variant-image-cell">
+                          <label class="variant-upload-trigger" title="Upload variant image">
+                            @if (v.imageUrl) {
+                              <img [src]="v.imageUrl" alt="Variant" class="variant-img-preview" />
+                            } @else {
+                              <div class="variant-img-placeholder">
+                                <span class="material-symbols-rounded">image</span>
+                              </div>
+                            }
+                            <input type="file" hidden accept="image/*" (change)="onVariantImageAdd($event, v.id)" />
+                          </label>
+                        </td>
                         <td class="editable-cell" [class.is-editing]="editingCell()?.id === v.id && editingCell()?.field === 'variantName'" (click)="startEdit(v.id, 'variantName', $event)">
                           <div class="variant-label-wrap">
                             @if (v.optionValues) {

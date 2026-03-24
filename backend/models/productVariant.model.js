@@ -23,6 +23,10 @@ const productVariantSchema = new mongoose.Schema(
       required: [true, "Variant name is required"],
       trim: true,
     },
+    imageUrl: {
+      type: String,
+      default: "",
+    },
     variantStatus: {
       type: String,
       enum: ["active", "inactive"],

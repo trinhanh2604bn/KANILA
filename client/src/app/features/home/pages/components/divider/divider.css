@@ -1,0 +1,86 @@
+.section-header {
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.section-header__row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.section-header__title-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.section-header__deco {
+  display: none;
+  width: clamp(72px, 12vw, 200px);
+  height: auto;
+  object-fit: contain;
+}
+
+@media (min-width: 576px) {
+  .section-header__deco {
+    display: block;
+  }
+}
+
+.section-header__title {
+  margin: 0;
+  font-family: var(--font-family-base);
+  font-size: clamp(1.06rem, 2.25vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #2d1f3d;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* Pill “Xem tất cả” — below title, centered */
+.section-header__cta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 1rem 0.4rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  background: #fff0f5;
+  color: #1f2937;
+  font-family: var(--font-family-base);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    background 0.25s ease,
+    color 0.2s ease,
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
+}
+
+.section-header__cta-chevron {
+  font-size: 0.95em;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.section-header__cta:hover {
+  background: #ffe4ef;
+  color: var(--kanila-red);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.section-header__cta:active {
+  transform: translateY(0);
+}

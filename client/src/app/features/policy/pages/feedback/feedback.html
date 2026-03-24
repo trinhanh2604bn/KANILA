@@ -1,0 +1,73 @@
+<div class="feedback-page container py-5 fade-in-up">
+    <h1 class="h4-style text-center text-uppercase mb-5">GÓP Ý VÀ KHIẾU NẠI</h1>
+
+    <div class="feedback-content-wrapper p-4 p-md-5 rounded-4 shadow-sm" style="background-color: var(--kanila-white);">
+        
+        <div class="intro-box p-4 rounded-4 mb-5" style="background-color: var(--kanila-bg); border-left: 5px solid var(--kanila-red);">
+            <p class="mb-0 text-justify">
+                Phản hồi của bạn giúp chúng tôi cải thiện chất lượng dịch vụ và sản phẩm mỗi ngày. Chúng tôi cam kết xử lý khiếu nại một cách minh bạch và nhanh chóng.
+            </p>
+        </div>
+
+        <form class="feedback-form" (ngSubmit)="submitForm()">
+            <h2 class="h5-style mb-4 text-center text-md-start d-flex align-items-center" style="color: var(--kanila-red);">
+                <i class="bi bi-chat-square-dots-fill me-2"></i> Gửi phản hồi trực tiếp
+            </h2>
+
+            <div class="form-group mb-4">
+                <label class="form-label d-block mb-3">1. Loại phản hồi</label>
+                <div class="d-flex flex-wrap gap-4">
+                    <div class="form-check custom-radio">
+                        <input class="form-check-input" type="radio" name="type" id="typeFeedback" value="feedback" [(ngModel)]="formData.type" required>
+                        <label class="form-check-label" for="typeFeedback">Góp ý / đề xuất</label>
+                    </div>
+                    <div class="form-check custom-radio">
+                        <input class="form-check-input" type="radio" name="type" id="typeComplaint" value="complaint" [(ngModel)]="formData.type" required>
+                        <label class="form-check-label" for="typeComplaint">Khiếu nại / vấn đề</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-6 form-group">
+                    <label for="name" class="form-label mb-2">2. Họ và tên</label>
+                    <input id="name" type="text" class="form-control custom-input py-2" name="name" [(ngModel)]="formData.name" required>
+                </div>
+                <div class="col-md-6 form-group">
+                    <label for="email" class="form-label mb-2">3. Email của bạn</label>
+                    <input id="email" type="email" class="form-control custom-input py-2" name="email" [(ngModel)]="formData.email" required>
+                </div>
+            </div>
+
+            <div class="form-group mb-4">
+                <label for="subject" class="form-label mb-2">4. Chủ đề phản hồi</label>
+                <select id="subject" class="form-select custom-input py-2" name="subject" [(ngModel)]="formData.subject" required>
+                    <option *ngFor="let option of subjectOptions" [value]="option">{{ option }}</option>
+                </select>
+            </div>
+
+            <div class="form-group mb-4">
+                <label for="description" class="form-label mb-2">5. Mô tả chi tiết vấn đề</label>
+                <textarea id="description" class="form-control custom-input" name="description" rows="5" [(ngModel)]="formData.description" required></textarea>
+            </div>
+
+            <div class="form-group mb-5">
+                <label class="form-label mb-2">6. Ảnh/Clip bằng chứng (nếu là khiếu nại)</label>
+                <div class="file-upload-wrapper p-4 rounded-3 text-center transition-all" style="background-color: var(--kanila-white);">
+                    <i class="bi bi-cloud-arrow-up-fill mb-2" style="font-size: 36px; color: var(--kanila-pink);"></i>
+                    <br>
+                    <button type="button" class="btn btn-upload rounded-pill px-4 py-2 mt-2 mb-2 transition-all" style="background-color: var(--kanila-bg); color: var(--kanila-red); border: 1px solid var(--kanila-red);">
+                        Chọn Tệp Tin
+                    </button>
+                    <div><span class="file-note" style="opacity: 0.7;">Tối đa 2MB (chỉ chấp nhận ảnh hoặc video ngắn)</span></div>
+                </div>
+            </div>
+
+            <div class="form-actions text-center mt-2">
+                <button type="submit" class="btn btn-submit rounded-pill px-5 py-3 transition-all text-uppercase" style="background-color: var(--kanila-red); color: var(--kanila-white); border: none; letter-spacing: 1px;">
+                    Gửi Phản Hồi <i class="bi bi-send-fill ms-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
