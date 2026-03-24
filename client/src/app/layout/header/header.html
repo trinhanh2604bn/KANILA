@@ -115,10 +115,76 @@
               {{ cartBadgeCount }}
             </span>
           </a>
-          <a routerLink="/auth/login" class="action-link d-flex flex-column align-items-center">
-            <i class="bi bi-person fs-5"></i>
-            <span class="small-label">Đăng nhập</span>
-          </a>
+          <div class="account-menu-wrap" (click)="$event.stopPropagation()">
+            <button
+              class="account-trigger"
+              type="button"
+              [class.account-trigger-open]="accountMenuOpen"
+              (click)="toggleAccountMenu($event)"
+              [attr.aria-expanded]="accountMenuOpen"
+            >
+              <span class="account-avatar" *ngIf="isLoggedIn; else accountGuestIcon">{{ accountInitials }}</span>
+              <ng-template #accountGuestIcon>
+                <span class="account-icon"><i class="bi bi-person"></i></span>
+              </ng-template>
+              <span class="account-copy">
+                <span class="account-line-1">{{ isLoggedIn ? ('Xin chào, ' + accountFirstName) : 'Tài khoản' }}</span>
+                <span class="account-line-2">{{ isLoggedIn ? 'Hội viên Kanila' : 'Đăng nhập / Đăng ký' }}</span>
+              </span>
+              <i class="bi bi-chevron-down account-chevron" [class.account-chevron-open]="accountMenuOpen"></i>
+            </button>
+
+            <div class="account-dropdown" *ngIf="accountMenuOpen" role="menu">
+              <ng-container *ngIf="isLoggedIn; else loggedOutBlock">
+                <div class="account-summary-card">
+                  <span class="account-summary-avatar">{{ accountInitials }}</span>
+                  <div class="account-summary-copy">
+                    <strong>Xin chào, {{ accountFirstName }}</strong>
+                    <span>Hội viên Kanila</span>
+                  </div>
+                </div>
+
+                <div class="account-group">
+                  <p class="account-group-title">Cá nhân</p>
+                  <a routerLink="/account/profile" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-person-circle"></i><span>Hồ sơ cá nhân</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/account/skin-profile" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-droplet"></i><span>Làn da của bạn</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/account/addresses" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-geo-alt"></i><span>Địa chỉ giao hàng</span><i class="bi bi-chevron-right"></i></a>
+                </div>
+
+                <div class="account-group">
+                  <p class="account-group-title">Mua sắm</p>
+                  <a routerLink="/orders" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-bag-check"></i><span>Đơn hàng của tôi</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/wishlist" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-heart"></i><span>Danh mục yêu thích</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/account/coupons" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá của tôi</span><i class="bi bi-chevron-right"></i></a>
+                </div>
+
+                <div class="account-group">
+                  <p class="account-group-title">Tiện ích</p>
+                  <a routerLink="/account/payment-methods" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-credit-card-2-front"></i><span>Phương thức thanh toán</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/help" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-headset"></i><span>Hỗ trợ khách hàng</span><i class="bi bi-chevron-right"></i></a>
+                  <button type="button" class="account-row account-row-logout" (click)="logout()"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span><i class="bi bi-chevron-right"></i></button>
+                </div>
+              </ng-container>
+
+              <ng-template #loggedOutBlock>
+                <div class="account-summary-card guest-card">
+                  <div class="account-summary-copy">
+                    <strong>Chào bạn!</strong>
+                    <span>Đăng nhập để nhận ưu đãi dành riêng cho bạn</span>
+                  </div>
+                </div>
+                <div class="account-auth-actions">
+                  <a routerLink="/auth/login" class="account-auth-btn account-auth-btn-primary" (click)="closeAccountMenu()">Đăng nhập</a>
+                  <a routerLink="/auth/register" class="account-auth-btn account-auth-btn-secondary" (click)="closeAccountMenu()">Đăng ký</a>
+                </div>
+                <div class="account-group account-group-compact">
+                  <a routerLink="/account/skin-profile" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-droplet"></i><span>Làn da của bạn</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/wishlist" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-heart"></i><span>Danh mục yêu thích</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/account/coupons" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span><i class="bi bi-chevron-right"></i></a>
+                </div>
+              </ng-template>
+            </div>
+          </div>
         </div>
 
       </div>

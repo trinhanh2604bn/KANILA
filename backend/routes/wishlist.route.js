@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { getAllWishlists, getWishlistById, getWishlistsByCustomerId, createWishlist, updateWishlist, deleteWishlist } = require("../controllers/wishlist.controller");
+const authMiddleware = require("../middlewares/auth.middleware");
+const { getAllWishlists, getWishlistById, getWishlistsByCustomerId, getMyWishlist, createWishlist, updateWishlist, deleteWishlist } = require("../controllers/wishlist.controller");
+router.get("/me", authMiddleware, getMyWishlist);
 router.get("/", getAllWishlists);
 router.get("/customer/:customer_id", getWishlistsByCustomerId);
 router.get("/:id", getWishlistById);

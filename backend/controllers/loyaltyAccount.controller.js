@@ -31,6 +31,33 @@ const getAccountByCustomerId = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
+// GET /api/loyalty/me
+const getMyLoyaltyAccount = async (req, res) => {
+  try {
+    const accountId = req.user?.account_id || req.user?.accountId;
+    if (!accountId || !validateObjectId(accountId)) {
+      return res.status(401).json({ success: false, message: "Invalid or missing account identity" });
+    }
+    const customer = await Customer.findOne({ account_id: accountId }).select("_id");
+    if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
+
+    const loyalty = await LoyaltyAccount.findOne({ customer_id: customer._id })
+      .populate("tierId", "tierCode tierName")
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: "Get my loyalty account successfully",
+      data: {
+        points_balance: Number(loyalty?.pointsBalance || 0),
+        tier_name: loyalty?.tierId?.tierName || "Member",
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const createLoyaltyAccount = async (req, res) => {
   try {
     const customer_id = pickCustomerId(req.body);
@@ -65,4 +92,4 @@ const deleteLoyaltyAccount = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
-module.exports = { getAllLoyaltyAccounts, getLoyaltyAccountById, getAccountByCustomerId, createLoyaltyAccount, updateLoyaltyAccount, deleteLoyaltyAccount };
+module.exports = { getAllLoyaltyAccounts, getLoyaltyAccountById, getAccountByCustomerId, getMyLoyaltyAccount, createLoyaltyAccount, updateLoyaltyAccount, deleteLoyaltyAccount };

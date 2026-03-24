@@ -1,0 +1,228 @@
+<section class="account-page">
+  <div class="profile-skeleton" *ngIf="isLoading">
+    <div class="card-soft sk sk-side"></div>
+    <div class="sk-main">
+      <div class="card-soft sk sk-row"></div>
+      <div class="card-soft sk sk-card"></div>
+      <div class="card-soft sk sk-card"></div>
+    </div>
+  </div>
+
+  <div class="error-banner" *ngIf="!isLoading && loadError">{{ loadError }}</div>
+
+  <div class="account-layout">
+    <aside class="account-sidebar card-soft">
+      <div class="sidebar-head">
+        <div class="avatar-wrap">
+          <img *ngIf="avatarUrl; else noAvatar" [src]="avatarUrl" [alt]="fullName" class="avatar-img" />
+          <ng-template #noAvatar><span class="avatar">{{ initials }}</span></ng-template>
+          <button type="button" class="avatar-edit">Đổi ảnh</button>
+        </div>
+        <h3>Xin chào, {{ firstName }}</h3>
+        <p class="tier-badge">{{ loyaltyTier }}</p>
+        <p class="points">{{ loyaltyPoints | number }} điểm</p>
+        <p class="points" *ngIf="nextTierName && pointsToNextTier > 0">Còn {{ pointsToNextTier | number }} điểm để lên {{ nextTierName }}</p>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a routerLink="/account/profile" routerLinkActive="active"><i class="bi bi-person-circle"></i><span>Hồ sơ cá nhân</span></a>
+        <a routerLink="/account/addresses" routerLinkActive="active"><i class="bi bi-geo-alt"></i><span>Địa chỉ giao hàng</span></a>
+        <a routerLink="/orders"><i class="bi bi-bag-check"></i><span>Đơn hàng</span></a>
+        <a routerLink="/wishlist"><i class="bi bi-heart"></i><span>Danh mục yêu thích</span></a>
+        <a routerLink="/account/coupons" routerLinkActive="active"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span></a>
+        <a routerLink="/account/security" routerLinkActive="active"><i class="bi bi-shield-lock"></i><span>Bảo mật tài khoản</span></a>
+      </nav>
+    </aside>
+
+    <main class="account-main">
+      <div class="stats-row">
+        <a class="stat-card card-soft" routerLink="/orders"><span><i class="bi bi-bag-check"></i> Đơn hàng</span><strong>{{ orderCount }}</strong><small>{{ pendingOrderCount }} đơn đang xử lý</small></a>
+        <a class="stat-card card-soft" routerLink="/wishlist"><span><i class="bi bi-heart"></i> Yêu thích</span><strong>{{ wishlistCount }}</strong><small>Lưu để mua sau</small></a>
+        <a class="stat-card card-soft" routerLink="/account/coupons"><span><i class="bi bi-ticket-perforated"></i> Mã giảm giá</span><strong>{{ couponCount }}</strong><small>Ưu đãi còn hiệu lực</small></a>
+        <a class="stat-card card-soft" routerLink="/account/addresses"><span><i class="bi bi-geo-alt"></i> Địa chỉ</span><strong>{{ addressCount }}</strong><small>Địa chỉ giao hàng</small></a>
+      </div>
+
+      <section class="card-soft profile-card">
+        <header class="card-head">
+          <div>
+            <h2>Thông tin cá nhân</h2>
+            <p>Quản lý thông tin tài khoản để cá nhân hóa trải nghiệm mua sắm.</p>
+          </div>
+          <button *ngIf="!isEditMode" type="button" class="btn-ghost" (click)="toggleEdit()">Chỉnh sửa</button>
+        </header>
+
+        <div class="save-msg" *ngIf="saveMessage">{{ saveMessage }}</div>
+
+        <div class="field-grid" *ngIf="!isEditMode">
+          <div class="field"><label>Họ và tên</label><p>{{ fullName }}</p></div>
+          <div class="field"><label>Email</label><p>{{ email }}</p></div>
+          <div class="field"><label>Số điện thoại</label><p>{{ phone || 'Chưa cập nhật' }}</p></div>
+          <div class="field"><label>Giới tính</label><p>{{ gender }}</p></div>
+          <div class="field"><label>Ngày sinh</label><p>{{ dob || 'Chưa cập nhật' }}</p></div>
+        </div>
+
+        <form class="field-grid edit-mode" *ngIf="isEditMode" (submit)="$event.preventDefault(); saveProfile()">
+          <label class="input-wrap"><span>Họ và tên</span><input [(ngModel)]="draft.fullName" name="fullName" /></label>
+          <label class="input-wrap"><span>Email</span><input [(ngModel)]="draft.email" name="email" type="email" /></label>
+          <label class="input-wrap"><span>Số điện thoại</span><input [(ngModel)]="draft.phone" name="phone" /></label>
+          <label class="input-wrap"><span>Giới tính</span>
+            <select [(ngModel)]="draft.gender" name="gender">
+              <option>Nữ</option>
+              <option>Nam</option>
+              <option>Khác</option>
+            </select>
+          </label>
+          <label class="input-wrap"><span>Ngày sinh</span><input [(ngModel)]="draft.dob" name="dob" type="date" /></label>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Lưu</button>
+            <button type="button" class="btn-ghost" (click)="cancelEdit()">Hủy</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card-soft skin-card">
+        <header class="card-head">
+          <div>
+            <h2>Hồ sơ làn da của bạn</h2>
+            <p>Hoàn thiện Beauty DNA để nhận gợi ý sản phẩm chuẩn theo nhu cầu riêng.</p>
+          </div>
+        </header>
+
+        <div class="skin-stepper">
+          <button type="button" [class.active]="skinStep === 1" (click)="skinStep = 1">1. Làn da</button>
+          <button type="button" [class.active]="skinStep === 2" (click)="skinStep = 2">2. Đặc điểm</button>
+          <button type="button" [class.active]="skinStep === 3" (click)="skinStep = 3">3. Sở thích</button>
+        </div>
+
+        <div class="skin-stage" *ngIf="skinStep === 1">
+          <div class="group">
+            <h4>Loại da</h4>
+            <div class="pill-wrap">
+              <button type="button" class="pill" *ngFor="let item of skinTypeOptions" [class.active]="skinTypeSelections.includes(item)" (click)="toggleSkinType(item)">{{ item }}</button>
+            </div>
+          </div>
+          <div class="group">
+            <h4>Tông da</h4>
+            <div class="tone-wrap">
+              <button type="button" class="tone-chip" *ngFor="let t of toneOptions" [class.active]="skinTone === t" (click)="skinTone = t">
+                <span class="tone-dot" [class.t1]="t === 'Tông tối'" [class.t2]="t === 'Tông trung bình'" [class.t3]="t === 'Tông sáng'" [class.t4]="t === 'Không chắc'"></span>
+                {{ t }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="skin-stage" *ngIf="skinStep === 2">
+          <div class="group">
+            <h4>Màu mắt</h4>
+            <div class="pill-wrap">
+              <button type="button" class="pill" *ngFor="let item of eyeColorOptions" [class.active]="eyeColor === item" (click)="eyeColor = item">{{ item }}</button>
+            </div>
+          </div>
+          <div class="group">
+            <h4>Đặc điểm da bạn quan tâm</h4>
+            <div class="pill-wrap">
+              <button type="button" class="pill" *ngFor="let item of concernOptions" [class.active]="skinConcerns.includes(item)" (click)="toggleConcern(item)">{{ item }}</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="skin-stage" *ngIf="skinStep === 3">
+          <div class="group">
+            <h4>Ưu tiên thành phần</h4>
+            <div class="pill-wrap">
+              <button type="button" class="pill" *ngFor="let item of ingredientOptions" [class.active]="ingredientPreferences.includes(item)" (click)="toggleIngredient(item)">{{ item }}</button>
+            </div>
+            <div class="tag-wrap" *ngIf="ingredientPreferences.length">
+              <button type="button" class="tag" *ngFor="let tag of ingredientPreferences" (click)="removeIngredient(tag)">{{ tag }} <i class="bi bi-x"></i></button>
+            </div>
+          </div>
+          <div class="group">
+            <h4>Thương hiệu yêu thích</h4>
+            <div class="brand-search">
+              <input [(ngModel)]="brandSearch" name="brandSearch" placeholder="Tìm thương hiệu..." />
+              <div class="brand-suggest" *ngIf="brandSearch.trim() && filteredBrandOptions.length">
+                <button type="button" *ngFor="let item of filteredBrandOptions" (click)="addBrand(item)">{{ item }}</button>
+              </div>
+            </div>
+            <div class="tag-wrap" *ngIf="favoriteBrands.length">
+              <button type="button" class="tag" *ngFor="let tag of favoriteBrands" (click)="removeBrand(tag)">{{ tag }} <i class="bi bi-x"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-card">
+          <h4>Beauty DNA Preview</h4>
+          <p><strong>Loại da:</strong> {{ skinTypeSelections.length ? skinTypeSelections.join(', ') : 'Chưa chọn' }}</p>
+          <p><strong>Tông da:</strong> {{ skinTone || 'Chưa chọn' }}</p>
+          <p><strong>Màu mắt:</strong> {{ eyeColor || 'Chưa chọn' }}</p>
+          <p><strong>Đặc điểm:</strong> {{ skinConcerns.length ? skinConcerns.join(', ') : 'Chưa chọn' }}</p>
+          <p><strong>Ưu tiên thành phần:</strong> {{ ingredientPreferences.length ? ingredientPreferences.join(', ') : 'Chưa chọn' }}</p>
+          <p><strong>Thương hiệu yêu thích:</strong> {{ favoriteBrands.length ? favoriteBrands.join(', ') : 'Chưa chọn' }}</p>
+        </div>
+
+        <div class="step-actions">
+          <button type="button" class="btn-ghost" (click)="prevSkinStep()" [disabled]="skinStep === 1">Quay lại</button>
+          <button type="button" class="btn-ghost" (click)="nextSkinStep()" [disabled]="skinStep === 3">Tiếp tục</button>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-primary" (click)="updateSkinProfile()">Cập nhật</button>
+          <button type="button" class="btn-ghost" (click)="viewRecommendedProducts()">Xem sản phẩm phù hợp</button>
+        </div>
+      </section>
+
+      <section class="card-soft profile-reco">
+        <header class="card-head">
+          <div>
+            <h2>Dành riêng cho làn da của bạn</h2>
+            <p>Gợi ý dựa trên Beauty DNA và hành vi mua sắm gần đây.</p>
+          </div>
+        </header>
+        <div class="reco-grid" *ngIf="recommendedProducts.length; else emptyReco">
+          <a class="reco-item" *ngFor="let r of recommendedProducts" [routerLink]="['/catalog','product', r.product.slug || r.product._id]">
+            <img [src]="r.product.imageUrl || 'assets/images/banner/nen.png'" [alt]="r.product.productName" />
+            <div class="reco-copy">
+              <strong>{{ r.product.productName }}</strong>
+              <span>{{ r.product.price | number:'1.0-0' }}đ</span>
+              <small>{{ r.reasons[0] || 'Phù hợp với hồ sơ của bạn' }}</small>
+            </div>
+          </a>
+        </div>
+        <ng-template #emptyReco>
+          <p class="reco-empty">Cập nhật hồ sơ làn da để xem gợi ý cá nhân hóa.</p>
+        </ng-template>
+      </section>
+
+      <section class="card-soft address-card">
+        <header class="card-head">
+          <div>
+            <h2>Địa chỉ mặc định</h2>
+            <p *ngIf="defaultAddressName || defaultAddressPhone">{{ defaultAddressName }} <span *ngIf="defaultAddressPhone">- {{ defaultAddressPhone }}</span></p>
+            <p>{{ defaultAddressText }}</p>
+          </div>
+          <a class="btn-ghost" routerLink="/account/addresses">Thay đổi</a>
+        </header>
+      </section>
+
+      <section class="card-soft security-card">
+        <header class="card-head">
+          <div>
+            <h2>Bảo mật tài khoản</h2>
+            <p>Tăng cường bảo vệ tài khoản để mua sắm an toàn hơn.</p>
+          </div>
+        </header>
+        <div class="security-actions">
+          <a routerLink="/account/security" class="security-item"><i class="bi bi-key"></i><span>Đổi mật khẩu</span></a>
+          <a routerLink="/account/security" class="security-item"><i class="bi bi-link-45deg"></i><span>Liên kết tài khoản mạng xã hội</span></a>
+          <div class="security-meta">
+            <span class="security-pill" [class.ok]="hasPassword">{{ hasPassword ? 'Mật khẩu: Đã thiết lập' : 'Mật khẩu: Chưa thiết lập' }}</span>
+            <span class="security-pill" *ngFor="let p of linkedProviders">{{ p.provider | uppercase }}</span>
+            <span class="security-pill" *ngIf="!linkedProviders.length">Chưa liên kết social</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</section>

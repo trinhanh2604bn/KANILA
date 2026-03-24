@@ -1,5 +1,7 @@
 const Coupon = require("../models/coupon.model");
 const Promotion = require("../models/promotion.model");
+const CouponRedemption = require("../models/couponRedemption.model");
+const Customer = require("../models/customer.model");
 const validateObjectId = require("../utils/validateObjectId");
 
 // GET /api/coupons
@@ -69,6 +71,37 @@ const getCouponByCode = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/coupons/me
+const getMyCoupons = async (req, res) => {
+  try {
+    const accountId = req.user?.account_id || req.user?.accountId;
+    if (!accountId || !validateObjectId(accountId)) {
+      return res.status(401).json({ success: false, message: "Invalid or missing account identity" });
+    }
+    const customer = await Customer.findOne({ account_id: accountId }).select("_id");
+    if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
+
+    const redemptions = await CouponRedemption.find({
+      customer_id: customer._id,
+      redemptionStatus: { $ne: "cancelled" },
+    })
+      .populate("couponId", "couponCode couponStatus")
+      .sort({ redeemedAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message: "Get my coupons successfully",
+      data: {
+        items: redemptions,
+        count: redemptions.length,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -188,6 +221,7 @@ module.exports = {
   getAllCoupons,
   getCouponById,
   getCouponByCode,
+  getMyCoupons,
   createCoupon,
   updateCoupon,
   patchCoupon,

@@ -1,13 +1,31 @@
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../middlewares/auth.middleware");
 const {
   getAllAccounts,
   getAccountById,
+  getProfileHub,
+  patchMyProfile,
+  getMySkinProfile,
+  patchMySkinProfile,
+  getMyAddresses,
+  patchMyDefaultAddress,
+  changeMyPassword,
+  getMyProviders,
   createAccount,
   updateAccount,
   patchAccount,
   deleteAccount,
 } = require("../controllers/account.controller");
+
+router.get("/profile-hub", authMiddleware, getProfileHub);
+router.patch("/profile", authMiddleware, patchMyProfile);
+router.get("/skin-profile", authMiddleware, getMySkinProfile);
+router.patch("/skin-profile", authMiddleware, patchMySkinProfile);
+router.get("/addresses", authMiddleware, getMyAddresses);
+router.patch("/addresses/:id/default", authMiddleware, patchMyDefaultAddress);
+router.post("/change-password", authMiddleware, changeMyPassword);
+router.get("/providers", authMiddleware, getMyProviders);
 
 router.get("/", getAllAccounts);
 router.post("/", createAccount);

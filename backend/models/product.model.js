@@ -80,6 +80,47 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    skin_types_supported: {
+      type: [String],
+      default: [],
+    },
+    concerns_targeted: {
+      type: [String],
+      default: [],
+    },
+    ingredient_flags: {
+      type: [String],
+      default: [],
+    },
+    key_ingredients: {
+      type: [String],
+      default: [],
+    },
+    is_sensitive_friendly: {
+      type: Boolean,
+      default: false,
+    },
+    tone_match_supported: {
+      type: [String],
+      default: [],
+    },
+    finish_type: {
+      type: String,
+      default: "",
+    },
+    coverage_type: {
+      type: String,
+      default: "",
+    },
+    sales_count: {
+      type: Number,
+      default: 0,
+      min: [0, "Sales count must not be negative"],
+    },
+    is_best_seller: {
+      type: Boolean,
+      default: false,
+    },
     usageInstruction: {
       type: String,
       default: "",

@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { getAllLoyaltyAccounts, getLoyaltyAccountById, getAccountByCustomerId, createLoyaltyAccount, updateLoyaltyAccount, deleteLoyaltyAccount } = require("../controllers/loyaltyAccount.controller");
+const authMiddleware = require("../middlewares/auth.middleware");
+const { getAllLoyaltyAccounts, getLoyaltyAccountById, getAccountByCustomerId, getMyLoyaltyAccount, createLoyaltyAccount, updateLoyaltyAccount, deleteLoyaltyAccount } = require("../controllers/loyaltyAccount.controller");
+router.get("/me", authMiddleware, getMyLoyaltyAccount);
 router.get("/", getAllLoyaltyAccounts);
 router.get("/customer/:customer_id", getAccountByCustomerId);
 router.get("/:id", getLoyaltyAccountById);

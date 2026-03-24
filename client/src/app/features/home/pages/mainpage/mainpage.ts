@@ -17,6 +17,7 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { GlobalToastComponent } from '../../../../layout/global-toast/global-toast';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { RecommendationService, RecommendedProductView } from '../../../../core/services/recommendation.service';
 
 @Component({
   selector: 'app-mainpage',
@@ -42,6 +43,7 @@ export class Mainpage implements OnInit {
   hoveredFeaturedIndex: number | null = null;
 
   previewProduct: Product | null = null;
+  personalized: RecommendedProductView[] = [];
 
   constructor(
     private readonly productService: ProductService,
@@ -50,6 +52,7 @@ export class Mainpage implements OnInit {
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
     private readonly authService: AuthService,
+    private readonly recommendationService: RecommendationService,
   ) {}
 
   ngOnInit(): void {
@@ -71,6 +74,12 @@ export class Mainpage implements OnInit {
         this.featuredLoading = false;
       },
     });
+
+    if (this.isAuthenticated()) {
+      this.recommendationService.getMyRecommendations('', 6).pipe(take(1)).subscribe((items) => {
+        this.personalized = items;
+      });
+    }
   }
 
   goCategory(): void {
@@ -209,5 +218,10 @@ export class Mainpage implements OnInit {
 
   private isAuthenticated(): boolean {
     return this.authService.isAuthenticated();
+  }
+
+  goToRecommendedDetail(item: RecommendedProductView): void {
+    const slugOrId = item.product.slug || item.product._id;
+    this.router.navigate(['/catalog', 'product', slugOrId]);
   }
 }

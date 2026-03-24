@@ -300,6 +300,30 @@ const getMyOrders = async (req, res) => {
   }
 };
 
+// GET /api/orders/me/summary
+const getMyOrderSummary = async (req, res) => {
+  try {
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) {
+      return res.status(403).json({ success: false, message: "Authenticated account required" });
+    }
+    const [totalOrders, pendingOrders] = await Promise.all([
+      Order.countDocuments({ customer_id: customer._id }),
+      Order.countDocuments({ customer_id: customer._id, order_status: { $in: ["pending", "confirmed", "processing"] } }),
+    ]);
+    return res.status(200).json({
+      success: true,
+      message: "Get my order summary successfully",
+      data: {
+        total_orders: totalOrders,
+        pending_orders: pendingOrders,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // GET /api/orders/me/:id/tracking
 const getMyOrderTracking = async (req, res) => {
   try {
@@ -649,6 +673,7 @@ module.exports = {
   getOrderById,
   getOrdersByCustomerId,
   getMyOrders,
+  getMyOrderSummary,
   getMyOrderById,
   getMyOrderTracking,
   lookupGuestOrder,

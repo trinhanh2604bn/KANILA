@@ -75,6 +75,7 @@ const loyaltyPointLedgerRoutes = require("./loyaltyPointLedger.route");
 const adminRoutes = require("./admin.route");
 const setupRoutes = require("./setup.route");
 const guestSessionRoutes = require("./guestSession.route");
+const recommendationRoutes = require("./recommendation.route");
 
 router.use("/brands", brandRoutes);
 router.use("/categories", categoryRoutes);
@@ -83,7 +84,9 @@ router.use("/product-categories", productCategoryRoutes);
 
 router.use("/auth", authRoutes);
 router.use("/accounts", accountRoutes);
+router.use("/account", accountRoutes);
 router.use("/customers", customerRoutes);
+router.use("/customer", customerRoutes);
 router.use("/addresses", addressRoutes);
 router.use("/customer-consents", customerConsentRoutes);
 router.use("/customer-preferences", customerPreferenceRoutes);
@@ -132,6 +135,7 @@ router.use("/shipment-events", shipmentEventRoutes);
 router.use("/returns", returnRoutes);
 router.use("/return-items", returnItemRoutes);
 router.use("/wishlists", wishlistRoutes);
+router.use("/wishlist", wishlistRoutes);
 router.use("/wishlist-items", wishlistItemRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/review-media", reviewMediaRoutes);
@@ -139,10 +143,12 @@ router.use("/review-votes", reviewVoteRoutes);
 router.use("/review-summary", reviewSummaryRoutes);
 router.use("/loyalty-tiers", loyaltyTierRoutes);
 router.use("/loyalty-accounts", loyaltyAccountRoutes);
+router.use("/loyalty", loyaltyAccountRoutes);
 router.use("/loyalty-point-ledger", loyaltyPointLedgerRoutes);
 router.use("/admin", adminRoutes);
 router.use("/setup", setupRoutes);
 router.use("/guest-sessions", guestSessionRoutes);
+router.use("/recommendations", recommendationRoutes);
 
 // One-time migration route (remove after running)
 const migrateRoute = require("./migrate.route");

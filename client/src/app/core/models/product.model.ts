@@ -31,4 +31,14 @@ export interface Product {
   brandId?: { _id: string; brandName: string };
   /** From API: GET /api/products — media from ProductMedia collection */
   productMedia?: ProductMediaItem[];
+  skin_types_supported?: string[];
+  concerns_targeted?: string[];
+  ingredient_flags?: string[];
+  key_ingredients?: string[];
+  is_sensitive_friendly?: boolean;
+  tone_match_supported?: string[];
+  finish_type?: string;
+  coverage_type?: string;
+  sales_count?: number;
+  is_best_seller?: boolean;
 }

@@ -17,6 +17,8 @@ import {
 } from '../../../../core/services/catalog-facet.service';
 import { ProductAttributeRow, ProductAttributeService } from '../../../../core/services/product-attribute.service';
 import { ProductService } from '../../../../core/services/product.service';
+import { RecommendationService } from '../../../../core/services/recommendation.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import {
   CatalogBrandFilterItem,
   CatalogCategoryItem,
@@ -127,7 +129,9 @@ export class Catalog implements OnInit {
     private readonly brandService: BrandService,
     private readonly productService: ProductService,
     private readonly productAttributeService: ProductAttributeService,
-    private readonly facetService: CatalogFacetService
+    private readonly facetService: CatalogFacetService,
+    private readonly recommendationService: RecommendationService,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -182,6 +186,7 @@ export class Catalog implements OnInit {
         this.maxLimit = this.computeMaxPrice(this.allProducts);
         this.route.queryParams.subscribe((params) => {
           this.applyRouteState(params);
+          this.applyPersonalizedRerank();
           this.applyLocalFilters();
         });
         this.loading = false;
@@ -531,6 +536,21 @@ export class Catalog implements OnInit {
       relativeTo: this.route,
       queryParams: next,
       queryParamsHandling: 'merge',
+    });
+  }
+
+  private applyPersonalizedRerank(): void {
+    if (!this.authService.isAuthenticated()) return;
+    const categoryHint =
+      this.selectedSubCategory ||
+      this.selectedParentCategory?.name ||
+      this.selectedParentCategory?.slug ||
+      '';
+    this.recommendationService.getMyRecommendations(categoryHint, 60).pipe(catchError(() => of([]))).subscribe((items) => {
+      if (!items.length) return;
+      const scoreMap = new Map(items.map((x) => [x.productId, x.score]));
+      this.allProducts = [...this.allProducts].sort((a, b) => (scoreMap.get(b.id) ?? -9999) - (scoreMap.get(a.id) ?? -9999));
+      this.applyLocalFilters();
     });
   }
 

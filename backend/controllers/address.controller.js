@@ -104,6 +104,36 @@ const getAddressesByCustomerId = async (req, res) => {
   }
 };
 
+// GET /api/addresses/me
+const getMyAddresses = async (req, res) => {
+  try {
+    const accountId = req.user?.account_id || req.user?.accountId;
+    if (!accountId || !validateObjectId(accountId)) {
+      return res.status(401).json({ success: false, message: "Invalid or missing account identity" });
+    }
+    const customer = await Customer.findOne({ account_id: accountId }).select("_id");
+    if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
+
+    const addresses = await Address.find({ customer_id: customer._id }).sort({ is_default_shipping: -1, created_at: -1 });
+    const defaultAddress =
+      addresses.find((x) => x.is_default_shipping === true) ||
+      addresses.find((x) => x.is_default_billing === true) ||
+      addresses[0] ||
+      null;
+
+    return res.status(200).json({
+      success: true,
+      message: "Get my addresses successfully",
+      data: {
+        addresses,
+        defaultAddress,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // POST /api/addresses
 const createAddress = async (req, res) => {
   try {
@@ -241,6 +271,7 @@ module.exports = {
   getAllAddresses,
   getAddressById,
   getAddressesByCustomerId,
+  getMyAddresses,
   createAddress,
   updateAddress,
   deleteAddress,

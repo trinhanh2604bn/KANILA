@@ -6,6 +6,7 @@ const {
   getOrderById,
   getOrdersByCustomerId,
   getMyOrders,
+  getMyOrderSummary,
   getMyOrderById,
   getMyOrderTracking,
   lookupGuestOrder,
@@ -17,6 +18,7 @@ const {
   deleteOrder,
 } = require("../controllers/order.controller");
 router.get("/me", authMiddleware, getMyOrders);
+router.get("/me/summary", authMiddleware, getMyOrderSummary);
 router.get("/me/:id/tracking", authMiddleware, getMyOrderTracking);
 router.get("/me/:id", authMiddleware, getMyOrderById);
 router.post("/guest/lookup", lookupGuestOrder);

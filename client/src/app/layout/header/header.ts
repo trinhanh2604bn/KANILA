@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Subject, forkJoin, takeUntil } from 'rxjs';
 import { HeaderBrandItem, HeaderCategoryItem } from '../../core/models/header.model';
+import { AuthService } from '../../core/services/auth.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { CartService } from '../../features/cart/services/cart.service';
@@ -61,6 +62,7 @@ export class Header implements OnInit, OnDestroy {
   headerLoading = true;
   headerError = false;
   cartBadgeCount = 0;
+  accountMenuOpen = false;
 
   private readonly destroy$ = new Subject<void>();
 
@@ -68,7 +70,8 @@ export class Header implements OnInit, OnDestroy {
     private readonly categoryService: CategoryService,
     private readonly brandService: BrandService,
     private readonly cartService: CartService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -101,6 +104,41 @@ export class Header implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  get isLoggedIn(): boolean {
+    return this.authService.isAuthenticated();
+  }
+
+  get accountFirstName(): string {
+    const payload = this.decodeTokenPayload();
+    const fullName = String(payload?.['full_name'] || payload?.['fullName'] || payload?.['username'] || '').trim();
+    if (!fullName) return 'Beauty Lover';
+    return fullName.split(/\s+/)[0] || 'Beauty Lover';
+  }
+
+  get accountInitials(): string {
+    const payload = this.decodeTokenPayload();
+    const fullName = String(payload?.['full_name'] || payload?.['fullName'] || payload?.['username'] || '').trim();
+    if (!fullName) return 'K';
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    return (parts[0]?.[0] || 'K').toUpperCase();
+  }
+
+  toggleAccountMenu(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.accountMenuOpen = !this.accountMenuOpen;
+  }
+
+  closeAccountMenu(): void {
+    this.accountMenuOpen = false;
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.accountMenuOpen = false;
+    this.router.navigate(['/']);
   }
 
   onCategoryClick(item: HeaderCategoryItem, sub?: HeaderCategoryItem): void {
@@ -183,5 +221,24 @@ export class Header implements OnInit, OnDestroy {
     if (!queryString) return null;
     const params = new URLSearchParams(queryString);
     return params.get(key);
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.accountMenuOpen) this.accountMenuOpen = false;
+  }
+
+  private decodeTokenPayload(): Record<string, unknown> | null {
+    const token = this.authService.getToken();
+    if (!token) return null;
+    try {
+      const payloadPart = token.split('.')[1];
+      if (!payloadPart) return null;
+      const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      return JSON.parse(atob(padded));
+    } catch {
+      return null;
+    }
   }
 }

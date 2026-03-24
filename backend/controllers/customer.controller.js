@@ -82,6 +82,37 @@ const getCustomerByAccountId = async (req, res) => {
   }
 };
 
+// GET /api/customer/me
+const getMyCustomerProfile = async (req, res) => {
+  try {
+    const accountId = req.user?.account_id || req.user?.accountId;
+    if (!accountId || !validateObjectId(accountId)) {
+      return res.status(401).json({ success: false, message: "Invalid or missing account identity" });
+    }
+
+    const customer = await Customer.findOne({ account_id: accountId }).populate("account_id", ACCOUNT_POPULATE_SELECT);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer profile not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Get my customer profile successfully",
+      data: {
+        customerId: String(customer._id),
+        full_name: customer.full_name || "",
+        email: customer.account_id?.email || "",
+        phone: customer.account_id?.phone || "",
+        gender: customer.gender || "",
+        birthday: customer.date_of_birth || null,
+        avatar_url: customer.avatar_url || "",
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // PUT /api/customers/:id
 const updateCustomer = async (req, res) => {
   try {
@@ -162,6 +193,7 @@ module.exports = {
   getAllCustomers,
   getCustomerById,
   getCustomerByAccountId,
+  getMyCustomerProfile,
   updateCustomer,
   patchCustomer,
   deleteCustomer,

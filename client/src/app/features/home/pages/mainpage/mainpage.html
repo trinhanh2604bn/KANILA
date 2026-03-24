@@ -5,6 +5,20 @@
 
 <!-- Same horizontal margins as client layout: <main class="container py-2"> -->
 <main class="container py-2 mainpage-content">
+  <section class="personalized-section" *ngIf="personalized.length">
+    <app-divider title="DÀNH RIÊNG CHO BẠN" buttonText="Xem thêm"></app-divider>
+    <div class="personalized-grid">
+      <article class="personalized-card" *ngFor="let r of personalized" (click)="goToRecommendedDetail(r)">
+        <img [src]="r.product.imageUrl || 'assets/images/banner/nen.png'" [alt]="r.product.productName" />
+        <div class="personalized-copy">
+          <h4>{{ r.product.productName }}</h4>
+          <p class="personalized-reason">{{ r.reasons[0] || 'Phù hợp với làn da của bạn' }}</p>
+          <strong>{{ r.product.price | number: '1.0-0' }}đ</strong>
+        </div>
+      </article>
+    </div>
+  </section>
+
   <div class="mt-3">
     <app-divider title="BEST SELLER" buttonText="Xem tất cả"></app-divider>
   </div>

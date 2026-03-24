@@ -31,6 +31,30 @@ const getWishlistsByCustomerId = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
+// GET /api/wishlist/me
+const getMyWishlist = async (req, res) => {
+  try {
+    const accountId = req.user?.account_id || req.user?.accountId;
+    if (!accountId || !validateObjectId(accountId)) {
+      return res.status(401).json({ success: false, message: "Invalid or missing account identity" });
+    }
+    const customer = await Customer.findOne({ account_id: accountId }).select("_id");
+    if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
+
+    const wishlists = await Wishlist.find({ customer_id: customer._id }).sort({ createdAt: -1 }).lean();
+    return res.status(200).json({
+      success: true,
+      message: "Get my wishlist successfully",
+      data: {
+        items: wishlists,
+        count: wishlists.length,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const createWishlist = async (req, res) => {
   try {
     const customer_id = pickCustomerId(req.body);
@@ -77,4 +101,4 @@ const deleteWishlist = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
-module.exports = { getAllWishlists, getWishlistById, getWishlistsByCustomerId, createWishlist, updateWishlist, deleteWishlist };
+module.exports = { getAllWishlists, getWishlistById, getWishlistsByCustomerId, getMyWishlist, createWishlist, updateWishlist, deleteWishlist };
