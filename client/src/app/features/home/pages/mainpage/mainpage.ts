@@ -14,6 +14,7 @@ import { Product } from '../../../../core/models/product.model';
 import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { GlobalToastComponent } from '../../../../layout/global-toast/global-toast';
+import { ScrollToTop } from '../../../../layout/scroll-to-top/scroll-to-top';
 
 @Component({
   selector: 'app-mainpage',
@@ -26,7 +27,7 @@ import { GlobalToastComponent } from '../../../../layout/global-toast/global-toa
     Roya,
   Footer,
 Header,
-GlobalToastComponent],
+GlobalToastComponent,ScrollToTop],
   templateUrl: './mainpage.html',
   styleUrl: './mainpage.css',
 })
