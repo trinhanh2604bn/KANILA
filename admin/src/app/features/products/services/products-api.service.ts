@@ -93,8 +93,10 @@ export class ProductsApiService {
     else isActive = true;
 
     const body: Record<string, unknown> = { ...rest, isActive, imageUrl };
+    if (images !== undefined) {
+      body['images'] = images;
+    }
     delete body['status'];
-    delete body['images'];
     return body;
   }
 
