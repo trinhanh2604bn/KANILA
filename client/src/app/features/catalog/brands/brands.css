@@ -1,0 +1,74 @@
+/* Breadcrumb */
+.breadcrumb-link { color: var(--kanila-text); opacity: 0.7; cursor: pointer; text-decoration: none; font-weight: normal; }
+.breadcrumb-link:hover { color: var(--kanila-red); opacity: 1; }
+.breadcrumb-active { color: var(--kanila-red); font-weight: 700; cursor: default; }
+.breadcrumb-chevron { color: var(--kanila-text); opacity: 0.4; font-size: 0.85rem; }
+
+/* Thanh điều hướng bảng chữ cái */
+.alphabet-nav-wrapper {
+    top: 90px; /* Cách header một khoảng để không bị đè, điều chỉnh tùy header của bạn */
+    z-index: 100;
+}
+
+.btn-alphabet {
+    background: transparent;
+    border: none;
+    color: var(--kanila-text);
+    font-size: 1rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-alphabet:hover {
+    color: var(--kanila-red);
+    transform: scale(1.2);
+}
+
+/* Card Thương hiệu */
+.brand-card {
+    display: block;
+    cursor: pointer;
+}
+
+.brand-logo-box {
+    aspect-ratio: 1 / 1; /* Bắt buộc là hình vuông hoàn hảo */
+    border: 1px solid rgba(107, 30, 46, 0.05);
+}
+
+.brand-logo-box img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain; /* Đảm bảo logo luôn nằm gọn và không bị méo */
+    transition: transform 0.3s ease;
+}
+
+/* Hiệu ứng Hover */
+.brand-card:hover .brand-logo-box {
+    border-color: var(--kanila-red);
+    box-shadow: 0 8px 15px rgba(107, 30, 46, 0.15) !important;
+    transform: translateY(-5px);
+}
+
+.brand-card:hover .brand-logo-box img {
+    transform: scale(1.05); /* Phóng to logo nhẹ */
+}
+
+.brand-card:hover .brand-name {
+    color: var(--kanila-red) !important;
+}
+
+/* Hiệu ứng xuất hiện mượt mà */
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.transition-all {
+    transition: all 0.3s ease;
+}

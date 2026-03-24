@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, shareReplay } from 'rxjs';
+import { BrandListItem } from '../models/brand.model';
 import { HeaderBrandItem } from '../models/header.model';
 
 interface ApiResponse<T> {
@@ -10,9 +11,12 @@ interface ApiResponse<T> {
 
 interface RawBrand {
   _id: string;
+  id?: string;
   brandName: string;
+  name?: string;
   brandCode?: string;
   logoUrl?: string;
+  logo?: string;
   brandStatus?: 'active' | 'inactive' | 'draft';
   isActive?: boolean;
 }
@@ -23,6 +27,22 @@ export class BrandService {
   private headerBrands$?: Observable<HeaderBrandItem[]>;
 
   constructor(private readonly http: HttpClient) {}
+
+  getBrands(): Observable<BrandListItem[]> {
+    return this.http.get<ApiResponse<RawBrand[]> | RawBrand[]>(this.apiUrl).pipe(
+      map((res) => {
+        const rows = Array.isArray(res) ? res : (res.data ?? []);
+        return rows
+          .filter((b) => (b.isActive ?? b.brandStatus !== 'inactive') && b.brandStatus !== 'inactive')
+          .map((b) => ({
+            id: b.id ?? b._id ?? '',
+            name: (b.name ?? b.brandName ?? '').trim(),
+            logo: (b.logo ?? b.logoUrl ?? '').trim(),
+          }))
+          .filter((b) => !!b.id && !!b.name);
+      })
+    );
+  }
 
   getHeaderBrands(): Observable<HeaderBrandItem[]> {
     if (!this.headerBrands$) {
