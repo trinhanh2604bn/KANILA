@@ -13,25 +13,33 @@
   margin-right: 15px; 
 }
 
+/* --- Các thẻ Danh mục và Danh mục con --- */
 .subcategory-tab {
-  background-color: transparent;
+  background-color: var(--kanila-white); /* Thêm nền trắng */
   color: var(--kanila-text);
-  border: none;
-  padding: 6px 14px;
-  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.1); /* Thêm viền xám nhạt giống nút Lọc */
+  padding: 8px 16px; /* Cân chỉnh lại padding cho bằng nút Lọc */
+  border-radius: 25px; /* Bo tròn đều */
   cursor: pointer;
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.95rem; /* Chỉnh size chữ bằng nút Lọc */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Bóng đổ nhẹ */
+  transition: all 0.2s ease;
 }
 
+/* Hiệu ứng khi rê chuột vào */
 .subcategory-tab:hover {
-  background-color: rgba(107, 30, 46, 0.05);
+  border-color: rgba(107, 30, 46, 0.3); /* Viền đậm lên */
+  background-color: var(--kanila-bg);
 }
 
+/* Trạng thái khi được chọn (Active) */
 .subcategory-tab.active {
   background-color: var(--kanila-pink); 
   color: var(--kanila-red); 
+  border-color: transparent; /* Ẩn viền khi active */
   font-weight: 700;
+  box-shadow: none;
 }
 
 .catalog-section + .catalog-section {

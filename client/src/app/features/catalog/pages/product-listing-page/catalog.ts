@@ -75,7 +75,7 @@ export class Catalog implements OnInit {
   finishOptions: string[] = [];
   benefitOptions: string[] = [];
   promotionOptions: string[] = ['Đang giảm giá'];
-  ratingOptions: number[] = [5, 4, 3];
+  ratingOptions: number[] = [4, 3, 2];
   stockOptions: string[] = ['Còn hàng', 'Hết hàng'];
   sizeOptions: string[] = [];
   private brandItems: CatalogBrandFilterItem[] = [];
@@ -587,8 +587,7 @@ export class Catalog implements OnInit {
       this.selectedPromotions.length > 0 ||
       this.selectedRatings.length > 0 ||
       this.selectedStockStatuses.length > 0 ||
-      this.selectedSizes.length > 0 ||
-      !!this.searchKeyword
+      this.selectedSizes.length > 0
     );
   }
 
