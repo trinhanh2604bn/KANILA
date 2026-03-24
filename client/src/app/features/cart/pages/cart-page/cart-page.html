@@ -1,0 +1,179 @@
+<section class="cart-page">
+  <header class="cart-header">
+    <a routerLink="/catalog" class="continue-shopping-link">← Tiếp tục mua sắm</a>
+    <div>
+      <h1>Giỏ hàng của bạn</h1>
+      <p *ngIf="hasItems" class="cart-subtitle">
+        <span>{{ cartItems.length }} sản phẩm</span>
+        <span>{{ selectedCount }} đã chọn</span>
+      </p>
+      <p *ngIf="!hasItems">Chưa có sản phẩm trong giỏ hàng</p>
+    </div>
+  </header>
+
+  <ng-container *ngIf="hasItems; else emptyCart">
+    <div class="cart-layout">
+      <div class="cart-left">
+        <div class="bulk-actions">
+          <label class="check-wrap">
+            <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll($any($event.target).checked)" />
+            <span>Chọn tất cả</span>
+          </label>
+          <button type="button" class="bulk-remove" (click)="removeSelected()" [disabled]="!selectedCount">
+            Xóa sản phẩm đã chọn
+          </button>
+        </div>
+
+        <article class="cart-item-card" *ngFor="let item of cartItems">
+          <label class="item-check">
+            <input
+              type="checkbox"
+              [ngModel]="item.selected"
+              (ngModelChange)="toggleItemSelected(item.id, $event)"
+            />
+          </label>
+
+          <a class="item-image" [routerLink]="['/catalog', 'product', item.id]">
+            <img [src]="item.image" [alt]="item.name" />
+          </a>
+
+          <div class="item-content">
+            <p class="item-brand">{{ item.brand }}</p>
+            <h3 class="item-name">{{ item.name }}</h3>
+            <p class="item-variant">{{ item.variant }}</p>
+
+            <div class="item-bottom">
+              <div class="item-price">
+                <strong>{{ item.price | number }}đ</strong>
+                <div class="item-price-meta">
+                  <span *ngIf="item.oldPrice">{{ item.oldPrice | number }}đ</span>
+                  <em *ngIf="item.oldPrice">-{{ ((item.oldPrice - item.price) / item.oldPrice * 100) | number:'1.0-0' }}%</em>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="item-actions">
+            <div class="item-action-icons">
+              <button
+                type="button"
+                class="icon-btn heart-btn"
+                [class.active]="item.inWishlist"
+                (click)="toggleWishlist(item.id)"
+                [attr.aria-label]="'Wishlist'"
+                title="Save item"
+              >
+                <span>{{ item.inWishlist ? '♥' : '♡' }}</span>
+              </button>
+              <button
+                type="button"
+                class="danger icon-btn"
+                (click)="removeItem(item.id)"
+                [attr.aria-label]="'Remove'"
+                title="Remove item"
+              >
+                <span>🗑</span>
+              </button>
+            </div>
+            <div class="item-qty" [class.pulse]="qtyPulseItemId === item.id">
+              <button type="button" (click)="updateQty(item.id, -1)" [disabled]="item.quantity === 1">-</button>
+              <span>{{ item.quantity }}</span>
+              <button type="button" (click)="updateQty(item.id, 1)">+</button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <aside class="cart-right">
+        <div class="summary-card">
+          <h2>Tóm tắt đơn hàng</h2>
+
+          <div class="promo-box">
+            <label for="promo-code">Mã ưu đãi</label>
+            <div class="promo-row">
+              <input id="promo-code" type="text" placeholder="Nhập mã giảm giá" [(ngModel)]="promoInput" />
+              <button type="button" (click)="applyPromo()">Áp dụng</button>
+            </div>
+            <p *ngIf="appliedPromoCode">Đã áp dụng: <strong>{{ appliedPromoCode }}</strong></p>
+          </div>
+
+          <div class="summary-line">
+            <span>Tạm tính</span>
+            <strong>{{ subtotal | number }}đ</strong>
+          </div>
+          <div class="summary-line">
+            <span>Giảm giá</span>
+            <strong>-{{ discount | number }}đ</strong>
+          </div>
+          <div class="summary-line">
+            <span>Phí vận chuyển</span>
+            <strong>{{ shippingFee | number }}đ</strong>
+          </div>
+
+          <div class="summary-total">
+            <span>Tổng cộng</span>
+            <strong>{{ total | number }}đ</strong>
+          </div>
+
+          <button type="button" class="checkout-btn" (click)="goCheckout()" [disabled]="!selectedCount">
+            Thanh toán ngay
+          </button>
+          <p class="summary-note" *ngIf="amountToFreeShip > 0">
+            Mua thêm {{ amountToFreeShip | number }}đ để được miễn phí vận chuyển.
+          </p>
+          <p class="summary-note success" *ngIf="amountToFreeShip === 0">
+            Bạn đã đủ điều kiện miễn phí vận chuyển.
+          </p>
+          <p class="summary-note" *ngIf="savingsAmount > 0">Bạn đang tiết kiệm {{ savingsAmount | number }}đ.</p>
+
+          <div class="trust-block">
+            <p>✓ Miễn phí vận chuyển từ 499K</p>
+            <p>✓ Đổi trả dễ dàng trong 7 ngày</p>
+          </div>
+
+          <div class="shipping-box">
+            <h4>Giao đến</h4>
+            <p>📍 {{ deliveryLocation }}</p>
+            <small>🚚 {{ etaText }}</small>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="cart-reco" *ngIf="recommendedProducts.length">
+      <div class="cart-reco-head">
+        <h3>Gợi ý cho bạn</h3>
+        <a routerLink="/catalog">Xem thêm</a>
+      </div>
+      <div class="cart-reco-grid">
+        <a class="cart-reco-card" *ngFor="let item of recommendedProducts" [routerLink]="['/catalog', 'product', item.slug]">
+          <div class="cart-reco-image">
+            <img [src]="item.image" [alt]="item.name" />
+          </div>
+          <p class="cart-reco-brand">{{ item.brand }}</p>
+          <h4>{{ item.name }}</h4>
+          <strong>{{ item.price | number }}đ</strong>
+        </a>
+      </div>
+    </section>
+
+    <div class="mobile-checkout-bar">
+      <div>
+        <p>Tổng thanh toán</p>
+        <strong>{{ total | number }}đ</strong>
+      </div>
+      <button type="button" (click)="goCheckout()" [disabled]="!selectedCount">Thanh toán</button>
+    </div>
+  </ng-container>
+
+  <ng-template #emptyCart>
+    <section class="empty-cart">
+      <div class="empty-icon">🛍️</div>
+      <h3>Giỏ hàng đang trống</h3>
+      <p>Khám phá thêm các sản phẩm làm đẹp được yêu thích và quay lại nhé.</p>
+      <a routerLink="/catalog" class="empty-cta">Tiếp tục mua sắm</a>
+    </section>
+  </ng-template>
+
+  <div class="cart-toast" [class.show]="!!uiToast">{{ uiToast }}</div>
+</section>

@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
+import { CartService } from '../../../cart/services/cart.service';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -20,7 +22,13 @@ export class Login implements OnInit {
   showError: boolean = false;
   loginForm!: FormGroup;
 
-  constructor(private fb: FormBuilder, private router: Router, private authService: AuthService) {}
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private authService: AuthService,
+    private cartService: CartService,
+    private toast: ToastService
+  ) {}
 
   ngOnInit() {
     this.loginForm = this.fb.group({
@@ -36,6 +44,9 @@ export class Login implements OnInit {
       next: (res: any) => {
         if (res.success) {
           localStorage.setItem('token', res.data.token);
+          this.cartService.syncGuestCartAfterLogin().subscribe(() => {
+            this.toast.success('Giỏ hàng của bạn đã được đồng bộ.');
+          });
           this.router.navigate(['/home']); 
         }
       },

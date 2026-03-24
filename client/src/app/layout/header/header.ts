@@ -6,6 +6,7 @@ import { HeaderBrandItem, HeaderCategoryItem, HeaderSearchProductItem } from '..
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { ProductService } from '../../core/services/product.service';
+import { CartService } from '../../features/cart/services/cart.service';
 
 @Component({
   selector: 'app-header',
@@ -64,6 +65,7 @@ export class Header implements OnInit, OnDestroy {
 
   headerLoading = true;
   headerError = false;
+  cartBadgeCount = 0;
 
   private readonly destroy$ = new Subject<void>();
   private readonly searchInput$ = new Subject<string>();
@@ -72,6 +74,7 @@ export class Header implements OnInit, OnDestroy {
     private readonly categoryService: CategoryService,
     private readonly brandService: BrandService,
     private readonly productService: ProductService,
+    private readonly cartService: CartService,
     private readonly router: Router
   ) {}
 
@@ -117,6 +120,12 @@ export class Header implements OnInit, OnDestroy {
           },
         });
       });
+
+    this.cartService.cartTotalQuantity$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((count) => {
+        this.cartBadgeCount = Math.max(0, Number(count || 0));
+      });
   }
 
   ngOnDestroy(): void {
@@ -161,11 +170,9 @@ export class Header implements OnInit, OnDestroy {
 
   onSuggestionClick(item: HeaderSearchProductItem): void {
     this.showSuggestions = false;
-    if (item.slug) {
-      this.router.navigate(['/products', item.slug]);
-      return;
-    }
-    this.router.navigate(['/product', item.id]);
+    const slugOrId = item.slug || item.id;
+    if (!slugOrId) return;
+    this.router.navigate(['/catalog', 'product', slugOrId]);
   }
 
   private buildMegaColumns(categories: HeaderCategoryItem[]): Array<{ title: string; items: HeaderCategoryItem[] }> {

@@ -1,0 +1,164 @@
+<main class="checkout-page">
+  <div class="checkout-shell">
+    <section class="checkout-progress" aria-label="Checkout progress">
+      <div class="step">
+        <span class="step-dot is-done"><i class="bi bi-check2"></i></span>
+        <span class="step-label">Cart</span>
+      </div>
+      <span class="step-line"></span>
+      <div class="step">
+        <span class="step-dot is-active">2</span>
+        <span class="step-label">Checkout</span>
+      </div>
+      <span class="step-line"></span>
+      <div class="step">
+        <span class="step-dot">3</span>
+        <span class="step-label">Complete</span>
+      </div>
+    </section>
+
+    <div class="checkout-layout">
+      <section class="checkout-left">
+        <article class="checkout-card">
+          <header class="card-head">
+            <h2><i class="bi bi-geo-alt"></i> Shipping Information</h2>
+            <button type="button" class="text-link">Change</button>
+          </header>
+
+          <div class="form-grid">
+            <label class="field">
+              <span>Full name</span>
+              <input type="text" [(ngModel)]="contactName" [class.invalid]="invalidName" placeholder="Nguyen Anh" />
+              <small class="error" *ngIf="invalidName">Please enter recipient name.</small>
+            </label>
+
+            <label class="field">
+              <span>Phone number</span>
+              <input type="tel" [(ngModel)]="phone" [class.invalid]="invalidPhone" placeholder="09xxxxxxxx" />
+              <small class="error" *ngIf="invalidPhone">Please enter a valid phone number.</small>
+            </label>
+
+            <label class="field field--full">
+              <span>Address</span>
+              <input type="text" [(ngModel)]="addressLine" [class.invalid]="invalidAddress" placeholder="Street, ward, district..." />
+              <small class="error" *ngIf="invalidAddress">Address is required (min 8 characters).</small>
+            </label>
+
+            <label class="field">
+              <span>City</span>
+              <input type="text" [(ngModel)]="city" />
+            </label>
+
+            <label class="field">
+              <span>District</span>
+              <input type="text" [(ngModel)]="district" />
+            </label>
+          </div>
+        </article>
+
+        <article class="checkout-card">
+          <header class="card-head">
+            <h2><i class="bi bi-truck"></i> Shipping Method</h2>
+          </header>
+          <div class="method-grid">
+            <label class="method-card" *ngFor="let method of shippingMethods" [class.selected]="selectedShippingId === method.id">
+              <input type="radio" name="shippingMethod" [value]="method.id" [(ngModel)]="selectedShippingId" />
+              <div class="method-meta">
+                <strong>{{ method.label }}</strong>
+                <span>{{ method.eta }}</span>
+              </div>
+              <div class="method-price">{{ method.fee | number }}đ</div>
+            </label>
+          </div>
+        </article>
+
+        <article class="checkout-card">
+          <header class="card-head">
+            <h2><i class="bi bi-credit-card-2-front"></i> Payment Method</h2>
+          </header>
+          <div class="method-grid">
+            <label class="method-card payment" *ngFor="let method of paymentMethods" [class.selected]="selectedPaymentId === method.id">
+              <input type="radio" name="paymentMethod" [value]="method.id" [(ngModel)]="selectedPaymentId" />
+              <i class="bi method-icon" [class]="method.icon"></i>
+              <div class="method-meta">
+                <strong>{{ method.label }}</strong>
+                <span>{{ method.subtitle }}</span>
+              </div>
+            </label>
+          </div>
+        </article>
+
+        <article class="checkout-card">
+          <header class="card-head">
+            <h2><i class="bi bi-ticket-perforated"></i> Voucher</h2>
+          </header>
+
+          <div class="voucher-row">
+            <input type="text" [(ngModel)]="voucherInput" placeholder="Enter voucher code" />
+            <button type="button" (click)="applyVoucher()">Apply</button>
+          </div>
+
+          <div class="voucher-applied" *ngIf="appliedVoucher">
+            <span>Applied: <strong>{{ appliedVoucher }}</strong></span>
+            <span class="discount">-{{ voucherDiscount | number }}đ</span>
+            <button type="button" class="text-link" (click)="clearVoucher()">Remove</button>
+          </div>
+        </article>
+      </section>
+
+      <aside class="checkout-right">
+        <article class="summary-card">
+          <h3>Order Summary</h3>
+
+          <div class="summary-lines" *ngIf="cartItems.length; else emptyCheckout">
+            <div class="line-item" *ngFor="let item of cartItems">
+              <img [src]="item.image" [alt]="item.name" />
+              <div>
+                <p>{{ item.name }}</p>
+                <small>{{ item.variant }} x{{ item.quantity }}</small>
+              </div>
+              <strong>{{ item.price * item.quantity | number }}đ</strong>
+            </div>
+          </div>
+          <ng-template #emptyCheckout>
+            <p class="empty-text">No selected items yet. Please go back to cart and select items.</p>
+          </ng-template>
+
+          <div class="price-block">
+            <div><span>Subtotal</span><span>{{ subtotal | number }}đ</span></div>
+            <div><span>Savings</span><span class="accent">-{{ savingsTotal | number }}đ</span></div>
+            <div><span>Shipping</span><span>{{ shippingFee | number }}đ</span></div>
+            <div class="free-ship" *ngIf="amountToFreeShipping > 0">
+              Add {{ amountToFreeShipping | number }}đ more for free shipping.
+            </div>
+            <div class="free-ship ok" *ngIf="amountToFreeShipping === 0 && subtotal > 0">
+              You have unlocked free shipping.
+            </div>
+            <div class="total-row"><span>Total</span><strong>{{ grandTotal | number }}đ</strong></div>
+          </div>
+
+          <button type="button" class="cta-btn" [disabled]="placingOrder || !cartItems.length" (click)="placeOrder()">
+            <i class="bi bi-shield-lock"></i>
+            {{ placingOrder ? 'Processing...' : 'Place Secure Order' }}
+          </button>
+
+          <div class="trust-badges">
+            <span><i class="bi bi-patch-check"></i> Authentic products</span>
+            <span><i class="bi bi-arrow-counterclockwise"></i> Easy returns</span>
+            <span><i class="bi bi-lock"></i> Secure payment</span>
+          </div>
+        </article>
+      </aside>
+    </div>
+  </div>
+
+  <div class="mobile-checkout-bar">
+    <div>
+      <small>Total</small>
+      <strong>{{ grandTotal | number }}đ</strong>
+    </div>
+    <button type="button" [disabled]="placingOrder || !cartItems.length" (click)="placeOrder()">
+      <i class="bi bi-shield-lock"></i> Checkout
+    </button>
+  </div>
+</main>

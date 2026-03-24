@@ -3,22 +3,17 @@ const Cart = require("../models/cart.model");
 const ProductVariant = require("../models/productVariant.model");
 const validateObjectId = require("../utils/validateObjectId");
 const { normalizeCartItemBody } = require("../utils/cartCheckoutNormalize");
+const { computeCartSummary } = require("../utils/cartSummary");
 
 const recalcCartTotals = async (cart_id) => {
   const items = await CartItem.find({ cart_id });
-  const item_count = items.length;
-  const subtotal_amount = items.reduce((sum, item) => sum + item.line_total_amount, 0);
-  const discount_amount = items.reduce(
-    (sum, item) => sum + (item.discount_amount * item.quantity),
-    0
-  );
-  const total_amount = subtotal_amount;
+  const summary = computeCartSummary(items);
 
   await Cart.findByIdAndUpdate(cart_id, {
-    item_count,
-    subtotal_amount,
-    discount_amount,
-    total_amount,
+    item_count: summary.itemCount,
+    subtotal_amount: summary.subtotal,
+    discount_amount: summary.discountTotal,
+    total_amount: summary.grandTotal,
   });
 };
 

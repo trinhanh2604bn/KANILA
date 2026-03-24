@@ -1,0 +1,3 @@
+<div class="global-toast" *ngIf="toastService.toast$ | async as toast" [class]="'global-toast ' + toast.type">
+  {{ toast.text }}
+</div>

@@ -19,6 +19,9 @@ export interface Product {
   /** Optional original/list price — must be greater than `price` to show discount */
   compareAtPrice?: number | null;
   shortDescription?: string;
+  longDescription?: string;
+  ingredientText?: string;
+  usageInstruction?: string;
   averageRating: number;
   bought: number;
   stock: number;

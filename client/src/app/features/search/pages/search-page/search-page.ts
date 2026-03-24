@@ -56,10 +56,8 @@ export class SearchPageComponent implements OnInit, OnDestroy {
   }
 
   goToProduct(item: HeaderSearchProductItem): void {
-    if (item.slug) {
-      this.router.navigate(['/products', item.slug]);
-      return;
-    }
-    this.router.navigate(['/product', item.id]);
+    const slugOrId = item.slug || item.id;
+    if (!slugOrId) return;
+    this.router.navigate(['/catalog', 'product', slugOrId]);
   }
 }

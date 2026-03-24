@@ -100,6 +100,41 @@ const getProductById = async (req, res) => {
   }
 };
 
+// GET /api/products/slug/:slug
+const getProductBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    if (!slug || !String(slug).trim()) {
+      return res.status(400).json({ success: false, message: "Slug is required" });
+    }
+
+    const product = await Product.findOne({ slug: String(slug).trim().toLowerCase() })
+      .populate("brandId", "brandName brandCode")
+      .populate("categoryId", "categoryName categoryCode");
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    const data = product.toObject ? product.toObject() : product;
+    await attachAuditAccountEmails(data, product);
+    if (!data.imageUrl) {
+      const m = await ProductMedia.findOne({ productId: product._id })
+        .sort({ isPrimary: -1, sortOrder: 1, createdAt: 1 })
+        .lean();
+      if (m?.mediaUrl) data.imageUrl = m.mediaUrl;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Get product by slug successfully",
+      data,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // POST /api/products
 const createProduct = async (req, res) => {
   try {
@@ -259,6 +294,7 @@ const patchProduct = async (req, res) => {
 module.exports = {
   getAllProducts,
   getProductById,
+  getProductBySlug,
   createProduct,
   updateProduct,
   patchProduct,
