@@ -3,12 +3,12 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Header } from '../../../../layout/header/header';
 import { Footer } from '../../../../layout/footer/footer';
-import { Slider } from '../../components/slider/slider';
-import { Divider } from '../../components/divider/divider';
-import { ProductSlider } from '../../components/product-slider/product-slider';
-import { Bfslider } from '../../components/bfslider/bfslider';
-import { Brand } from '../../components/brand/brand';
-import { Roya } from '../../components/roya/roya';
+import { Slider } from '../components/slider/slider';
+import { Divider } from '../components/divider/divider';
+import { ProductSlider } from '../components/product-slider/product-slider';
+import { Bfslider } from '../components/bfslider/bfslider';
+import { Brand } from '../components/brand/brand';
+import { Roya } from '../components/roya/roya';
 import { ProductService } from '../../../../core/services/product.service';
 import { Product } from '../../../../core/models/product.model';
 

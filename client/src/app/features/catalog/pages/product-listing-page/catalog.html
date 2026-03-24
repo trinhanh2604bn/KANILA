@@ -1,0 +1,288 @@
+<div class="shop-page container py-4 fade-in-up">
+    <div class="text-center py-4" *ngIf="loading">
+        <span style="color: var(--kanila-text);">Đang tải dữ liệu danh mục...</span>
+    </div>
+    <div class="text-center py-4" *ngIf="!loading && hasError">
+        <span style="color: var(--kanila-red);">Không thể tải dữ liệu sản phẩm. Vui lòng thử lại.</span>
+    </div>
+  
+    <ng-container *ngIf="!loading && !hasError">
+    <div class="breadcrumb d-flex align-items-center mb-3" style="font-size: 1.05rem;">
+        <a routerLink="/" class="breadcrumb-link transition-all d-flex align-items-center">
+            <i class="bi bi-house-door-fill me-2"></i> Trang chủ
+        </a>
+        <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
+  
+        <a routerLink="/catalog" class="transition-all"
+              [ngClass]="{'breadcrumb-active': !selectedParentCategory && !selectedBrandFromHeader, 'breadcrumb-link': selectedParentCategory || selectedBrandFromHeader}">
+            {{ isSalePage ? 'Chương trình Sale' : 'Sản phẩm' }}
+        </a>
+  
+        <ng-container *ngIf="selectedBrandFromHeader">
+            <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
+            <span class="breadcrumb-link transition-all" (click)="clearBrandFilter()">Thương hiệu</span>
+            <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
+            <span class="transition-all text-capitalize" [ngClass]="{'breadcrumb-active': !selectedParentCategory, 'breadcrumb-link': selectedParentCategory}" (click)="selectedParentCategory ? clearCategoryFilter() : null">
+                {{ selectedBrandFromHeader }}
+            </span>
+        </ng-container>
+  
+        <ng-container *ngIf="selectedParentCategory">
+            <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
+            <span class="transition-all"
+                  [ngClass]="{'breadcrumb-active': !selectedSubCategory, 'breadcrumb-link': selectedSubCategory}"
+                  (click)="selectedSubCategory ? selectParentCategory(selectedParentCategory) : null">
+                {{ selectedParentCategory.name }}
+            </span>
+        </ng-container>
+  
+        <ng-container *ngIf="selectedParentCategory && selectedSubCategory">
+            <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
+            <span class="breadcrumb-active transition-all">
+                {{ getSubCategoryName() }}
+            </span>
+        </ng-container>
+    </div>
+  
+    <div class="sticky-filter-wrapper transition-all" [class.collapsed]="isScrolled">
+  
+        <section class="catalog-section section-categories mb-1" *ngIf="!selectedParentCategory || selectedBrandFromHeader">
+            <div class="d-flex align-items-center gap-3 overflow-auto pb-1">
+                <h2 class="text-uppercase mb-0 category-title" *ngIf="selectedBrandFromHeader">
+                    {{ selectedBrandFromHeader }}
+                </h2>
+                <button *ngFor="let cat of categories"
+                        class="subcategory-tab transition-all text-nowrap"
+                        [class.active]="selectedBrandFromHeader && selectedParentCategory?.id === cat.id"
+                        (click)="selectParentCategory(cat)">
+                    {{ cat.name }}
+                </button>
+            </div>
+        </section>
+  
+        <section class="catalog-section section-categories mb-2 pb-2" *ngIf="selectedParentCategory && !selectedBrandFromHeader">
+            <div class="d-flex align-items-center gap-4">
+                <h2 class="text-uppercase mb-0 category-title">
+                    {{ selectedParentCategory.name }}
+                </h2>
+                <div class="d-flex gap-2 overflow-auto flex-grow-1">
+                    <button class="subcategory-tab transition-all text-nowrap" 
+                            [class.active]="!selectedSubCategory" 
+                            (click)="selectSubCategory(null)">
+                        Tất cả
+                    </button>
+                    <button *ngFor="let sub of selectedParentCategory.subCategories" 
+                            class="subcategory-tab transition-all text-nowrap" 
+                            [class.active]="selectedSubCategory === sub.slug" 
+                            (click)="selectSubCategory(sub.slug)">
+                        {{ sub.name }}
+                    </button>
+                </div>
+            </div>
+        </section>
+  
+        <div class="advanced-filters">
+            <div class="pt-2">
+                
+                <section class="catalog-section section-filters mb-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="d-flex align-items-center me-3" style="color: var(--kanila-red);">
+                            <i class="bi bi-funnel-fill me-2" style="font-size: 18px;"></i>
+                            <span style="font-weight: 700; text-transform: uppercase; font-size: 0.9rem;">Lọc</span>
+                        </div>
+  
+                        <div class="position-relative">
+                            <button class="btn-filter filter-chip transition-all d-flex align-items-center" [class.active]="selectedRatings.length > 0 || openDropdown === 'rating'" (click)="toggleDropdown('rating', $event)">
+                                <i class="bi bi-star-fill me-2" *ngIf="selectedRatings.length > 0"></i>
+                                Đánh giá <i class="bi bi-chevron-down ms-2 small-icon"></i>
+                            </button>
+                            <div class="dropdown-panel shadow p-3 rounded-4" *ngIf="openDropdown === 'rating'" (click)="$event.stopPropagation()">
+                                <label class="d-flex align-items-center custom-checkbox mb-2" *ngFor="let item of ratingOptions">
+                                    <input type="checkbox" class="me-2" [checked]="selectedRatings.includes(item)" (change)="toggleRating(item)">
+                                    <span>Từ {{ item }} sao <i class="bi bi-star-fill text-warning ms-1" style="font-size: 0.8rem;"></i></span>
+                                </label>
+                            </div>
+                        </div>
+  
+                        <div class="position-relative" *ngIf="!selectedBrandFromHeader">
+                            <button class="btn-filter filter-chip transition-all d-flex align-items-center" [class.active]="selectedBrands.length > 0 || openDropdown === 'brand'" (click)="toggleDropdown('brand', $event)">
+                                Thương hiệu <i class="bi bi-chevron-down ms-2 small-icon"></i>
+                            </button>
+                            <div class="dropdown-panel shadow rounded-4 p-0" *ngIf="openDropdown === 'brand'" (click)="$event.stopPropagation()">
+                                <div class="p-2 border-bottom bg-light rounded-top-4">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text" class="form-control border-start-0 shadow-none bg-white" placeholder="Tìm thương hiệu..." [(ngModel)]="brandSearchText">
+                                    </div>
+                                </div>
+                                <div class="p-3 brand-list-scroll" style="max-height: 250px; overflow-y: auto;">
+                                    <div *ngIf="filteredBrandOptions.length === 0" class="text-muted small text-center">Không tìm thấy thương hiệu</div>
+                                    <label class="d-flex align-items-center custom-checkbox mb-2" *ngFor="let brand of filteredBrandOptions">
+                                        <input type="checkbox" class="me-2" [checked]="selectedBrands.includes(brand)" (change)="toggleBrand(brand)"><span>{{ brand }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+  
+                        <div class="position-relative">
+                            <button class="btn-filter filter-chip transition-all d-flex align-items-center" [class.active]="selectedPrice !== null || openDropdown === 'price'" (click)="toggleDropdown('price', $event)">
+                                Giá <i class="bi bi-chevron-down ms-2 small-icon"></i>
+                            </button>
+                            <div class="dropdown-panel price-dropdown shadow-lg p-4 rounded-4" *ngIf="openDropdown === 'price'" (click)="$event.stopPropagation()">
+                                <h6 class="mb-3" style="color: var(--kanila-text); font-weight: 700; font-size: 15px;">Khoảng giá</h6>
+                                <div class="d-flex align-items-center justify-content-between mb-4 gap-2">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-end custom-price-input" [(ngModel)]="minPriceInput" (input)="onMinPriceInput()" (change)="onPriceChangeDone()">
+                                        <span class="input-group-text bg-white border-start-0" style="color: var(--kanila-text);">đ</span>
+                                    </div>
+                                    <span class="mx-1 fw-bold text-muted">-</span>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-end custom-price-input" [(ngModel)]="maxPriceInput" (input)="onMaxPriceInput()" (change)="onPriceChangeDone()">
+                                        <span class="input-group-text bg-white border-start-0" style="color: var(--kanila-text);">đ</span>
+                                    </div>
+                                </div>
+                                <div class="range-slider-wrapper mb-2">
+                                    <div class="range-track" [style.left.%]="(minPriceInput / maxLimit) * 100" [style.width.%]="((maxPriceInput - minPriceInput) / maxLimit) * 100"></div>
+                                    <input type="range" class="custom-range" [min]="0" [max]="maxLimit" step="10000" [(ngModel)]="minPriceInput" (input)="onMinPriceInput()" (change)="onPriceChangeDone()">
+                                    <input type="range" class="custom-range" [min]="0" [max]="maxLimit" step="10000" [(ngModel)]="maxPriceInput" (input)="onMaxPriceInput()" (change)="onPriceChangeDone()">
+                                </div>
+                            </div>
+                        </div>
+  
+                        <div class="position-relative">
+                            <button class="btn-filter filter-chip transition-all d-flex align-items-center" [class.active]="selectedShades.length > 0 || openDropdown === 'shade'" (click)="toggleDropdown('shade', $event)">
+                                Shade/Màu <i class="bi bi-chevron-down ms-2 small-icon"></i>
+                            </button>
+                            <div class="dropdown-panel shadow p-3 rounded-4" style="min-width: 280px;" *ngIf="openDropdown === 'shade'" (click)="$event.stopPropagation()">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div *ngFor="let item of shadeOptions" 
+                                         class="shade-swatch transition-all"
+                                         [class.active]="selectedShades.includes(item)"
+                                         [style.background-color]="getShadeColor(item)"
+                                         [title]="item"
+                                         (click)="toggleShade(item)">
+                                        <i class="bi bi-check" *ngIf="selectedShades.includes(item)"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+  
+                        <div class="position-relative">
+                            <button class="btn-filter filter-chip transition-all d-flex align-items-center" [class.active]="selectedSkinTypes.length > 0 || openDropdown === 'skin'" (click)="toggleDropdown('skin', $event)">
+                                Làn da <i class="bi bi-chevron-down ms-2 small-icon"></i>
+                            </button>
+                            <div class="dropdown-panel shadow p-3 rounded-4" style="min-width: 260px;" *ngIf="openDropdown === 'skin'" (click)="$event.stopPropagation()">
+                                <div class="skin-hint mb-3" *ngIf="suggestedSkinType">
+                                    <span class="text-muted small">Gợi ý cho bạn:</span>
+                                    <button type="button" class="btn btn-sm skin-suggest-btn" (click)="applySuggestedSkinType()">{{ suggestedSkinType }}</button>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button *ngFor="let skin of skinTypes"
+                                            class="skin-select-chip transition-all"
+                                            [class.active]="selectedSkinTypes.includes(skin)"
+                                            (click)="toggleSkinType(skin)">
+                                        {{ skin }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                         
+  
+                    </div>
+                </section>
+  
+                <section class="catalog-section section-applied-filters mb-2" *ngIf="hasActiveFilters()">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span style="color: var(--kanila-text); font-size: 0.8rem; font-weight: 600; margin-right: 4px;">Đã chọn:</span>
+                        
+                        <div class="applied-chip transition-all" *ngIf="selectedBrandFromHeader">
+                            <span class="chip-text">Brand: {{ selectedBrandFromHeader }}</span>
+                            <i class="bi bi-x" (click)="clearBrandFilter()"></i>
+                        </div>
+  
+                        <ng-container *ngFor="let brand of selectedBrands">
+                            <div class="applied-chip transition-all" *ngIf="brand !== selectedBrandFromHeader">
+                                <span class="chip-text">{{ brand }}</span>
+                                <i class="bi bi-x" (click)="removeFilter('brand', brand)"></i>
+                            </div>
+                        </ng-container>
+  
+                        <div class="applied-chip transition-all" *ngFor="let item of selectedSkinTypes">
+                            <span class="chip-text">Da: {{ item }}</span><i class="bi bi-x" (click)="removeFilter('skin', item)"></i>
+                        </div>
+                        <div class="applied-chip transition-all" *ngFor="let item of selectedShades">
+                            <span class="chip-text">Màu: {{ item }}</span><i class="bi bi-x" (click)="removeFilter('shade', item)"></i>
+                        </div>
+                        <div class="applied-chip transition-all" *ngFor="let item of selectedFinishes">
+                            <span class="chip-text">Finish: {{ item }}</span><i class="bi bi-x" (click)="removeFilter('finish', item)"></i>
+                        </div>
+                        <div class="applied-chip transition-all" *ngFor="let item of selectedBenefits">
+                            <span class="chip-text">{{ item }}</span><i class="bi bi-x" (click)="removeFilter('benefit', item)"></i>
+                        </div>
+                        <div class="applied-chip transition-all" *ngFor="let item of selectedPromotions">
+                            <span class="chip-text">{{ item }}</span><i class="bi bi-x" (click)="removeFilter('promotion', item)"></i>
+                        </div>
+                        <div class="applied-chip transition-all" *ngFor="let item of selectedRatings">
+                            <span class="chip-text">>= {{ item }} <i class="bi bi-star-fill" style="font-size:0.6rem"></i></span><i class="bi bi-x" (click)="removeFilter('rating', '' + item)"></i>
+                        </div>
+                        
+                        <div class="applied-chip transition-all" *ngIf="selectedPrice">
+                            <span class="chip-text">{{ selectedPrice.label }}</span><i class="bi bi-x" (click)="removeFilter('price', null)"></i>
+                        </div>
+                        
+                        <button class="clear-all-text btn btn-link p-0 text-decoration-underline ms-2 transition-all" (click)="clearAllFilters()">
+                            Xóa tất cả
+                        </button>
+                    </div>
+                </section>
+  
+                <section class="catalog-section section-sort border-top">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between pt-2 pb-2">
+                        
+                        <div class="d-none d-md-block text-muted small">
+                            Hiển thị <strong>{{ filteredProducts.length }}</strong> sản phẩm
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-2 ms-auto sort-container">
+                            <span class="text-muted small me-2 d-none d-sm-inline">Sắp xếp theo:</span>
+                            <div class="position-relative d-inline-block">
+                                <button class="btn-sort-dropdown transition-all d-flex align-items-center justify-content-between"
+                                        (click)="toggleDropdown('sortGlobal', $event)">
+                                    <span class="fw-bold" style="color: var(--kanila-red);">{{ getSortLabel(activeSort) }}</span>
+                                    <i class="bi bi-chevron-down ms-2" style="font-size: 0.8rem; color: var(--kanila-text);"></i>
+                                </button>
+                                
+                                <div class="dropdown-panel shadow-sm rounded-3 py-2 px-0" style="min-width: 180px; right: 0; left: auto;" *ngIf="openDropdown === 'sortGlobal'" (click)="$event.stopPropagation()">
+                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'default'" (click)="selectSort('default')">Mặc định</button>
+                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'popular'" (click)="selectSort('popular')">Bán chạy</button>
+                                    <button *ngIf="!isSalePage" class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'hot_deal'" (click)="selectSort('hot_deal')">Deal HOT</button>
+                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_asc'" (click)="selectSort('price_asc')">Giá Thấp - Cao</button>
+                                    <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_desc'" (click)="selectSort('price_desc')">Giá Cao - Thấp</button>
+                                </div>
+                            </div>
+                        </div>
+  
+                    </div>
+                </section>
+  
+            </div>
+        </div>
+    </div> <div class="row g-4 mt-1">
+        <div class="col-6 col-md-4 catalog-col-5" *ngFor="let p of filteredProducts">
+            <app-product-card [product]="toProductCardProduct(p)"></app-product-card>
+        </div>
+  
+        <div class="col-12 text-center py-5 my-5" *ngIf="filteredProducts.length === 0">
+            <div class="mb-4">
+               <i class="bi bi-emoji-frown text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+            </div>
+            <h5 class="fw-bold mb-3" style="color: var(--kanila-text);">Rất tiếc, không tìm thấy sản phẩm!</h5>
+            <p class="text-muted mb-4">Thử thay đổi bộ lọc hoặc bỏ chọn bớt các tiêu chí nhé.</p>
+            <button class="btn px-4 py-2 rounded-pill fw-bold" style="background-color: var(--kanila-red); color: white; border: none; box-shadow: 0 4px 10px rgba(107,30,46,0.2);" (click)="clearAllFilters()">
+                Xóa tất cả bộ lọc
+            </button>
+        </div>
+    </div>
+    </ng-container>
+  </div>
