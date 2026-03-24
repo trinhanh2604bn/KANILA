@@ -1,0 +1,99 @@
+<main class="success-page">
+  <div class="success-shell">
+    <section class="success-hero card">
+      <div class="success-icon"><i class="bi bi-check2-circle"></i></div>
+      <h1>Đặt hàng thành công</h1>
+      <p class="subtext">Cảm ơn bạn! Đơn hàng của bạn đã được ghi nhận và đang chờ xác nhận từ hệ thống.</p>
+
+      <div class="hero-meta">
+        <div>
+          <span>Mã đơn hàng</span>
+          <strong>{{ orderNumber }}</strong>
+        </div>
+        <div>
+          <span>Ngày đặt</span>
+          <strong>{{ orderDate | date: 'dd/MM/yyyy, HH:mm' }}</strong>
+        </div>
+        <div>
+          <span>Dự kiến giao</span>
+          <strong>{{ estimatedDelivery | date: 'dd/MM/yyyy' }}</strong>
+        </div>
+        <div>
+          <span>Trạng thái thanh toán</span>
+          <strong class="paid">{{ paymentStatus }}</strong>
+        </div>
+      </div>
+      <p class="notify-note">Xác nhận đơn hàng đã được gửi tới email/SĐT của bạn.</p>
+    </section>
+
+    <section class="card">
+      <h2>Tiến trình đơn hàng</h2>
+      <div class="timeline">
+        <div class="timeline-item" *ngFor="let step of timeline" [class.done]="step.done">
+          <div class="dot">{{ step.done ? '✓' : '' }}</div>
+          <span>{{ step.label }}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="left-stack">
+        <article class="card info-card">
+          <h3>Thông tin đơn hàng</h3>
+          <div class="info-grid">
+            <div><span>Mã đơn</span><strong>{{ orderNumber }}</strong></div>
+            <div><span>Ngày đặt</span><strong>{{ orderDate | date: 'dd/MM/yyyy, HH:mm' }}</strong></div>
+            <div><span>Phương thức thanh toán</span><strong>{{ paymentMethod }}</strong></div>
+            <div><span>Phương thức vận chuyển</span><strong>{{ shippingMethod }}</strong></div>
+            <div><span>Người nhận</span><strong>{{ customerName }} - {{ customerPhone }}</strong></div>
+            <div><span>Địa chỉ giao</span><strong>{{ shippingAddress }}</strong></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Sản phẩm đã đặt</h3>
+          <div class="product-list">
+            <div class="product-row" *ngFor="let item of orderedItems">
+              <img [src]="item.image" [alt]="item.name" />
+              <div class="product-meta">
+                <small>{{ item.brand }}</small>
+                <p>{{ item.name }}</p>
+                <span>{{ item.variant }} • SL {{ item.quantity }}</span>
+              </div>
+              <strong>{{ item.lineTotal | number }}đ</strong>
+            </div>
+          </div>
+          <button class="text-link" type="button" (click)="viewOrderDetails()">Xem chi tiết đơn hàng</button>
+        </article>
+
+        <article class="card support">
+          <h3>Kanila luôn đồng hành cùng bạn</h3>
+          <div class="support-grid">
+            <span><i class="bi bi-patch-check"></i> 100% sản phẩm chính hãng</span>
+            <span><i class="bi bi-arrow-counterclockwise"></i> Đổi trả dễ dàng theo chính sách</span>
+            <span><i class="bi bi-headset"></i> Hotline hỗ trợ: 1900 1234</span>
+            <span><i class="bi bi-truck"></i> Bạn sẽ nhận thông báo khi đơn bắt đầu giao</span>
+          </div>
+        </article>
+      </section>
+
+      <aside class="right-stack">
+        <article class="card payment-summary">
+          <h3>Tổng thanh toán</h3>
+          <div class="row"><span>Tạm tính</span><span>{{ subtotal | number }}đ</span></div>
+          <div class="row"><span>Giảm giá</span><span class="discount">-{{ discount | number }}đ</span></div>
+          <div class="row"><span>Phí vận chuyển</span><span>{{ shippingFee | number }}đ</span></div>
+          <div class="row total"><span>Tổng đã thanh toán</span><strong>{{ totalPaid | number }}đ</strong></div>
+        </article>
+
+        <article class="card actions">
+          <button type="button" class="btn btn-primary" (click)="trackOrder()">
+            <i class="bi bi-geo-alt"></i> Theo dõi đơn hàng
+          </button>
+          <button type="button" class="btn btn-soft" (click)="viewOrderDetails()">Xem chi tiết đơn</button>
+          <button type="button" class="btn btn-ghost" (click)="continueShopping()">Tiếp tục mua sắm</button>
+        </article>
+      </aside>
+    </div>
+  </div>
+</main>
