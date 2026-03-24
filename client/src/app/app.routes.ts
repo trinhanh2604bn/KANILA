@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'payment', loadChildren: () => import('./features/payment/payment.routes').then((m) => m.PAYMENT_ROUTES) },
       { path: 'search', loadChildren: () => import('./features/search/search.routes').then((m) => m.SEARCH_ROUTES) },
       { path: 'loyalty', loadChildren: () => import('./features/loyalty/loyalty.routes').then((m) => m.LOYALTY_ROUTES) },
+      
     ],
   },
   { path: '**', redirectTo: 'home' },

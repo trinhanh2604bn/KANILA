@@ -1,4 +1,352 @@
-<section class="catalog-page-placeholder">
-  <a routerLink="/catalog">← Sản phẩm</a>
-  <p>Chi tiết sản phẩm</p>
+<section class="pdp-page">
+  <div class="container">
+    <div class="text-center py-4" *ngIf="loading">
+      <span>Đang tải chi tiết sản phẩm...</span>
+    </div>
+    <div class="text-center py-4" *ngIf="!loading && hasError">
+      <span style="color: var(--kanila-red);">Không thể tải chi tiết sản phẩm. Vui lòng thử lại.</span>
+    </div>
+    <ng-container *ngIf="!loading && !hasError">
+    <nav class="pdp-breadcrumb">
+      <a routerLink="/">Trang chủ</a>
+      <span>›</span>
+      <a routerLink="/catalog">{{ breadcrumb[1] }}</a>
+      <span>›</span>
+      <a routerLink="/catalog" [queryParams]="{ sub: 'kem-nen' }">{{ breadcrumb[2] }}</a>
+      <span>›</span>
+      <strong>{{ productName }}</strong>
+    </nav>
+
+    <section class="pdp-hero">
+      <div class="pdp-gallery">
+        <div class="pdp-main-image-wrap">
+          <span class="image-type-chip">{{ gallery[selectedImageIndex].type }}</span>
+          <img [src]="selectedImage" [alt]="productName" class="pdp-main-image" />
+          <button class="gallery-nav prev" (click)="prevImage()" aria-label="Ảnh trước">‹</button>
+          <button class="gallery-nav next" (click)="nextImage()" aria-label="Ảnh tiếp theo">›</button>
+        </div>
+        <div class="pdp-thumbs">
+          <button
+            *ngFor="let image of gallery; let i = index"
+            class="thumb-btn"
+            [class.active]="i === selectedImageIndex"
+            (click)="setImage(i)"
+          >
+            <img [src]="image.url" [alt]="image.type" />
+            <span class="thumb-type">{{ image.type }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="pdp-info-card">
+        <div class="brand-row">
+          <a class="brand-name brand-link" routerLink="/catalog/brand/kanila-atelier">{{ brandName }}</a>
+          <div class="badge-row">
+            <span class="badge" *ngFor="let badge of badges">{{ badge }}</span>
+          </div>
+        </div>
+        <h1>{{ productName }}</h1>
+        <p class="subtitle">{{ productSubtitle }}</p>
+
+        <div class="meta-row">
+          <span class="stars">{{ starText(rating) }}</span>
+          <span>{{ rating }}/5</span>
+          <button type="button" class="meta-link" (click)="scrollToReviews()">({{ reviewCount }} đánh giá)</button>
+          <span>{{ soldCount | number }} đã bán</span>
+          <span>{{ wishCount | number }} yêu thích</span>
+          <span class="meta-trust">Verified reviews</span>
+          <span class="meta-trust">Best seller in foundation</span>
+        </div>
+
+        <div class="price-row">
+          <span class="current">{{ currentPrice | number }}đ</span>
+          <span class="old">{{ oldPrice | number }}đ</span>
+          <span class="discount">-{{ discountPercent }}%</span>
+        </div>
+        <div class="price-meta">
+          <span>Save {{ savingsAmount | number }}đ</span>
+          <span>Trả góp 0% qua thẻ tín dụng</span>
+        </div>
+
+        <div class="selector-block">
+          <div class="selector-head">
+            <span>Tone / Shade</span>
+            <strong>{{ selectedShade.name }} · {{ selectedShade.undertone }}</strong>
+          </div>
+          <div class="shade-list">
+            <button
+              *ngFor="let shade of shades"
+              class="shade-chip"
+              [class.active]="shade.id === selectedShadeId"
+              (click)="selectShade(shade.id)"
+            >
+              <span class="swatch" [style.background]="shade.hex"></span>
+              <span class="shade-meta">
+                <strong>{{ shadeCode(shade.name) }}</strong>
+                <span>{{ shadeLabel(shade.name) }}</span>
+                <small>{{ shade.undertone }} undertone</small>
+              </span>
+              <i class="bi bi-check2 shade-check" *ngIf="shade.id === selectedShadeId"></i>
+            </button>
+          </div>
+          <p class="shade-selected-note">Selected: {{ selectedShade.name }} ({{ selectedShade.undertone }} undertone)</p>
+        </div>
+
+        <div class="purchase-row">
+          <div class="qty-box">
+            <button (click)="decreaseQty()">−</button>
+            <span>{{ quantity }}</span>
+            <button (click)="increaseQty()">+</button>
+          </div>
+          <button class="cta primary" [class.loading]="isAddingToCart" (click)="addToCartFeedback()">
+            {{ isAddingToCart ? 'Đang thêm...' : 'Thêm vào giỏ' }}
+          </button>
+          <button class="cta secondary">Mua ngay</button>
+          <button class="wishlist-btn" aria-label="Yêu thích">♡</button>
+        </div>
+
+        <p class="shipping-note">Chỉ còn 12 sản phẩm • {{ stockText }} • {{ shippingText }}</p>
+
+        <div class="trust-row">
+          <span><i class="bi bi-patch-check-fill"></i> {{ trustItems[0] }}</span>
+          <span><i class="bi bi-truck"></i> {{ trustItems[1] }}</span>
+          <span><i class="bi bi-arrow-repeat"></i> {{ trustItems[2] }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="pdp-highlights">
+      <article class="highlight-card" *ngFor="let item of highlights">
+        <i class="bi" [class]="item.icon"></i>
+        <div>
+          <p>{{ item.label }}</p>
+          <h4>{{ item.value }}</h4>
+        </div>
+      </article>
+    </section>
+
+    <section class="pdp-info-tabs">
+      <div class="tab-head">
+        <button [class.active]="activeTab === 'overview'" (click)="setTab('overview')">Overview</button>
+        <button [class.active]="activeTab === 'ingredients'" (click)="setTab('ingredients')">Ingredients</button>
+        <button [class.active]="activeTab === 'howToUse'" (click)="setTab('howToUse')">How to use</button>
+        <button [class.active]="activeTab === 'whyLoveIt'" (click)="setTab('whyLoveIt')">Why you'll love it</button>
+        <button [class.active]="activeTab === 'suitableFor'" (click)="setTab('suitableFor')">Suitable for</button>
+        <button [class.active]="activeTab === 'storage'" (click)="setTab('storage')">Storage / caution</button>
+      </div>
+      <div class="tab-body" *ngIf="activeTab === 'overview'">
+        <ul>
+          <li *ngFor="let line of contentSections.overview">{{ line }}</li>
+        </ul>
+      </div>
+      <div class="tab-body" *ngIf="activeTab === 'ingredients'">
+        <ul>
+          <li *ngFor="let line of contentSections.ingredients">{{ line }}</li>
+        </ul>
+      </div>
+      <div class="tab-body" *ngIf="activeTab === 'howToUse'">
+        <ul>
+          <li *ngFor="let line of contentSections.howToUse">{{ line }}</li>
+        </ul>
+      </div>
+      <div class="tab-body" *ngIf="activeTab === 'whyLoveIt'">
+        <ul>
+          <li *ngFor="let line of contentSections.whyLoveIt">{{ line }}</li>
+        </ul>
+      </div>
+      <div class="tab-body" *ngIf="activeTab === 'suitableFor'">
+        <ul>
+          <li *ngFor="let line of contentSections.suitableFor">{{ line }}</li>
+        </ul>
+      </div>
+      <div class="tab-body" *ngIf="activeTab === 'storage'">
+        <ul>
+          <li *ngFor="let line of contentSections.storage">{{ line }}</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="pdp-visual-inspo">
+      <h3>Texture & Result Inspiration</h3>
+      <div class="visual-grid">
+        <article>
+          <img src="https://images.unsplash.com/photo-1590156202996-79f2b73f95c1?auto=format&fit=crop&w=900&q=80" alt="Texture close-up" />
+          <p>Texture close-up</p>
+        </article>
+        <article>
+          <img src="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=900&q=80" alt="Skin swatch" />
+          <p>Skin swatch by undertone</p>
+        </article>
+        <article>
+          <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=900&q=80" alt="Before and after" />
+          <p>Before / after in natural light</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="pdp-recommendations">
+      <div class="reco-block reco-block--fbt">
+        <h3>Frequently Bought Together</h3>
+        <div class="reco-scroll">
+          <app-product-card
+            class="pdp-reco-card-host"
+            *ngFor="let item of bundleProducts"
+            [product]="recoToProduct(item)"
+          ></app-product-card>
+        </div>
+      </div>
+
+      <div class="reco-block">
+        <h3>Similar Products</h3>
+        <div class="reco-scroll">
+          <app-product-card
+            class="pdp-reco-card-host"
+            *ngFor="let item of similarProducts"
+            [product]="recoToProduct(item)"
+          ></app-product-card>
+        </div>
+      </div>
+
+      <div class="reco-block">
+        <h3>Same Brand</h3>
+        <div class="reco-scroll">
+          <app-product-card
+            class="pdp-reco-card-host"
+            *ngFor="let item of sameBrandProducts"
+            [product]="recoToProduct(item)"
+          ></app-product-card>
+        </div>
+      </div>
+
+      <div class="reco-block">
+        <h3>Recently Viewed</h3>
+        <div class="reco-scroll">
+          <app-product-card
+            class="pdp-reco-card-host"
+            *ngFor="let item of recentProducts"
+            [product]="recoToProduct(item)"
+          ></app-product-card>
+        </div>
+      </div>
+    </section>
+
+    <section class="pdp-reviews" id="pdp-reviews">
+      <div class="reviews-head">
+        <div class="reviews-head-main">
+          <h3>Customer Reviews</h3>
+          <p *ngIf="hasReviews; else reviewsEmptyText">{{ reviewCount | number }} đánh giá</p>
+          <ng-template #reviewsEmptyText>
+            <p>Chưa có đánh giá. Hãy là người đầu tiên chia sẻ trải nghiệm!</p>
+          </ng-template>
+          <div class="reviews-head-meta" *ngIf="hasReviews">
+            <span>{{ customerReviewPhotos.length }} ảnh thật từ khách hàng</span>
+            <span>{{ recommendPercent }}% hài lòng</span>
+          </div>
+        </div>
+        <button class="write-review-btn"><span>✍️</span>Viết đánh giá</button>
+      </div>
+
+      <div class="rating-overview">
+        <div class="avg-rating">
+          <h2>{{ rating }}</h2>
+          <span>{{ starText(rating) }}</span>
+          <p class="avg-rating-count" *ngIf="hasReviews">{{ reviewCount | number }} đánh giá</p>
+          <p class="avg-rating-reco" *ngIf="hasReviews">{{ recommendPercent }}% recommend sản phẩm này</p>
+          <div class="avg-rating-insights" *ngIf="hasReviews">
+            <small>Best for combination skin</small>
+            <small>Most users say: easy to blend</small>
+          </div>
+          <p class="avg-rating-empty" *ngIf="!hasReviews">Chưa có đánh giá. Hãy là người đầu tiên chia sẻ trải nghiệm!</p>
+        </div>
+        <div class="rating-bars" aria-label="Rating distribution" *ngIf="hasRatingData; else noRatingData">
+          <p class="rating-bars-caption">Phân bổ đánh giá theo từng mức sao</p>
+          <div class="bar-row" *ngFor="let star of [5,4,3,2,1]">
+            <span [class.is-top]="isTopRatingRow(star)">{{ star }} sao</span>
+            <div class="bar">
+              <i [style.width.%]="ratingPercent(star)"></i>
+            </div>
+            <small [class.is-top]="isTopRatingRow(star)">{{ ratingPercent(star) }}%</small>
+          </div>
+        </div>
+        <ng-template #noRatingData>
+          <div class="rating-no-data">
+            <i class="bi bi-bar-chart-line"></i>
+            <p>Chưa có dữ liệu</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="review-insights">
+        <h4>Khách hàng yêu thích</h4>
+        <div class="insight-tags">
+          <span *ngFor="let tag of reviewInsightTags"><i>✓</i>{{ tag }}</span>
+        </div>
+      </div>
+
+      <div class="review-media-strip" *ngIf="customerReviewPhotos.length">
+        <button class="review-media-title" (click)="setReviewFilter('withImage')">
+          Photos from customers
+        </button>
+        <div class="review-media-scroll">
+          <img *ngFor="let image of customerReviewPhotos" [src]="image" alt="Customer review photo" />
+        </div>
+      </div>
+
+      <div class="review-filters">
+        <button [class.active]="reviewFilter==='all'" (click)="setReviewFilter('all')">Tất cả</button>
+        <button [class.active]="reviewFilter==='5'" (click)="setReviewFilter('5')">5★</button>
+        <button [class.active]="reviewFilter==='4'" (click)="setReviewFilter('4')">4★</button>
+        <button [class.active]="reviewFilter==='3'" (click)="setReviewFilter('3')">3★</button>
+        <button [class.active]="reviewFilter==='2'" (click)="setReviewFilter('2')">2★</button>
+        <button [class.active]="reviewFilter==='1'" (click)="setReviewFilter('1')">1★</button>
+        <button [class.active]="reviewFilter==='withImage'" (click)="setReviewFilter('withImage')">Có hình</button>
+        <button [class.active]="reviewFilter==='verified'" (click)="setReviewFilter('verified')">Đã mua hàng</button>
+        <button class="is-passive" type="button">Theo shade</button>
+        <button class="is-passive" type="button">Theo loại da</button>
+      </div>
+
+      <div class="review-list" *ngIf="filteredReviews.length; else emptyReviewState">
+        <article class="review-card" *ngFor="let review of filteredReviews">
+          <header>
+            <img [src]="review.avatar" [alt]="review.userName" />
+            <div class="review-author">
+              <h4>{{ review.userName }}</h4>
+              <p>{{ review.date }}</p>
+            </div>
+            <span class="verified-badge" *ngIf="review.verified">Verified Purchase</span>
+          </header>
+          <div class="review-stars">{{ starText(review.rating) }}</div>
+          <div class="review-context">
+            <span>Shade {{ review.shade }}</span>
+            <span>Da hỗn hợp</span>
+            <span>Coverage medium</span>
+            <span>Natural finish</span>
+          </div>
+          <h5>{{ review.title }}</h5>
+          <p class="review-body">{{ review.body }}</p>
+          <div class="review-images" *ngIf="review.images.length">
+            <img *ngFor="let image of review.images" [src]="image" alt="Review image" />
+          </div>
+          <button class="helpful-btn">Hữu ích ({{ review.helpful }})</button>
+        </article>
+      </div>
+      <ng-template #emptyReviewState>
+        <div class="review-empty">
+          <h5>Chưa có đánh giá phù hợp bộ lọc</h5>
+          <p>Hãy thử chọn bộ lọc khác để xem thêm trải nghiệm từ khách hàng.</p>
+          <button (click)="setReviewFilter('all')">Xem tất cả đánh giá</button>
+        </div>
+      </ng-template>
+    </section>
+    </ng-container>
+  </div>
+
+  <aside class="sticky-buy-bar" [class.show]="stickyVisible" *ngIf="!loading && !hasError">
+    <img [src]="gallery[0].url" [alt]="productName" />
+    <div>
+      <h4>{{ productName }}</h4>
+      <p>{{ selectedShade.name }} · {{ currentPrice | number }}đ</p>
+    </div>
+    <button>Thêm vào giỏ</button>
+  </aside>
 </section>

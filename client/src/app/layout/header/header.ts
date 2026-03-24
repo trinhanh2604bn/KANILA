@@ -161,11 +161,9 @@ export class Header implements OnInit, OnDestroy {
 
   onSuggestionClick(item: HeaderSearchProductItem): void {
     this.showSuggestions = false;
-    if (item.slug) {
-      this.router.navigate(['/products', item.slug]);
-      return;
-    }
-    this.router.navigate(['/product', item.id]);
+    const slugOrId = item.slug || item.id;
+    if (!slugOrId) return;
+    this.router.navigate(['/catalog', 'product', slugOrId]);
   }
 
   private buildMegaColumns(categories: HeaderCategoryItem[]): Array<{ title: string; items: HeaderCategoryItem[] }> {

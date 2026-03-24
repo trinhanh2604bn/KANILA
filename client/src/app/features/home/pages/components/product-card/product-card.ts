@@ -86,14 +86,16 @@ export class ProductCardComponent {
 
   goToDetail(e: Event): void {
     e.stopPropagation();
-    if (this.product?._id) {
-      this.router.navigate(['/product', this.product._id]);
+    const slugOrId = this.product?.slug || this.product?._id;
+    if (slugOrId) {
+      this.router.navigate(['/catalog', 'product', slugOrId]);
     }
   }
 
   onCardClick(): void {
-    if (this.product?._id) {
-      this.router.navigate(['/product', this.product._id]);
+    const slugOrId = this.product?.slug || this.product?._id;
+    if (slugOrId) {
+      this.router.navigate(['/catalog', 'product', slugOrId]);
     }
   }
 }

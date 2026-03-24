@@ -135,8 +135,9 @@ export class Mainpage implements OnInit {
 
   goToDetail(product: Product, e: Event): void {
     e.stopPropagation();
-    if (product._id) {
-      this.router.navigate(['/product', product._id]);
+    const slugOrId = product.slug || product._id;
+    if (slugOrId) {
+      this.router.navigate(['/catalog', 'product', slugOrId]);
     }
   }
 

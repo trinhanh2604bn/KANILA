@@ -310,7 +310,7 @@
       </div>
 
       <div class="col-6 col-md-4 col-lg-3" *ngFor="let p of filteredProducts">
-          <div class="product-card p-3 rounded-4 shadow-sm h-100 d-flex flex-column transition-all position-relative" style="background-color: var(--kanila-white); border: 1px solid rgba(107,30,46,0.05); cursor: pointer;" [routerLink]="['/product', p.id]">
+          <div class="product-card p-3 rounded-4 shadow-sm h-100 d-flex flex-column transition-all position-relative" style="background-color: var(--kanila-white); border: 1px solid rgba(107,30,46,0.05); cursor: pointer;" [routerLink]="['/catalog', 'product', p.slug || p.id]">
               <span *ngIf="p.isSale" class="badge rounded-pill position-absolute" style="top: 10px; right: 10px; z-index: 10; background-color: var(--kanila-red); font-size: 0.75rem;">SALE</span>
               <div class="img-placeholder rounded-3 mb-3 d-flex align-items-center justify-content-center" style="background-color: var(--kanila-bg); height: 180px;">
                   <i class="bi bi-box-seam" style="font-size: 40px; color: var(--kanila-pink);"></i>
