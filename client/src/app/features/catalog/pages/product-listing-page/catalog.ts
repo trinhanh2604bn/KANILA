@@ -48,6 +48,7 @@ interface CatalogProductRow {
   price: number;
   oldPrice: number | null;
   isSale: boolean;
+  isFakedSale?: boolean; // THÊM CỜ ĐÁNH DẤU SẢN PHẨM DEMO SALE
   sold: number;
   imageUrl?: string;
   description?: string;
@@ -83,9 +84,9 @@ export class Catalog implements OnInit {
   allProducts: CatalogProductRow[] = [];
   filteredProducts: CatalogProductRow[] = [];
   
-  displayProducts: Product[] = [];
+  // SỬA Ở ĐÂY: Mảng hiển thị giờ chứa thêm cờ isFakedSale để HTML nhận diện
+  displayProducts: { product: Product, isFakedSale: boolean }[] = [];
 
-  // --- BIẾN PHÂN TRANG (PAGINATION) ---
   currentPage: number = 1;
   itemsPerPage: number = 25; 
   totalPages: number = 1;
@@ -221,7 +222,6 @@ export class Catalog implements OnInit {
     this.isScrolled = window.scrollY > 200;
   }
 
-  // --- LOGIC PHÂN TRANG (PAGINATION) ---
   goToPage(page: number | string) {
     if (typeof page === 'string') return; 
     if (page < 1 || page > this.totalPages || page === this.currentPage) return;
@@ -235,7 +235,12 @@ export class Catalog implements OnInit {
     const endIndex = startIndex + this.itemsPerPage;
     const pageProducts = this.filteredProducts.slice(startIndex, endIndex);
     
-    this.displayProducts = pageProducts.map(p => this.toProductCardProduct(p));
+    // Đã sửa ở đây: Lấy thêm cờ isFakedSale bọc lại đưa ra HTML
+    this.displayProducts = pageProducts.map(p => ({
+      product: this.toProductCardProduct(p),
+      isFakedSale: !!p.isFakedSale
+    }));
+    
     this.generatePagination();
   }
 
@@ -248,7 +253,6 @@ export class Catalog implements OnInit {
     const range = [];
     const rangeWithDots: (number | string)[] = [];
     
-    // FIX LỖI TypeScript TS2454 Ở ĐÂY
     let l: number | undefined; 
 
     for (let i = 1; i <= last; i++) {
@@ -270,7 +274,6 @@ export class Catalog implements OnInit {
     }
     this.pagesArray = rangeWithDots;
   }
-  // ---------------------------------
 
   get filteredBrandOptions(): string[] {
     if (!this.brandSearchText) return this.brands;
@@ -585,7 +588,6 @@ export class Catalog implements OnInit {
       this.selectedRatings.length > 0 ||
       this.selectedStockStatuses.length > 0 ||
       this.selectedSizes.length > 0 ||
-      !!this.selectedBrandFromHeader ||
       !!this.searchKeyword
     );
   }
@@ -719,13 +721,25 @@ export class Catalog implements OnInit {
     );
     return products
       .filter((p) => p.productStatus !== 'inactive' && p.isActive !== false)
-      .map((p) => {
+      .map((p, index) => {
         const categoryRef = p.categoryId?._id ?? '';
         const categoryCtx = this.findCategoryContext(categoryRef);
         const optionFacet = optionMap.get(p._id) ?? { shades: [] };
         const variantFacet = variantFacetMap.get(p._id) ?? { inStock: (p.stock ?? 0) > 0, sizes: [] };
         const finishBenefit = finishBenefitMap.get(p._id) ?? { finishes: [], benefits: [] };
-        const isDiscount = !!(p.compareAtPrice && p.compareAtPrice > (p.price ?? 0));
+        
+        // --- LOGIC FAKE SALE ---
+        let oldPrice = p.compareAtPrice;
+        let currentPrice = p.price ?? 0;
+        let isFaked = false;
+
+        if (!oldPrice && currentPrice > 0 && index % 3 === 0) {
+            oldPrice = currentPrice * 1.25; 
+            isFaked = true;
+        }
+
+        const isDiscount = !!(oldPrice && oldPrice > currentPrice);
+
         const brandName = p.brandId?.brandName ?? '';
         return {
           id: p._id,
@@ -747,9 +761,10 @@ export class Catalog implements OnInit {
           inStock: variantFacet.inStock,
           stockQty: p.stock ?? 0,
           sizes: variantFacet.sizes,
-          price: p.price ?? 0,
-          oldPrice: p.compareAtPrice ?? null,
+          price: currentPrice,
+          oldPrice: oldPrice ?? null,
           isSale: isDiscount,
+          isFakedSale: isFaked, // Truyền cờ này ra
           sold: p.bought ?? 0,
           imageUrl: this.resolveImage(p),
           description: p.shortDescription ?? p.longDescription ?? '',

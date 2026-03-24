@@ -193,11 +193,6 @@
                 <section class="catalog-section section-applied-filters mb-2" *ngIf="hasActiveFilters()">
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         <span style="color: var(--kanila-text); font-size: 0.8rem; font-weight: 600; margin-right: 4px;">Đã chọn:</span>
-                        
-                        <div class="applied-chip transition-all" *ngIf="selectedBrandFromHeader">
-                            <span class="chip-text">Brand: {{ selectedBrandFromHeader }}</span>
-                            <i class="bi bi-x" (click)="clearBrandFilter()"></i>
-                        </div>
   
                         <ng-container *ngFor="let brand of selectedBrands">
                             <div class="applied-chip transition-all" *ngIf="brand !== selectedBrandFromHeader">
@@ -239,7 +234,6 @@
     </div> 
     
 
-    <!-- Hiển thị sản phẩm -->
     <div class="row g-4 mt-1">
 
         <section class="catalog-section section-sort border-top">
@@ -273,8 +267,10 @@
             </div>
         </section>
 
-        <div class="col-6 col-md-4 catalog-col-5" *ngFor="let p of displayProducts">
-            <app-product-card [product]="p"></app-product-card>
+        <div class="col-6 col-md-4 catalog-col-5" *ngFor="let item of displayProducts">
+            <div class="h-100 position-relative faked-sale-wrapper" [class.is-faked]="item.isFakedSale">
+                <app-product-card [product]="item.product" class="h-100 d-block"></app-product-card>
+            </div>
         </div>
   
         <div class="col-12 text-center py-5 my-5" *ngIf="filteredProducts.length === 0">
