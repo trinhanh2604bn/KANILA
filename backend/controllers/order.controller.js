@@ -5,6 +5,10 @@ const OrderTotal = require("../models/orderTotal.model");
 const Customer = require("../models/customer.model");
 const OrderStatusHistory = require("../models/orderStatusHistory.model");
 const Account = require("../models/account.model");
+const Shipment = require("../models/shipment.model");
+const ShipmentEvent = require("../models/shipmentEvent.model");
+const PaymentIntent = require("../models/paymentIntent.model");
+const PaymentMethod = require("../models/paymentMethod.model");
 const validateObjectId = require("../utils/validateObjectId");
 const { pickCustomerId } = require("../utils/pickCustomerRef");
 const { normalizeOrderBody } = require("../utils/orderNormalize");
@@ -214,6 +218,177 @@ const getMyOrderById = async (req, res) => {
   }
 };
 
+// GET /api/orders/me
+const getMyOrders = async (req, res) => {
+  try {
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) {
+      return res.status(403).json({ success: false, message: "Authenticated account required" });
+    }
+
+    const page = Math.max(1, Number(req.query?.page || 1));
+    const limit = Math.min(50, Math.max(1, Number(req.query?.limit || 10)));
+    const skip = (page - 1) * limit;
+    const status = String(req.query?.status || "").trim().toLowerCase();
+
+    const filter = { customer_id: customer._id };
+    if (status) filter.order_status = status;
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter).sort({ placed_at: -1 }).skip(skip).limit(limit).lean(),
+      Order.countDocuments(filter),
+    ]);
+
+    const orderIds = orders.map((o) => o._id);
+    const [totals, shipments, itemAgg] = await Promise.all([
+      OrderTotal.find({ order_id: { $in: orderIds } }).lean(),
+      Shipment.find({ order_id: { $in: orderIds } }).sort({ createdAt: -1 }).lean(),
+      OrderItem.aggregate([
+        { $match: { order_id: { $in: orderIds } } },
+        {
+          $group: {
+            _id: "$order_id",
+            itemCount: { $sum: 1 },
+            totalQuantity: { $sum: "$quantity" },
+            firstItemName: { $first: "$product_name_snapshot" },
+            firstItemVariant: { $first: "$variant_name_snapshot" },
+          },
+        },
+      ]),
+    ]);
+
+    const totalMap = new Map(totals.map((t) => [String(t.order_id), t]));
+    const shipmentMap = new Map(shipments.map((s) => [String(s.order_id), s]));
+    const itemMap = new Map(itemAgg.map((a) => [String(a._id), a]));
+
+    const data = orders.map((o) => {
+      const t = totalMap.get(String(o._id));
+      const s = shipmentMap.get(String(o._id));
+      const i = itemMap.get(String(o._id));
+      return {
+        _id: String(o._id),
+        order_number: o.order_number,
+        order_status: o.order_status,
+        payment_status: o.payment_status,
+        fulfillment_status: o.fulfillment_status,
+        placed_at: o.placed_at,
+        grand_total_amount: Number(t?.grand_total_amount || 0),
+        subtotal_amount: Number(t?.subtotal_amount || 0),
+        shipping_fee_amount: Number(t?.shipping_fee_amount || 0),
+        item_count: Number(i?.itemCount || 0),
+        total_quantity: Number(i?.totalQuantity || 0),
+        first_item_name: i?.firstItemName || "",
+        first_item_variant: i?.firstItemVariant || "",
+        shipment_status: s?.shipmentStatus || null,
+        tracking_number: s?.trackingNumber || null,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Get my orders successfully",
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/orders/me/:id/tracking
+const getMyOrderTracking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid order ID" });
+    }
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) {
+      return res.status(403).json({ success: false, message: "Authenticated account required" });
+    }
+
+    const order = await Order.findOne({ _id: id, customer_id: customer._id }).lean();
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    const [shipment, shipmentEvents, statusHistory, paymentIntent] = await Promise.all([
+      Shipment.findOne({ order_id: id }).sort({ createdAt: -1 }).lean(),
+      ShipmentEvent.find({
+        shipmentId: {
+          $in: (
+            await Shipment.find({ order_id: id }).select("_id").lean()
+          ).map((x) => x._id),
+        },
+      })
+        .sort({ eventTime: -1 })
+        .lean(),
+      OrderStatusHistory.find({ order_id: id }).sort({ changed_at: -1 }).lean(),
+      PaymentIntent.findOne({ order_id: id }).sort({ createdAt: -1 }).lean(),
+    ]);
+
+    const paymentMethod = paymentIntent?.payment_method_id
+      ? await PaymentMethod.findById(paymentIntent.payment_method_id).lean()
+      : null;
+
+    const eventsFromShipment = shipmentEvents.map((e) => ({
+      code: e.eventCode || "",
+      status: e.eventStatus || "",
+      description: e.eventDescription || "",
+      timestamp: e.eventTime || e.createdAt,
+      location: e.locationText || "",
+      source: "shipment_event",
+    }));
+
+    const eventsFromStatus = statusHistory.map((h) => ({
+      code: h.new_order_status || "order_update",
+      status: h.new_order_status || "",
+      description: h.change_reason || "Order status updated",
+      timestamp: h.changed_at,
+      location: "",
+      source: "order_status",
+    }));
+
+    const events = [...eventsFromShipment, ...eventsFromStatus].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Get my order tracking successfully",
+      data: {
+        orderId: String(order._id),
+        orderNumber: order.order_number,
+        orderStatus: order.order_status,
+        paymentStatus: order.payment_status,
+        fulfillmentStatus: order.fulfillment_status,
+        paymentMethod: paymentMethod?.payment_method_name || null,
+        shipment: shipment
+          ? {
+              shipmentId: String(shipment._id),
+              shipmentNumber: shipment.shipmentNumber,
+              shipmentStatus: shipment.shipmentStatus,
+              carrierCode: shipment.carrierCode || null,
+              serviceName: shipment.serviceName || null,
+              trackingNumber: shipment.trackingNumber || null,
+              shippedAt: shipment.shippedAt || null,
+              deliveredAt: shipment.deliveredAt || null,
+            }
+          : null,
+        latestUpdateAt: events[0]?.timestamp || order.updated_at || order.placed_at,
+        events,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // POST /api/orders
 const createOrder = async (req, res) => {
   try {
@@ -366,7 +541,9 @@ module.exports = {
   getAllOrders,
   getOrderById,
   getOrdersByCustomerId,
+  getMyOrders,
   getMyOrderById,
+  getMyOrderTracking,
   createOrder,
   updateOrder,
   patchOrder,

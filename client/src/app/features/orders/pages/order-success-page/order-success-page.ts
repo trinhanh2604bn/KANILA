@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { take } from 'rxjs/operators';
-import { CheckoutService } from '../../../checkout/services/checkout.service';
+import { OrderService } from '../../services/order.service';
 
 interface OrderedItem {
   id: string;
@@ -29,16 +29,17 @@ interface RecoItem {
   styleUrls: ['./order-success-page.css'],
 })
 export class OrderSuccessPageComponent {
-  orderNumber = `KAN-${Date.now().toString().slice(-8)}`;
+  orderId = '';
+  orderNumber = '';
   orderDate = new Date();
   readonly estimatedDelivery = this.addDays(new Date(), 3);
-  paymentStatus = 'Đã xác nhận';
+  paymentStatus = '';
+  orderStatus = '';
   readonly timeline = [
-    { label: 'Đã đặt hàng', done: true },
-    { label: 'Đã xác nhận', done: false },
-    { label: 'Đang chuẩn bị', done: false },
-    { label: 'Đang giao', done: false },
-    { label: 'Hoàn tất', done: false },
+    { key: 'pending', label: 'Đã đặt hàng' },
+    { key: 'confirmed', label: 'Đã xác nhận' },
+    { key: 'processing', label: 'Đang chuẩn bị' },
+    { key: 'completed', label: 'Hoàn tất' },
   ];
   readonly recommendations: RecoItem[] = [
     { name: 'Glow Cushion Foundation', brand: 'KLAIRS', price: 390000, image: 'assets/images/banner/new_product.png' },
@@ -50,77 +51,37 @@ export class OrderSuccessPageComponent {
   discount = 0;
   shippingFee = 0;
   totalPaid = 0;
-  paymentMethod = 'Thanh toán khi nhận hàng';
-  shippingMethod = 'Giao tiêu chuẩn';
-  customerName = 'Ngọc Ánh';
-  customerPhone = '09xxxxxxxx';
-  shippingAddress = 'TP. Ho Chi Minh';
+  paymentMethod = 'Đang cập nhật';
+  shippingMethod = 'Đang cập nhật';
+  customerName = '';
+  customerPhone = '';
+  shippingAddress = '';
   orderedItems: OrderedItem[] = [];
   isLoading = true;
+  hasError = false;
 
   constructor(
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly checkoutService: CheckoutService
+    private readonly orderService: OrderService
   ) {
     const state = (this.router.getCurrentNavigation()?.extras?.state || history.state || {}) as any;
     const routeOrderId = this.route.snapshot.queryParamMap.get('id') || '';
-    const orderId = state?.orderId || routeOrderId || '';
+    this.orderId = String(state?.orderId || routeOrderId || '').trim();
+    this.orderNumber = String(state?.orderNumber || '').trim();
 
-    this.subtotal = Number(state?.subtotal || 1290000);
-    this.discount = Number(state?.discount || 120000);
-    this.shippingFee = Number(state?.shippingFee || 0);
-    this.totalPaid = Number(state?.grandTotal || Math.max(0, this.subtotal - this.discount + this.shippingFee));
-    this.paymentMethod = state?.paymentMethod || 'Thanh toán khi nhận hàng';
-    this.shippingMethod = state?.shippingMethod || 'Giao tiêu chuẩn';
-    this.customerName = state?.contactName || 'Ngọc Ánh';
-    this.customerPhone = state?.phone || '09xxxxxxxx';
-    this.shippingAddress = state?.address || 'TP. Ho Chi Minh';
-
-    const fallback: OrderedItem[] = [
-      {
-        id: '1',
-        brand: '3CE',
-        name: 'Velvet Lip Tint',
-        variant: 'Màu #Taupe',
-        image: 'assets/images/banner/new_product.png',
-        quantity: 1,
-        lineTotal: 320000,
-      },
-      {
-        id: '2',
-        brand: 'KLAIRS',
-        name: 'Hydrating Grip Primer',
-        variant: '30ml',
-        image: 'assets/images/banner/bestseller.png',
-        quantity: 2,
-        lineTotal: 640000,
-      },
-    ];
-
-    this.orderedItems = Array.isArray(state?.items) && state.items.length
-      ? state.items.map((x: any, idx: number) => ({
-          id: x.id || String(idx + 1),
-          brand: x.brand || 'KANILA',
-          name: x.name || 'Sản phẩm',
-          variant: x.variant || 'Default',
-          image: x.image || 'assets/images/banner/nen.png',
-          quantity: Number(x.quantity || 1),
-          lineTotal: Number((x.price || 0) * (x.quantity || 1)),
-        }))
-      : fallback;
-
-    this.orderNumber = state?.orderNumber || this.orderNumber;
-    if (!orderId) {
+    if (!this.orderId) {
+      this.hasError = true;
       this.isLoading = false;
       return;
     }
-    this.checkoutService.getOrderById(orderId).pipe(take(1)).subscribe((order) => {
-      this.isLoading = false;
+
+    this.orderService.getMyOrderById(this.orderId).pipe(take(1)).subscribe((order) => {
       if (!order) return;
-      this.orderNumber = order.order_number || this.orderNumber;
+      this.orderNumber = order.order_number || this.orderNumber || this.orderId;
       this.orderDate = order.placed_at ? new Date(order.placed_at) : this.orderDate;
-      this.paymentStatus = order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán';
+      this.paymentStatus = this.mapPaymentStatus(order.payment_status);
+      this.orderStatus = this.mapOrderStatus(order.order_status);
       this.orderedItems = (order.items || []).map((item) => ({
         id: item._id,
         brand: 'KANILA',
@@ -141,6 +102,11 @@ export class OrderSuccessPageComponent {
         this.customerPhone = shipping.phone || this.customerPhone;
         this.shippingAddress = [shipping.address_line_1, shipping.district, shipping.city].filter(Boolean).join(', ');
       }
+      this.isLoading = false;
+      this.hasError = false;
+    }, () => {
+      this.hasError = true;
+      this.isLoading = false;
     });
   }
 
@@ -149,16 +115,52 @@ export class OrderSuccessPageComponent {
   }
 
   viewOrderDetails(): void {
-    this.router.navigate(['/orders']);
+    if (!this.orderId) return;
+    this.router.navigate(['/orders', this.orderId]);
   }
 
   trackOrder(): void {
-    this.router.navigate(['/orders']);
+    if (!this.orderId) return;
+    this.router.navigate(['/orders', this.orderId, 'tracking']);
   }
 
   private addDays(date: Date, days: number): Date {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d;
+  }
+
+  isStepDone(key: string): boolean {
+    const rank: Record<string, number> = {
+      pending: 1,
+      confirmed: 2,
+      processing: 3,
+      completed: 4,
+      cancelled: 0,
+    };
+    const current = rank[this.normalizeStatus(this.orderStatus)] || 1;
+    const step = rank[key] || 0;
+    return current >= step;
+  }
+
+  private mapPaymentStatus(status: string): string {
+    const s = String(status || '').toLowerCase();
+    if (s === 'paid') return 'Đã thanh toán';
+    if (s === 'authorized') return 'Đã ủy quyền';
+    if (s === 'refunded') return 'Đã hoàn tiền';
+    return 'Chờ thanh toán';
+  }
+
+  private mapOrderStatus(status: string): string {
+    const s = String(status || '').toLowerCase();
+    if (s === 'confirmed') return 'confirmed';
+    if (s === 'processing') return 'processing';
+    if (s === 'completed') return 'completed';
+    if (s === 'cancelled') return 'cancelled';
+    return 'pending';
+  }
+
+  private normalizeStatus(status: string): string {
+    return String(status || '').toLowerCase().trim();
   }
 }

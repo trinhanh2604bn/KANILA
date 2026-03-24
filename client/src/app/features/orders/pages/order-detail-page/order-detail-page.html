@@ -1,0 +1,43 @@
+<main class="order-detail">
+  <section class="card" *ngIf="isLoading">Đang tải chi tiết đơn hàng...</section>
+  <section class="card" *ngIf="!isLoading && hasError">Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.</section>
+
+  <ng-container *ngIf="!isLoading && order">
+    <section class="card head">
+      <h1>{{ order.order_number }}</h1>
+      <p>{{ order.placed_at | date: 'dd/MM/yyyy HH:mm' }}</p>
+      <div class="badges">
+        <span>{{ order.order_status }}</span>
+        <span>{{ order.payment_status }}</span>
+        <span>{{ order.fulfillment_status }}</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Sản phẩm đã đặt</h3>
+      <div class="line" *ngFor="let item of order.items">
+        <div>
+          <strong>{{ item.product_name_snapshot }}</strong>
+          <p>{{ item.variant_name_snapshot }} · SL {{ item.quantity }}</p>
+        </div>
+        <strong>{{ item.line_total_amount | number }}đ</strong>
+      </div>
+    </section>
+
+    <section class="card totals" *ngIf="order.order_total as total">
+      <div><span>Tạm tính</span><span>{{ total.subtotal_amount | number }}đ</span></div>
+      <div><span>Giảm giá</span><span>-{{ total.order_discount_amount | number }}đ</span></div>
+      <div><span>Vận chuyển</span><span>{{ total.shipping_fee_amount | number }}đ</span></div>
+      <div class="grand"><span>Tổng cộng</span><strong>{{ total.grand_total_amount | number }}đ</strong></div>
+    </section>
+
+    <section class="card">
+      <h3>Địa chỉ giao hàng</h3>
+      <p *ngFor="let ad of order.order_addresses">
+        <strong *ngIf="ad.address_type==='shipping'">[Giao hàng]</strong>
+        {{ ad.recipient_name }} - {{ ad.phone }} · {{ ad.address_line_1 }}, {{ ad.district }}, {{ ad.city }}
+      </p>
+      <button type="button" (click)="goTracking()">Theo dõi đơn hàng</button>
+    </section>
+  </ng-container>
+</main>

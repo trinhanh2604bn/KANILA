@@ -179,6 +179,7 @@ export class CheckoutPageComponent implements OnInit {
         this.cartService.getCurrentCart().pipe(take(1)).subscribe();
         this.placingOrder = false;
         this.router.navigate(['/orders', 'success'], {
+          queryParams: { id: result.orderId },
           state: {
             orderId: result.orderId,
             orderNumber: result.orderNumber,

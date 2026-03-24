@@ -1,0 +1,8 @@
+.order-detail { max-width: 980px; margin: 24px auto; padding: 0 12px; display: grid; gap: 12px; }
+.card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 16px; }
+.head { display: grid; gap: 6px; }
+.badges { display: flex; gap: 8px; }
+.badges span { background: #f8e8ee; color: #7d1230; border-radius: 999px; padding: 4px 10px; }
+.line { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px dashed #eee; }
+.totals > div { display: flex; justify-content: space-between; margin: 6px 0; }
+.grand { font-size: 1.1rem; }

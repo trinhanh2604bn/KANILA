@@ -1,0 +1,6 @@
+.tracking-page { max-width: 980px; margin: 24px auto; padding: 0 12px; display: grid; gap: 12px; }
+.card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 16px; }
+.badges { display: flex; gap: 8px; margin-top: 8px; }
+.badges span { background: #f8e8ee; color: #7d1230; border-radius: 999px; padding: 4px 10px; }
+.event { display: grid; grid-template-columns: 16px 1fr; gap: 8px; padding: 8px 0; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #8c1530; margin-top: 6px; }

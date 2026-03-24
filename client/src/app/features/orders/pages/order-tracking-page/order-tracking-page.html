@@ -1,0 +1,41 @@
+<main class="tracking-page">
+  <section class="card" *ngIf="isLoading">Đang tải theo dõi đơn hàng...</section>
+  <section class="card" *ngIf="!isLoading && hasError">Không thể tải trạng thái vận chuyển.</section>
+
+  <ng-container *ngIf="!isLoading && tracking">
+    <section class="card head">
+      <h1>Theo dõi đơn {{ tracking.orderNumber }}</h1>
+      <p>Cập nhật gần nhất: {{ tracking.latestUpdateAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+      <div class="badges">
+        <span>{{ tracking.orderStatus }}</span>
+        <span>{{ tracking.paymentStatus }}</span>
+        <span>{{ tracking.fulfillmentStatus }}</span>
+      </div>
+    </section>
+
+    <section class="card" *ngIf="tracking.shipment as ship; else noShip">
+      <h3>Thông tin vận chuyển</h3>
+      <p>Đơn vị: {{ ship.carrierCode || 'Đang cập nhật' }} {{ ship.serviceName || '' }}</p>
+      <p>Mã vận đơn: {{ ship.trackingNumber || 'Chưa có mã vận đơn' }}</p>
+      <p>Trạng thái: {{ ship.shipmentStatus }}</p>
+    </section>
+    <ng-template #noShip>
+      <section class="card">
+        <h3>Thông tin vận chuyển</h3>
+        <p>Đơn hàng chưa được bàn giao đơn vị vận chuyển. Vui lòng quay lại sau.</p>
+      </section>
+    </ng-template>
+
+    <section class="card">
+      <h3>Lịch sử cập nhật</h3>
+      <div class="event" *ngFor="let e of tracking.events">
+        <div class="dot"></div>
+        <div class="body">
+          <strong>{{ e.description || e.status || e.code }}</strong>
+          <p>{{ e.timestamp | date: 'dd/MM/yyyy HH:mm' }} <span *ngIf="e.location">· {{ e.location }}</span></p>
+        </div>
+      </div>
+      <p *ngIf="!tracking.events.length">Chưa có sự kiện theo dõi.</p>
+    </section>
+  </ng-container>
+</main>

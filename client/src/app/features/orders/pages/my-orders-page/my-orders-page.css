@@ -1,0 +1,9 @@
+.orders-page { max-width: 980px; margin: 24px auto; padding: 0 12px; }
+.orders-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.orders-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 16px; }
+.orders-list { display: grid; gap: 10px; }
+.order-item { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 14px; }
+.meta { text-align: right; }
+.badge { display: inline-block; background: #f8e8ee; color: #7d1230; border-radius: 999px; padding: 4px 10px; margin-bottom: 6px; }
+.actions { display: flex; gap: 8px; }
+.actions button { border: 1px solid #ddd; background: #fff; border-radius: 10px; padding: 8px 12px; }

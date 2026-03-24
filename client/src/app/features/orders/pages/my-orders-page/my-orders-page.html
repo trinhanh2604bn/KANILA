@@ -1,0 +1,35 @@
+<main class="orders-page">
+  <section class="orders-header">
+    <h1>Đơn hàng của tôi</h1>
+    <select [(ngModel)]="selectedStatus" (ngModelChange)="onFilterChange()">
+      <option value="">Tất cả trạng thái</option>
+      <option value="pending">Chờ xác nhận</option>
+      <option value="confirmed">Đã xác nhận</option>
+      <option value="processing">Đang xử lý</option>
+      <option value="completed">Hoàn tất</option>
+      <option value="cancelled">Đã hủy</option>
+    </select>
+  </section>
+
+  <section class="orders-card" *ngIf="isLoading">Đang tải danh sách đơn hàng...</section>
+  <section class="orders-card" *ngIf="!isLoading && hasError">Không thể tải đơn hàng. Vui lòng thử lại.</section>
+  <section class="orders-card" *ngIf="!isLoading && !hasError && !orders.length">Bạn chưa có đơn hàng nào.</section>
+
+  <section class="orders-list" *ngIf="!isLoading && !hasError && orders.length">
+    <article class="order-item" *ngFor="let order of orders">
+      <div class="main">
+        <h3>{{ order.order_number }}</h3>
+        <p>{{ order.first_item_name }} <span *ngIf="order.first_item_variant">· {{ order.first_item_variant }}</span></p>
+        <small>{{ order.placed_at | date: 'dd/MM/yyyy HH:mm' }}</small>
+      </div>
+      <div class="meta">
+        <span class="badge">{{ statusLabel(order.order_status) }}</span>
+        <strong>{{ order.grand_total_amount | number }}đ</strong>
+      </div>
+      <div class="actions">
+        <button type="button" (click)="viewDetail(order._id)">Chi tiết</button>
+        <button type="button" (click)="trackOrder(order._id)">Theo dõi</button>
+      </div>
+    </article>
+  </section>
+</main>
