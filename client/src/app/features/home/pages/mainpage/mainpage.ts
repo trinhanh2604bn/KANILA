@@ -18,6 +18,8 @@ import { GlobalToastComponent } from '../../../../layout/global-toast/global-toa
 import { CheckoutService } from '../../../checkout/services/checkout.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { RecommendationService, RecommendedProductView } from '../../../../core/services/recommendation.service';
+import { RecommendationProductBlockComponent } from '../../../recommendations/components/recommendation-product-block/recommendation-product-block';
+import { ProfileHubService } from '../../../account/services/profile-hub.service';
 
 @Component({
   selector: 'app-mainpage',
@@ -30,7 +32,8 @@ import { RecommendationService, RecommendedProductView } from '../../../../core/
     Roya,
   Footer,
 Header,
-GlobalToastComponent],
+GlobalToastComponent,
+RecommendationProductBlockComponent],
   templateUrl: './mainpage.html',
   styleUrl: './mainpage.css',
 })
@@ -44,6 +47,9 @@ export class Mainpage implements OnInit {
 
   previewProduct: Product | null = null;
   personalized: RecommendedProductView[] = [];
+  personalizedLoading = false;
+  personalizedError = '';
+  hasSkinProfile = false;
 
   constructor(
     private readonly productService: ProductService,
@@ -53,6 +59,7 @@ export class Mainpage implements OnInit {
     private readonly checkoutService: CheckoutService,
     private readonly authService: AuthService,
     private readonly recommendationService: RecommendationService,
+    private readonly profileHubService: ProfileHubService,
   ) {}
 
   ngOnInit(): void {
@@ -75,11 +82,7 @@ export class Mainpage implements OnInit {
       },
     });
 
-    if (this.isAuthenticated()) {
-      this.recommendationService.getMyRecommendations('', 6).pipe(take(1)).subscribe((items) => {
-        this.personalized = items;
-      });
-    }
+    this.loadPersonalizedRecommendations();
   }
 
   goCategory(): void {
@@ -216,12 +219,48 @@ export class Mainpage implements OnInit {
     });
   }
 
-  private isAuthenticated(): boolean {
+  isAuthenticated(): boolean {
     return this.authService.isAuthenticated();
   }
 
   goToRecommendedDetail(item: RecommendedProductView): void {
     const slugOrId = item.product.slug || item.product._id;
     this.router.navigate(['/catalog', 'product', slugOrId]);
+  }
+
+  goToSkinProfile(): void {
+    this.router.navigate(['/account/profile']);
+  }
+
+  retryPersonalized(): void {
+    this.loadPersonalizedRecommendations();
+  }
+
+  private loadPersonalizedRecommendations(): void {
+    if (!this.isAuthenticated()) return;
+    this.personalizedLoading = true;
+    this.personalizedError = '';
+    this.profileHubService.getSkinProfile().pipe(take(1)).subscribe((profile) => {
+      this.hasSkinProfile = !!profile && (
+        (profile.skin_type?.length || 0) > 0 ||
+        !!profile.skin_tone ||
+        (profile.concerns?.length || 0) > 0
+      );
+      if (!this.hasSkinProfile) {
+        this.personalizedLoading = false;
+        this.personalized = [];
+        return;
+      }
+      this.recommendationService.getMyRecommendations('', 6, 'homepage').pipe(take(1)).subscribe({
+        next: (items) => {
+          this.personalized = items;
+          this.personalizedLoading = false;
+        },
+        error: () => {
+          this.personalizedLoading = false;
+          this.personalizedError = 'Không thể tải gợi ý cá nhân hóa.';
+        },
+      });
+    });
   }
 }

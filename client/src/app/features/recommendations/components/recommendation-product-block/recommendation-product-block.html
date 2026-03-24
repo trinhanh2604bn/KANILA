@@ -1,0 +1,32 @@
+<section class="reco-block">
+  <header class="reco-head">
+    <h3>{{ title }}</h3>
+    <p *ngIf="subtitle">{{ subtitle }}</p>
+  </header>
+
+  <div class="reco-grid" *ngIf="!loading && !error && items.length; else recoState">
+    <a class="reco-card" *ngFor="let r of items" [routerLink]="['/catalog', 'product', r.product.slug || r.product._id]">
+      <img [src]="r.product.imageUrl || r.product.image || 'assets/images/banner/nen.png'" [alt]="r.product.productName || r.product.name" />
+      <div class="reco-copy">
+        <span class="reco-brand">{{ r.product.brandName || r.product.brand }}</span>
+        <strong>{{ r.product.productName || r.product.name }}</strong>
+        <span class="reco-price">{{ r.product.price | number:'1.0-0' }}đ</span>
+        <small class="reco-reason">{{ r.reasons[0] || 'Phù hợp với hồ sơ của bạn' }}</small>
+        <div class="reco-badges" *ngIf="r.badges?.length">
+          <span *ngFor="let b of r.badges | slice:0:2">{{ b }}</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <ng-template #recoState>
+    <div class="reco-loading" *ngIf="loading">
+      <div class="sk-card" *ngFor="let x of [1,2,3,4]"></div>
+    </div>
+    <div class="reco-empty" *ngIf="!loading && !error && !items.length">{{ emptyText }}</div>
+    <div class="reco-error" *ngIf="!loading && !!error">
+      <span>{{ error }}</span>
+      <button type="button" (click)="retry.emit()">Thử lại</button>
+    </div>
+  </ng-template>
+</section>

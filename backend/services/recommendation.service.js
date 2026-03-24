@@ -5,6 +5,7 @@ const Wishlist = require("../models/wishlist.model");
 const WishlistItem = require("../models/wishlistItem.model");
 const Order = require("../models/order.model");
 const OrderItem = require("../models/orderItem.model");
+const ALGORITHM_VERSION = "rule_v1";
 
 const WEIGHTS = {
   exactSkinType: 25,
@@ -92,9 +93,20 @@ function buildReason(text, reasons) {
 function scoreProduct(product, profile, behavior) {
   let score = 0;
   const reasons = [];
+  const reason_codes = [];
+  const score_breakdown = {
+    skin_type: 0,
+    concerns: 0,
+    ingredient_preferences: 0,
+    favorite_brand: 0,
+    popularity: 0,
+    behavior: 0,
+    business_boost: 0,
+    diversity_penalty: 0,
+  };
 
-  if (product.productStatus === "inactive" || product.isActive === false) return { eligible: false, score: -999, reasons };
-  if (Number(product.stock || 0) <= 0) return { eligible: false, score: -999, reasons };
+  if (product.productStatus === "inactive" || product.isActive === false) return { eligible: false, score: -999, reasons, reason_codes, score_breakdown };
+  if (Number(product.stock || 0) <= 0) return { eligible: false, score: -999, reasons, reason_codes, score_breakdown };
 
   const userSkin = toLowerSet(profile.skin_types);
   const productSkin = toLowerSet(product.skin_types_supported);
@@ -102,9 +114,12 @@ function scoreProduct(product, profile, behavior) {
     const overlap = [...userSkin].filter((x) => productSkin.has(x));
     if (overlap.length) {
       score += WEIGHTS.exactSkinType;
+      score_breakdown.skin_type += WEIGHTS.exactSkinType;
+      reason_codes.push("SKIN_TYPE_MATCH");
       buildReason(`Phù hợp với ${profile.skin_types[0] || "làn da của bạn"}`, reasons);
     } else {
       score += WEIGHTS.hardSkinMismatch;
+      score_breakdown.skin_type += WEIGHTS.hardSkinMismatch;
     }
   }
 
@@ -113,7 +128,13 @@ function scoreProduct(product, profile, behavior) {
   let concernMatches = 0;
   for (const c of concerns) if (targeted.has(c)) concernMatches += 1;
   if (concernMatches > 0) {
-    score += concernMatches * WEIGHTS.concernMatch;
+    const concernScore = concernMatches * WEIGHTS.concernMatch;
+    score += concernScore;
+    score_breakdown.concerns += concernScore;
+    const firstConcernCode = String(profile.concerns[0] || "")
+      .toUpperCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "_");
+    if (firstConcernCode) reason_codes.push(`CONCERN_${firstConcernCode}`);
     buildReason(`Hỗ trợ tình trạng ${profile.concerns[0] || "da"} của bạn`, reasons);
   }
 
@@ -122,29 +143,51 @@ function scoreProduct(product, profile, behavior) {
   let prefMatches = 0;
   for (const p of prefIngredients) if (productFlags.has(p)) prefMatches += 1;
   if (prefMatches > 0) {
-    score += prefMatches * WEIGHTS.ingredientPrefMatch;
+    const ingredientScore = prefMatches * WEIGHTS.ingredientPrefMatch;
+    score += ingredientScore;
+    score_breakdown.ingredient_preferences += ingredientScore;
     if (prefIngredients.has("fragrance-free") && productFlags.has("fragrance-free")) buildReason("Không chứa hương liệu", reasons);
+    for (const pref of profile.ingredient_preferences || []) {
+      const code = String(pref).toUpperCase().replace(/[^\p{L}\p{N}]+/gu, "_");
+      if (code) reason_codes.push(`INGREDIENT_PREF_${code}`);
+    }
   }
 
   const brandName = String(product.brandId?.brandName || "").toLowerCase();
   if (toLowerSet(profile.favorite_brands).has(brandName)) {
     score += WEIGHTS.favoriteBrand;
+    score_breakdown.favorite_brand += WEIGHTS.favoriteBrand;
+    reason_codes.push("FAVORITE_BRAND_MATCH");
     buildReason("Đến từ thương hiệu bạn yêu thích", reasons);
   }
 
   const rating = Number(product.averageRating || 0);
-  if (rating >= 4.2) score += WEIGHTS.ratingReview;
+  if (rating >= 4.2) {
+    score += WEIGHTS.ratingReview;
+    score_breakdown.popularity += WEIGHTS.ratingReview;
+    reason_codes.push("HIGH_RATING");
+  }
   if (product.is_best_seller || Number(product.sales_count || product.bought || 0) > 200) {
     score += WEIGHTS.bestSeller;
+    score_breakdown.business_boost += WEIGHTS.bestSeller;
+    reason_codes.push("BEST_SELLER_BOOST");
     buildReason("Best Seller", reasons);
   }
 
-  if (behavior.wishlistProductIds.has(String(product._id)) || behavior.orderedProductIds.has(String(product._id))) {
+  if (behavior.wishlistProductIds.has(String(product._id))) {
     score += WEIGHTS.behaviorAffinity;
+    score_breakdown.behavior += WEIGHTS.behaviorAffinity;
+    reason_codes.push("BEHAVIOR_WISHLIST_MATCH");
+  }
+  if (behavior.orderedProductIds.has(String(product._id))) {
+    score += WEIGHTS.behaviorAffinity;
+    score_breakdown.behavior += WEIGHTS.behaviorAffinity;
+    reason_codes.push("BEHAVIOR_ORDER_HISTORY_MATCH");
   }
 
   if (product.is_sensitive_friendly === false && toLowerSet(profile.concerns).has("đỏ rát")) {
     score += WEIGHTS.sensitiveMismatch;
+    score_breakdown.skin_type += WEIGHTS.sensitiveMismatch;
   }
 
   const badges = [];
@@ -152,7 +195,7 @@ function scoreProduct(product, profile, behavior) {
   if (product.is_best_seller || Number(product.sales_count || product.bought || 0) > 200) badges.push("Best Seller");
   if (productFlags.has("fragrance-free")) badges.push("Không hương liệu");
 
-  return { eligible: true, score, reasons, badges };
+  return { eligible: true, score, reasons, reason_codes: [...new Set(reason_codes)], badges, score_breakdown };
 }
 
 function diversify(sorted, max = 12) {
@@ -165,7 +208,13 @@ function diversify(sorted, max = 12) {
     const category = String(item.product.categoryId?._id || "");
     const bCount = brandCap.get(brand) || 0;
     const cCount = categoryCap.get(category) || 0;
-    if (bCount >= 3 || cCount >= 4) continue;
+    if (bCount >= 3 || cCount >= 4) {
+      item.score += -4;
+      item.score_breakdown = item.score_breakdown || {};
+      item.score_breakdown.diversity_penalty = (item.score_breakdown.diversity_penalty || 0) - 4;
+      item.reason_codes = [...new Set([...(item.reason_codes || []), "DIVERSITY_PENALTY"])];
+      continue;
+    }
     out.push(item);
     brandCap.set(brand, bCount + 1);
     categoryCap.set(category, cCount + 1);
@@ -202,22 +251,30 @@ async function recommendForProfile(profile, opts = {}) {
     productId: String(x.product._id),
     score: x.score,
     reasons: x.reasons.slice(0, 3),
+    reason_codes: x.reason_codes || [],
     badges: x.badges || [],
+    score_breakdown: x.score_breakdown || {},
+    algorithm_version: ALGORITHM_VERSION,
     product: {
       _id: String(x.product._id),
       productName: x.product.productName,
+      name: x.product.productName,
       slug: x.product.slug || String(x.product._id),
       imageUrl: x.product.imageUrl || "",
+      image: x.product.imageUrl || "",
       price: Number(x.product.price || 0),
       averageRating: Number(x.product.averageRating || 0),
+      rating: Number(x.product.averageRating || 0),
       bought: Number(x.product.bought || 0),
       brandName: x.product.brandId?.brandName || "",
+      brand: x.product.brandId?.brandName || "",
     },
   }));
 }
 
 module.exports = {
   WEIGHTS,
+  ALGORITHM_VERSION,
   getCustomerAndSkinProfile,
   getBehaviorSignals,
   recommendForProfile,

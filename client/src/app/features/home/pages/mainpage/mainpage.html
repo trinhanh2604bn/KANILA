@@ -5,18 +5,21 @@
 
 <!-- Same horizontal margins as client layout: <main class="container py-2"> -->
 <main class="container py-2 mainpage-content">
-  <section class="personalized-section" *ngIf="personalized.length">
-    <app-divider title="DÀNH RIÊNG CHO BẠN" buttonText="Xem thêm"></app-divider>
-    <div class="personalized-grid">
-      <article class="personalized-card" *ngFor="let r of personalized" (click)="goToRecommendedDetail(r)">
-        <img [src]="r.product.imageUrl || 'assets/images/banner/nen.png'" [alt]="r.product.productName" />
-        <div class="personalized-copy">
-          <h4>{{ r.product.productName }}</h4>
-          <p class="personalized-reason">{{ r.reasons[0] || 'Phù hợp với làn da của bạn' }}</p>
-          <strong>{{ r.product.price | number: '1.0-0' }}đ</strong>
-        </div>
-      </article>
-    </div>
+  <section class="personalized-section" *ngIf="isAuthenticated() && hasSkinProfile">
+    <app-recommendation-product-block
+      title="Dành riêng cho làn da của bạn"
+      subtitle="Dựa trên hồ sơ làn da và sở thích chăm sóc da của bạn"
+      [items]="personalized"
+      [loading]="personalizedLoading"
+      [error]="personalizedError"
+      emptyText="Kanila đang học thêm sở thích của bạn để gợi ý chính xác hơn."
+      (retry)="retryPersonalized()"
+    />
+  </section>
+  <section class="personalized-cta" *ngIf="isAuthenticated() && !hasSkinProfile">
+    <h3>Kanila chọn riêng cho bạn</h3>
+    <p>Tạo Beauty DNA để mở khóa gợi ý cá nhân hóa theo làn da.</p>
+    <button type="button" (click)="goToSkinProfile()">Tạo hồ sơ làn da</button>
   </section>
 
   <div class="mt-3">

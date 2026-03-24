@@ -1,9 +1,38 @@
 const validateObjectId = require("../utils/validateObjectId");
+const RecommendationLog = require("../models/recommendation-log.model");
 const {
+  ALGORITHM_VERSION,
   getCustomerAndSkinProfile,
   getBehaviorSignals,
   recommendForProfile,
 } = require("../services/recommendation.service");
+
+function resolveContext(req) {
+  const c = String(req.query?.context || req.body?.context || "").trim().toLowerCase();
+  if (["homepage", "profile_page", "category_page", "preview"].includes(c)) return c;
+  return "unknown";
+}
+
+async function logFinalRecommendations({ customerId, items, context, categoryContext, req }) {
+  if (!Array.isArray(items) || !items.length) return;
+  const logs = items.map((it, idx) => ({
+    customer_id: customerId || null,
+    product_id: it.productId,
+    context,
+    category_context: categoryContext || "",
+    score: Number(it.score || 0),
+    reason_codes: Array.isArray(it.reason_codes) ? it.reason_codes : [],
+    reasons: Array.isArray(it.reasons) ? it.reasons : [],
+    badges: Array.isArray(it.badges) ? it.badges : [],
+    score_breakdown: it.score_breakdown || {},
+    rank_position: idx + 1,
+    generated_at: new Date(),
+    algorithm_version: it.algorithm_version || ALGORITHM_VERSION,
+    session_id: String(req.headers["x-session-id"] || ""),
+    request_source: String(req.headers["user-agent"] || ""),
+  }));
+  await RecommendationLog.insertMany(logs, { ordered: false });
+}
 
 // GET /api/recommendations/me
 const getMyRecommendations = async (req, res) => {
@@ -19,8 +48,21 @@ const getMyRecommendations = async (req, res) => {
     const behavior = await getBehaviorSignals(customer._id);
     const category = req.query?.category || "";
     const limit = Number(req.query?.limit || 12);
+    const context = resolveContext(req);
     const items = await recommendForProfile(profile, { category, limit, behavior });
-    return res.status(200).json({ success: true, message: "Get personalized recommendations successfully", data: items });
+    await logFinalRecommendations({
+      customerId: customer._id,
+      items,
+      context,
+      categoryContext: category,
+      req,
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Get personalized recommendations successfully",
+      algorithm_version: ALGORITHM_VERSION,
+      data: items,
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -42,8 +84,21 @@ const previewRecommendations = async (req, res) => {
     };
     const category = req.query?.category || "";
     const limit = Number(req.query?.limit || 12);
+    const context = "preview";
     const items = await recommendForProfile(profile, { category, limit });
-    return res.status(200).json({ success: true, message: "Preview recommendations generated", data: items });
+    await logFinalRecommendations({
+      customerId: null,
+      items,
+      context,
+      categoryContext: category,
+      req,
+    });
+    return res.status(200).json({
+      success: true,
+      message: "Preview recommendations generated",
+      algorithm_version: ALGORITHM_VERSION,
+      data: items,
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

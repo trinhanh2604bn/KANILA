@@ -103,6 +103,7 @@ export class Catalog implements OnInit {
   maxPriceInput: number = 5000000;
   maxLimit: number = 5000000;
   suggestedSkinType: string | null = null;
+  personalizedRerankApplied = false;
 
   private readonly filterState: CatalogFilterState = {
     categorySlug: null,
@@ -540,16 +541,18 @@ export class Catalog implements OnInit {
   }
 
   private applyPersonalizedRerank(): void {
+    this.personalizedRerankApplied = false;
     if (!this.authService.isAuthenticated()) return;
     const categoryHint =
       this.selectedSubCategory ||
       this.selectedParentCategory?.name ||
       this.selectedParentCategory?.slug ||
       '';
-    this.recommendationService.getMyRecommendations(categoryHint, 60).pipe(catchError(() => of([]))).subscribe((items) => {
+    this.recommendationService.getMyRecommendations(categoryHint, 60, 'category_page').pipe(catchError(() => of([]))).subscribe((items) => {
       if (!items.length) return;
       const scoreMap = new Map(items.map((x) => [x.productId, x.score]));
       this.allProducts = [...this.allProducts].sort((a, b) => (scoreMap.get(b.id) ?? -9999) - (scoreMap.get(a.id) ?? -9999));
+      this.personalizedRerankApplied = true;
       this.applyLocalFilters();
     });
   }

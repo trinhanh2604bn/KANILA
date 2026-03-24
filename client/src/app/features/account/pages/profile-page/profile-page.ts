@@ -6,12 +6,13 @@ import { of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 import { AuthService } from '../../../../core/services/auth.service';
 import { RecommendationService, RecommendedProductView } from '../../../../core/services/recommendation.service';
+import { RecommendationProductBlockComponent } from '../../../recommendations/components/recommendation-product-block/recommendation-product-block';
 import { ProfileHubService } from '../../services/profile-hub.service';
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, FormsModule, RouterLink, RouterLinkActive, RecommendationProductBlockComponent],
   templateUrl: './profile-page.html',
   styleUrls: ['./profile-page.css'],
 })
@@ -54,6 +55,8 @@ export class ProfilePageComponent implements OnInit {
   hasPassword = true;
   linkedProviders: Array<{ provider: string; email: string; linkedAt: string | null }> = [];
   recommendedProducts: RecommendedProductView[] = [];
+  recommendationLoading = false;
+  recommendationError = '';
   readonly skinTypeOptions = ['Da dầu', 'Da khô', 'Da hỗn hợp', 'Da nhạy cảm'];
   readonly toneOptions = ['Tông tối', 'Tông trung bình', 'Tông sáng', 'Không chắc'];
   readonly eyeColorOptions = ['Nâu đậm', 'Nâu nhạt', 'Đen', 'Xám', 'Xanh', 'Không chắc'];
@@ -161,7 +164,7 @@ export class ProfilePageComponent implements OnInit {
       favoriteBrands: this.favoriteBrands,
     }).pipe(take(1)).subscribe({
       next: () => {
-        this.saveMessage = 'Hồ sơ làn da đã được cập nhật.';
+        this.saveMessage = 'Kanila đã cập nhật hồ sơ làn da của bạn.';
         this.loadRecommendations();
         setTimeout(() => {
           if (this.saveMessage) this.saveMessage = '';
@@ -236,8 +239,17 @@ export class ProfilePageComponent implements OnInit {
   }
 
   private loadRecommendations(): void {
-    this.recommendationService.getMyRecommendations('', 6).pipe(take(1)).subscribe((items) => {
-      this.recommendedProducts = items;
+    this.recommendationLoading = true;
+    this.recommendationError = '';
+    this.recommendationService.getMyRecommendations('', 6, 'profile_page').pipe(take(1)).subscribe({
+      next: (items) => {
+        this.recommendedProducts = items;
+        this.recommendationLoading = false;
+      },
+      error: () => {
+        this.recommendationLoading = false;
+        this.recommendationError = 'Không thể tải gợi ý cá nhân hóa.';
+      },
     });
   }
 

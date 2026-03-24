@@ -288,6 +288,7 @@
               <section class="catalog-section section-sort">
               <div class="d-flex flex-wrap align-items-center gap-3 border-top pt-3 pb-2" style="border-color: rgba(107,30,46,0.1) !important;">
                   <span class="section-title" style="color: var(--kanila-red); font-weight: 700;">Sắp xếp theo</span>
+                  <span class="product-count-pill" *ngIf="personalizedRerankApplied">Ưu tiên theo hồ sơ làn da của bạn</span>
                   <button class="btn-sort transition-all" [class.active]="activeSort === 'popular'" (click)="selectSort('popular')"><i class="bi bi-fire me-1"></i>Bán chạy</button>
 
                   <button *ngIf="!isSalePage" class="btn-sort transition-all" [class.active]="activeSort === 'hot_deal'" (click)="selectSort('hot_deal')"><i class="bi bi-lightning-charge me-1"></i>Deal HOT</button>

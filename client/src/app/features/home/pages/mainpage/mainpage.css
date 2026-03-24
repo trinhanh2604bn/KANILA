@@ -441,58 +441,39 @@
   margin-bottom: 20px;
 }
 
-.personalized-grid {
-  margin-top: 10px;
+.personalized-cta {
+  margin: 8px 0 20px;
+  border: 1px solid #f1d0e0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fff9fc, #fff);
+  padding: 16px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 6px;
 }
 
-.personalized-card {
-  border: 1px solid #f0cde0;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fff;
-  cursor: pointer;
-  transition: transform .18s ease;
-}
-
-.personalized-card:hover { transform: translateY(-2px); }
-
-.personalized-card img {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  display: block;
-}
-
-.personalized-copy {
-  padding: 10px;
-  display: grid;
-  gap: 4px;
-}
-
-.personalized-copy h4 {
+.personalized-cta h3 {
   margin: 0;
-  font-size: 0.84rem;
-  color: #4d2135;
+  font-size: 0.98rem;
+  color: #6b2748;
 }
 
-.personalized-reason {
+.personalized-cta p {
   margin: 0;
-  font-size: 0.74rem;
-  color: #8c5d72;
+  font-size: 0.8rem;
+  color: #936377;
 }
 
-.personalized-copy strong {
-  font-size: 0.82rem;
-  color: #7e2446;
-}
-
-@media (max-width: 768px) {
-  .personalized-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+.personalized-cta button {
+  justify-self: start;
+  margin-top: 4px;
+  border: 1px solid #e5bdd1;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7f2c4e;
+  background: #fff4fa;
 }
 
 .anhbg__product {

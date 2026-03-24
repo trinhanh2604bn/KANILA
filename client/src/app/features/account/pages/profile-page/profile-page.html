@@ -174,25 +174,15 @@
       </section>
 
       <section class="card-soft profile-reco">
-        <header class="card-head">
-          <div>
-            <h2>Dành riêng cho làn da của bạn</h2>
-            <p>Gợi ý dựa trên Beauty DNA và hành vi mua sắm gần đây.</p>
-          </div>
-        </header>
-        <div class="reco-grid" *ngIf="recommendedProducts.length; else emptyReco">
-          <a class="reco-item" *ngFor="let r of recommendedProducts" [routerLink]="['/catalog','product', r.product.slug || r.product._id]">
-            <img [src]="r.product.imageUrl || 'assets/images/banner/nen.png'" [alt]="r.product.productName" />
-            <div class="reco-copy">
-              <strong>{{ r.product.productName }}</strong>
-              <span>{{ r.product.price | number:'1.0-0' }}đ</span>
-              <small>{{ r.reasons[0] || 'Phù hợp với hồ sơ của bạn' }}</small>
-            </div>
-          </a>
-        </div>
-        <ng-template #emptyReco>
-          <p class="reco-empty">Cập nhật hồ sơ làn da để xem gợi ý cá nhân hóa.</p>
-        </ng-template>
+        <app-recommendation-product-block
+          title="Dành riêng cho làn da của bạn"
+          subtitle="Dựa trên hồ sơ làn da và sở thích chăm sóc da của bạn"
+          [items]="recommendedProducts"
+          [loading]="recommendationLoading"
+          [error]="recommendationError"
+          emptyText="Cập nhật hồ sơ làn da để xem gợi ý cá nhân hóa."
+          (retry)="updateSkinProfile()"
+        />
       </section>
 
       <section class="card-soft address-card">
