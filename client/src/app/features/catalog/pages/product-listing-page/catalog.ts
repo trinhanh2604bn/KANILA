@@ -733,7 +733,7 @@ export class Catalog implements OnInit {
         let currentPrice = p.price ?? 0;
         let isFaked = false;
 
-        if (!oldPrice && currentPrice > 0 && index % 3 === 0) {
+        if (!oldPrice && currentPrice > 0 && index % 6 === 0) {
             oldPrice = currentPrice * 1.25; 
             isFaked = true;
         }

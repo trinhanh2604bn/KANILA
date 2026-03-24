@@ -349,7 +349,6 @@
 /* --- ĐÁNH DẤU SẢN PHẨM SALE  --- */
 .faked-sale-wrapper.is-faked {
     padding: 2px;
-    background: rgba(255, 152, 0, 0.03);
     transition: all 0.3s ease;
 }
 
