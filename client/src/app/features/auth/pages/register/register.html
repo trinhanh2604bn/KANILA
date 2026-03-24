@@ -1,6 +1,9 @@
 <div class="auth-page-wrapper">
     <div class="auth-card">
       <h4 class="text-center mb-4 fw-bold" style="color: var(--kanila-red)">Đăng Ký</h4>
+      <div *ngIf="submitError" class="text-center mb-3">
+        <small class="text-danger-kanila">{{ submitError }}</small>
+      </div>
       
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
         <div class="mb-3">
@@ -37,7 +40,9 @@
           <small class="text-danger-kanila" *ngIf="isPasswordMismatch">Mật khẩu không khớp!</small>
         </div>
   
-        <button type="submit" class="btn btn-kanila w-100 py-2 fw-bold" style="height: 55px; font-size: 1.1rem">ĐĂNG KÝ</button>
+        <button type="submit" class="btn btn-kanila w-100 py-2 fw-bold" style="height: 55px; font-size: 1.1rem" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'ĐANG XỬ LÝ...' : 'ĐĂNG KÝ' }}
+        </button>
         
         <p class="mt-4 text-center h6 mb-0">
           Bạn đã có tài khoản? Đăng nhập <a routerLink="/auth/login" class="h6"  style="color: var(--kanila-red)"> tại đây</a>

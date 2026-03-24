@@ -1,3 +1,4 @@
+import { take } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
@@ -15,6 +16,7 @@ import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { GlobalToastComponent } from '../../../../layout/global-toast/global-toast';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-mainpage',
@@ -47,6 +49,7 @@ export class Mainpage implements OnInit {
     private readonly cartService: CartService,
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
+    private readonly authService: AuthService,
   ) {}
 
   ngOnInit(): void {
@@ -184,18 +187,27 @@ export class Mainpage implements OnInit {
       this.toast.warning('Sản phẩm hiện không còn khả dụng.');
       return;
     }
-    this.checkoutService.setBuyNowContext({
+    if (!this.isAuthenticated()) {
+      this.toast.warning('Vui lòng đăng nhập để sử dụng Mua ngay.');
+      this.router.navigate(['/auth/login']);
+      return;
+    }
+    this.checkoutService.createBuyNowCheckoutSession({
       productId,
       variantId: null,
       quantity: 1,
-      productName: product.productName,
-      variantName: product.productCode || 'Default',
-      imageUrl: this.getFeaturedImage(product),
-      unitPrice: product.price || 0,
-      compareAtPrice: product.compareAtPrice ?? null,
-      brandName: product.brandId?.brandName || '',
-      stockStatus: (product.stock ?? 0) > 0 ? 'in_stock' : 'out_of_stock',
+    }).pipe(take(1)).subscribe({
+      next: (session) => {
+        this.router.navigate(['/checkout'], { queryParams: { sessionId: session.sessionId } });
+      },
+      error: (err) => {
+        const issues = this.checkoutService.mapIssues(err);
+        this.toast.error(issues[0]?.message || 'Không thể mua ngay. Vui lòng thử lại.');
+      },
     });
-    this.router.navigate(['/checkout'], { queryParams: { mode: 'buy_now' } });
+  }
+
+  private isAuthenticated(): boolean {
+    return this.authService.isAuthenticated();
   }
 }

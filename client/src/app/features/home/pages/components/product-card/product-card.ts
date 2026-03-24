@@ -1,3 +1,4 @@
+import { take } from 'rxjs';
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
@@ -5,6 +6,7 @@ import { Product } from '../../../../../core/models/product.model';
 import { CartService } from '../../../../cart/services/cart.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { CheckoutService } from '../../../../checkout/services/checkout.service';
+import { AuthService } from '../../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-product-card',
@@ -22,7 +24,8 @@ export class ProductCardComponent {
     private readonly router: Router,
     private readonly cartService: CartService,
     private readonly toast: ToastService,
-    private readonly checkoutService: CheckoutService
+    private readonly checkoutService: CheckoutService,
+    private readonly authService: AuthService
   ) {}
 
   /** Primary image: ProductMedia (isPrimary / sortOrder) then legacy imageUrl */
@@ -93,19 +96,24 @@ export class ProductCardComponent {
       this.toast.warning('Sản phẩm hiện không còn khả dụng.');
       return;
     }
-    this.checkoutService.setBuyNowContext({
+    if (!this.isAuthenticated()) {
+      this.toast.warning('Vui lòng đăng nhập để sử dụng Mua ngay.');
+      this.router.navigate(['/auth/login']);
+      return;
+    }
+    this.checkoutService.createBuyNowCheckoutSession({
       productId,
       variantId: null,
       quantity: 1,
-      productName: this.product?.productName || 'Sản phẩm',
-      variantName: this.product?.productCode || 'Default',
-      imageUrl: this.primaryImageUrl,
-      unitPrice: this.product?.price || 0,
-      compareAtPrice: this.product?.compareAtPrice ?? null,
-      brandName: this.product?.brandId?.brandName || '',
-      stockStatus: 'in_stock',
+    }).pipe(take(1)).subscribe({
+      next: (session) => {
+        this.router.navigate(['/checkout'], { queryParams: { sessionId: session.sessionId } });
+      },
+      error: (err) => {
+        const issues = this.checkoutService.mapIssues(err);
+        this.toast.error(issues[0]?.message || 'Không thể mua ngay. Vui lòng thử lại.');
+      }
     });
-    this.router.navigate(['/checkout'], { queryParams: { mode: 'buy_now' } });
   }
 
   addToCart(e: Event): void {
@@ -145,5 +153,9 @@ export class ProductCardComponent {
     if (slugOrId) {
       this.router.navigate(['/catalog', 'product', slugOrId]);
     }
+  }
+
+  private isAuthenticated(): boolean {
+    return this.authService.isAuthenticated();
   }
 }

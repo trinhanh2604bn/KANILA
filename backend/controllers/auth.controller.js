@@ -106,9 +106,16 @@ success: true,
     });
   } catch (error) {
     if (error.code === 11000) {
+      const duplicateField = Object.keys(error?.keyPattern || error?.keyValue || {})[0] || "";
+      if (duplicateField === "email") {
+        return res.status(400).json({
+          success: false,
+          message: "Email already registered",
+        });
+      }
       return res.status(400).json({
         success: false,
-        message: "Email already registered",
+        message: `Duplicate value for field: ${duplicateField || "unknown"}`,
       });
     }
     res.status(500).json({ success: false, message: error.message });

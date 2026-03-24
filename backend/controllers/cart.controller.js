@@ -60,6 +60,33 @@ const getAvailableStockForProduct = (product) => Math.max(0, Number(product?.sto
 
 const computeStockStatus = (product) => (getAvailableStockForProduct(product) > 0 ? "in_stock" : "out_of_stock");
 
+const ensureDefaultVariantForProduct = async (product) => {
+  const productId = product?._id;
+  if (!productId) return null;
+  const skuBase = String(product?.productCode || productId).replace(/\s+/g, "-").toUpperCase();
+  let variant = await ProductVariant.findOne({ productId }).sort({ createdAt: 1 });
+  if (variant) return variant;
+
+  const suffix = String(productId).slice(-6).toUpperCase();
+  const sku = `${skuBase}-DEFAULT-${suffix}`;
+  try {
+    variant = await ProductVariant.create({
+      productId,
+      sku,
+      variantName: "Default",
+      variantStatus: "active",
+      barcode: "",
+      weightGrams: 0,
+      volumeMl: 0,
+      costAmount: 0,
+    });
+    return variant;
+  } catch {
+    // If a parallel request created it first, load again.
+    return ProductVariant.findOne({ productId }).sort({ createdAt: 1 });
+  }
+};
+
 const applySnapshotPricingFromProduct = (item, product) => {
   const unitPrice = toMoney(product?.price || 0);
   const compareAt = toMoney(item.compare_at_price_amount || 0);
@@ -93,7 +120,7 @@ const findCustomerByAuth = async (req) => {
   // Auto-heal legacy data: some older customer accounts were created
   // without a matching customer profile, which blocks /carts/me endpoints.
   const account = await Account.findById(accountId).select("_id account_type email username");
-  if (!account || account.account_type !== "customer") return null;
+  if (!account) return null;
 
   const fallbackName = account.username || account.email || "Customer";
   const customerCode = await generateCustomerCode();
@@ -346,11 +373,16 @@ const addItemToMyCart = async (req, res) => {
     if (!variant) {
       variant = await ProductVariant.findOne({ productId: product._id, variantStatus: "active" }).sort({ createdAt: 1 });
     }
+    // Resilience fallback: some legacy products have variants but variantStatus is not maintained.
+    // In that case, pick first available variant to avoid false "variant unavailable" on add-to-cart.
+    if (!variant) {
+      variant = await ProductVariant.findOne({ productId: product._id }).sort({ createdAt: 1 });
+    }
+    if (!variant) {
+      variant = await ensureDefaultVariantForProduct(product);
+    }
     if (!variant) {
       return res.status(409).json({ success: false, code: CART_ERROR.VARIANT_UNAVAILABLE, message: "Variant not found or unavailable" });
-    }
-    if (variant.variantStatus === "inactive") {
-      return res.status(409).json({ success: false, code: CART_ERROR.VARIANT_UNAVAILABLE, message: "Variant is unavailable" });
     }
 
     const availableStock = getAvailableStockForProduct(product);

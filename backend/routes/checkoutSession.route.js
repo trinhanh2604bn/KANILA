@@ -9,11 +9,15 @@ const {
   updateCheckoutSession,
   deleteCheckoutSession,
   createMyCheckoutSession,
+  createMyBuyNowCheckoutSession,
+  getMyCheckoutSessionById,
   updateMyCheckoutSession,
   placeMyCheckoutSessionOrder,
 } = require("../controllers/checkoutSession.controller");
 
 router.post("/me", authMiddleware, createMyCheckoutSession);
+router.post("/me/buy-now", authMiddleware, createMyBuyNowCheckoutSession);
+router.get("/me/:id", authMiddleware, getMyCheckoutSessionById);
 router.patch("/:id", authMiddleware, updateMyCheckoutSession);
 router.post("/:id/place-order", authMiddleware, placeMyCheckoutSessionOrder);
 

@@ -17,11 +17,7 @@
       </div>
     </section>
 
-    <p class="checkout-context">
-      {{ checkoutMode === 'buy_now'
-        ? 'Bạn đang ở chế độ Mua ngay. Đơn hàng chỉ gồm sản phẩm vừa chọn.'
-        : 'Bạn đang ở bước thanh toán cuối cùng. Kiểm tra thông tin trước khi đặt đơn.' }}
-    </p>
+    <p class="checkout-context">Bạn đang ở bước thanh toán cuối cùng. Kiểm tra thông tin trước khi đặt đơn.</p>
 
     <div class="checkout-layout">
       <section class="checkout-skeleton-layout" *ngIf="showShimmerSkeleton">
@@ -125,7 +121,7 @@
 
           <div class="voucher-applied" *ngIf="appliedVoucher">
             <span>Đã áp dụng: <strong>{{ appliedVoucher }}</strong></span>
-            <span class="discount">-{{ voucherDiscount | number }}đ</span>
+            <span class="discount">Đã tính vào tổng giảm giá</span>
             <button type="button" class="text-link" (click)="clearVoucher()">Gỡ</button>
           </div>
         </article>
@@ -170,9 +166,7 @@
 
           <button type="button" class="cta-btn" [disabled]="placingOrder || isSyncingSession || !cartItems.length" (click)="placeOrder()">
             <i class="bi bi-shield-lock"></i>
-            {{ checkoutMode === 'buy_now'
-              ? 'Xác nhận nhanh (Mua ngay)'
-              : (placingOrder ? 'Đang xử lý đơn...' : 'Đặt hàng an toàn') }}
+            {{ placingOrder ? 'Đang xử lý đơn...' : 'Đặt hàng an toàn' }}
           </button>
 
           <div class="trust-badges">

@@ -32,11 +32,16 @@ export interface Account {
   
 
   export interface RegisterRequest {
-    fullName: string;
-    phone: string;
-    email: string;
-    password: string; 
-  }
+  fullName?: string;
+  full_name?: string;
+  firstName?: string;
+  first_name?: string;
+  lastName?: string;
+  last_name?: string;
+  phone?: string;
+  email: string;
+  password: string;
+}
   
 
   export interface LoginRequest {
@@ -46,14 +51,14 @@ export interface Account {
   
 
   export interface AuthResponse {
-    success: boolean;
-    message: string;
-    token?: string;
-    user?: {
-      account: Account;
-      customer: Customer;
-    };
-  }
+  success: boolean;
+  message: string;
+  data?: {
+    token: string;
+    account: Account & { account_type?: 'customer' | 'admin' | 'staff' };
+    customer: Customer | null;
+  };
+}
   
 
   export interface ForgotPasswordRequest {

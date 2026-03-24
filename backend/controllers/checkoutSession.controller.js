@@ -34,6 +34,7 @@ const CHECKOUT_ERROR = {
 };
 
 const toMoney = (v) => Math.max(0, Math.round(Number(v || 0)));
+const buildLineKey = (productId, variantId) => `${String(productId)}::${String(variantId || "default")}`;
 
 const generateCustomerCode = async () => {
   const base = await Customer.countDocuments();
@@ -54,7 +55,7 @@ const resolveAuthCustomer = async (req) => {
   if (customer) return customer;
 
   const account = await Account.findById(accountId).select("_id account_type email username");
-  if (!account || account.account_type !== "customer") return null;
+  if (!account) return null;
   customer = await Customer.create({
     account_id: account._id,
     customer_code: await generateCustomerCode(),
@@ -80,6 +81,93 @@ const ensureActiveCart = async (customerId) => {
     });
   }
   return cart;
+};
+
+const createBuyNowCart = async (customerId) => {
+  return Cart.create({
+    customer_id: customerId,
+    cart_status: "converted",
+    currency_code: "VND",
+    item_count: 0,
+    subtotal_amount: 0,
+    discount_amount: 0,
+    total_amount: 0,
+  });
+};
+
+const expireInProgressSessions = async (customerId) => {
+  await CheckoutSession.updateMany(
+    { customer_id: customerId, checkout_status: "in_progress" },
+    { $set: { checkout_status: "expired" } }
+  );
+};
+
+const resolveBuyNowVariant = async (productId, variantId) => {
+  let variant = null;
+  if (variantId && validateObjectId(variantId)) {
+    variant = await ProductVariant.findOne({ _id: variantId, productId });
+  }
+  if (!variant) {
+    variant = await ProductVariant.findOne({ productId, variantStatus: "active" }).sort({ createdAt: 1 });
+  }
+  if (!variant) {
+    variant = await ProductVariant.findOne({ productId }).sort({ createdAt: 1 });
+  }
+  return variant;
+};
+
+const ensureDefaultVariantForProduct = async (product) => {
+  const productId = product?._id;
+  if (!productId) return null;
+  const skuBase = String(product?.productCode || productId).replace(/\s+/g, "-").toUpperCase();
+  let variant = await ProductVariant.findOne({ productId }).sort({ createdAt: 1 });
+  if (variant) return variant;
+
+  const suffix = String(productId).slice(-6).toUpperCase();
+  const sku = `${skuBase}-DEFAULT-${suffix}`;
+  try {
+    variant = await ProductVariant.create({
+      productId,
+      sku,
+      variantName: "Default",
+      variantStatus: "active",
+      barcode: "",
+      weightGrams: 0,
+      volumeMl: 0,
+      costAmount: 0,
+    });
+    return variant;
+  } catch {
+    return ProductVariant.findOne({ productId }).sort({ createdAt: 1 });
+  }
+};
+
+const createBuyNowSnapshotItem = async ({ cartId, product, variant, quantity }) => {
+  const unitPrice = toMoney(product.price || 0);
+  const qty = Math.max(1, Number(quantity || 1));
+  const lineTotal = unitPrice * qty;
+  const lineKey = `${buildLineKey(product._id, variant._id)}::buy_now`;
+  const stockStatus = Number(product.stock || 0) > 0 ? "in_stock" : "out_of_stock";
+
+  return CartItem.create({
+    line_key: lineKey,
+    product_id: product._id,
+    cart_id: cartId,
+    variant_id: variant._id,
+    sku_snapshot: variant.sku || product.productCode || String(product._id),
+    product_name_snapshot: product.productName || "Product",
+    variant_name_snapshot: variant.variantName || "Default",
+    brand_name_snapshot: product.brandId?.brandName || "",
+    image_url_snapshot: product.imageUrl || "",
+    compare_at_price_amount: toMoney(product.compareAtPrice || 0),
+    stock_status: stockStatus,
+    quantity: qty,
+    selected: true,
+    unit_price_amount: unitPrice,
+    discount_amount: 0,
+    final_unit_price_amount: unitPrice,
+    line_total_amount: lineTotal,
+  });
 };
 
 const validateSelectedItems = async (selectedItems) => {
@@ -190,6 +278,27 @@ const toCheckoutSessionPayload = async (session) => {
       lineTotal: toMoney(item.line_total_amount || 0),
     })),
   };
+};
+
+// GET /api/checkout-sessions/me/:id
+const getMyCheckoutSessionById = async (req, res) => {
+  try {
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required for checkout" });
+
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid session id" });
+
+    const session = await CheckoutSession.findById(id);
+    if (!session || String(session.customer_id) !== String(customer._id)) {
+      return res.status(404).json({ success: false, message: "Checkout session not found" });
+    }
+
+    const payload = await toCheckoutSessionPayload(session);
+    return res.status(200).json({ success: true, message: "Checkout session loaded", data: payload });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // GET /api/checkout-sessions
@@ -390,7 +499,7 @@ const deleteCheckoutSession = async (req, res) => {
 const createMyCheckoutSession = async (req, res) => {
   try {
     const customer = await resolveAuthCustomer(req);
-    if (!customer) return res.status(403).json({ success: false, message: "Customer account required for checkout" });
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required for checkout" });
 
     const cart = await ensureActiveCart(customer._id);
     const selectedItems = await CartItem.find({ cart_id: cart._id, selected: true }).sort({ added_at: -1 });
@@ -481,11 +590,108 @@ const createMyCheckoutSession = async (req, res) => {
   }
 };
 
+// POST /api/checkout-sessions/me/buy-now
+const createMyBuyNowCheckoutSession = async (req, res) => {
+  try {
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required for checkout" });
+
+    const productId = String(req.body?.productId || "").trim();
+    const variantIdRaw = req.body?.variantId;
+    const variantId = variantIdRaw == null ? null : String(variantIdRaw).trim();
+    const quantity = Number(req.body?.quantity || 1);
+
+    if (!validateObjectId(productId)) {
+      return res.status(400).json({ success: false, message: "Invalid productId" });
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid quantity" });
+    }
+    if (variantId && !validateObjectId(variantId)) {
+      return res.status(400).json({ success: false, message: "Invalid variantId" });
+    }
+
+    const product = await Product.findById(productId).populate("brandId", "brandName");
+    if (!product || product.isActive === false || product.productStatus === "inactive") {
+      return res.status(409).json({
+        success: false,
+        code: CHECKOUT_ERROR.PRODUCT_UNAVAILABLE,
+        message: "Sản phẩm hiện không còn khả dụng.",
+      });
+    }
+
+    let variant = await resolveBuyNowVariant(product._id, variantId);
+    if (!variant) {
+      variant = await ensureDefaultVariantForProduct(product);
+    }
+    if (!variant || variant.variantStatus === "inactive") {
+      return res.status(409).json({
+        success: false,
+        code: CHECKOUT_ERROR.VARIANT_UNAVAILABLE,
+        message: "Phân loại này hiện không còn khả dụng.",
+      });
+    }
+
+    const stock = Math.max(0, Number(product.stock || 0));
+    const qty = Math.max(1, Math.round(quantity));
+    if (qty > stock) {
+      return res.status(409).json({
+        success: false,
+        code: CHECKOUT_ERROR.INSUFFICIENT_STOCK,
+        message: "Số lượng vượt quá tồn kho hiện tại.",
+        availableStock: stock,
+        requestedQuantity: qty,
+      });
+    }
+
+    await expireInProgressSessions(customer._id);
+
+    const cart = await createBuyNowCart(customer._id);
+    const buyNowItem = await createBuyNowSnapshotItem({
+      cartId: cart._id,
+      product,
+      variant,
+      quantity: qty,
+    });
+    const summary = computeCartSummary([buyNowItem]);
+
+    await Cart.findByIdAndUpdate(cart._id, {
+      item_count: summary.itemCount,
+      subtotal_amount: summary.subtotal,
+      discount_amount: summary.discountTotal,
+      total_amount: summary.grandTotal,
+    });
+
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const session = await CheckoutSession.create({
+      cart_id: cart._id,
+      customer_id: customer._id,
+      checkout_status: "in_progress",
+      currency_code: "VND",
+      subtotal_amount: toMoney(summary.subtotal),
+      shipping_fee_amount: toMoney(summary.shippingFee),
+      discount_amount: toMoney(summary.discountTotal),
+      tax_amount: 0,
+      total_amount: toMoney(summary.grandTotal),
+      expires_at: expiresAt,
+    });
+
+    const payload = await toCheckoutSessionPayload(session);
+    return res.status(201).json({
+      success: true,
+      message: "Buy now checkout session created",
+      data: payload,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // PATCH /api/checkout-sessions/:id
 const updateMyCheckoutSession = async (req, res) => {
   try {
     const customer = await resolveAuthCustomer(req);
-    if (!customer) return res.status(403).json({ success: false, message: "Customer account required for checkout" });
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required for checkout" });
 
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid session id" });
@@ -601,7 +807,7 @@ const updateMyCheckoutSession = async (req, res) => {
 const placeMyCheckoutSessionOrder = async (req, res) => {
   try {
     const customer = await resolveAuthCustomer(req);
-    if (!customer) return res.status(403).json({ success: false, message: "Customer account required for checkout" });
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required for checkout" });
 
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid session id" });
@@ -795,6 +1001,8 @@ module.exports = {
   updateCheckoutSession,
   deleteCheckoutSession,
   createMyCheckoutSession,
+  createMyBuyNowCheckoutSession,
+  getMyCheckoutSessionById,
   updateMyCheckoutSession,
   placeMyCheckoutSessionOrder,
 };

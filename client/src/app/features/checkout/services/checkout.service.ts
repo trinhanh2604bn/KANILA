@@ -4,8 +4,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { CartService } from '../../cart/services/cart.service';
 import {
-  BuyNowCheckoutContext,
-  BuyNowCheckoutItem,
+  BuyNowCheckoutPayload,
   CheckoutIssue,
   CheckoutSessionUpdatePayload,
   CheckoutSessionView,
@@ -21,8 +20,6 @@ export class CheckoutService {
   private readonly shippingMethodApi = 'http://localhost:5000/api/shipping-methods';
   private readonly paymentMethodApi = 'http://localhost:5000/api/payment-methods';
   private readonly ordersApi = 'http://localhost:5000/api/orders';
-  private readonly buyNowStorageKey = 'kanila_buy_now_checkout';
-
   constructor(
     private readonly http: HttpClient,
     private readonly cartService: CartService
@@ -40,6 +37,18 @@ export class CheckoutService {
 
   createCheckoutSession(payload: CheckoutSessionUpdatePayload): Observable<CheckoutSessionView> {
     return this.http.post<any>(`${this.checkoutApi}/me`, payload).pipe(
+      map((res) => res?.data as CheckoutSessionView)
+    );
+  }
+
+  createBuyNowCheckoutSession(payload: BuyNowCheckoutPayload): Observable<CheckoutSessionView> {
+    return this.http.post<any>(`${this.checkoutApi}/me/buy-now`, payload).pipe(
+      map((res) => res?.data as CheckoutSessionView)
+    );
+  }
+
+  getMyCheckoutSessionById(sessionId: string): Observable<CheckoutSessionView> {
+    return this.http.get<any>(`${this.checkoutApi}/me/${sessionId}`).pipe(
       map((res) => res?.data as CheckoutSessionView)
     );
   }
@@ -76,35 +85,21 @@ export class CheckoutService {
     );
   }
 
-  setBuyNowContext(item: BuyNowCheckoutItem): void {
-    const payload: BuyNowCheckoutContext = {
-      source: 'buy_now',
-      createdAt: new Date().toISOString(),
-      items: [item],
-    };
-    sessionStorage.setItem(this.buyNowStorageKey, JSON.stringify(payload));
-  }
-
-  getBuyNowContext(): BuyNowCheckoutContext | null {
-    try {
-      const raw = sessionStorage.getItem(this.buyNowStorageKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as BuyNowCheckoutContext;
-      if (parsed?.source !== 'buy_now' || !Array.isArray(parsed.items) || !parsed.items.length) return null;
-      return parsed;
-    } catch {
-      return null;
-    }
-  }
-
-  clearBuyNowContext(): void {
-    sessionStorage.removeItem(this.buyNowStorageKey);
-  }
-
   mapIssues(err: any): CheckoutIssue[] {
     if (Array.isArray(err?.error?.issues)) return err.error.issues;
     if (err?.error?.code || err?.error?.message) {
-      return [{ code: String(err.error.code || 'CHECKOUT_ERROR'), message: String(err.error.message || 'Checkout failed') }];
+      const code = String(err.error.code || 'CHECKOUT_ERROR');
+      const fallback = String(err.error.message || 'Checkout failed');
+      const mapByCode: Record<string, string> = {
+        INSUFFICIENT_STOCK: 'Số lượng vượt quá tồn kho hiện tại.',
+        PRODUCT_UNAVAILABLE: 'Sản phẩm hiện không còn khả dụng.',
+        VARIANT_UNAVAILABLE: 'Phân loại này hiện không còn khả dụng.',
+        PRICE_CHANGED: 'Giá sản phẩm đã thay đổi. Vui lòng kiểm tra lại.',
+        INVALID_SHIPPING_METHOD: 'Phương thức vận chuyển không hợp lệ.',
+        INVALID_PAYMENT_METHOD: 'Phương thức thanh toán không hợp lệ.',
+        INVALID_ADDRESS: 'Thông tin địa chỉ giao hàng chưa hợp lệ.',
+      };
+      return [{ code, message: mapByCode[code] || fallback }];
     }
     return [{ code: 'CHECKOUT_ERROR', message: 'Checkout failed' }];
   }

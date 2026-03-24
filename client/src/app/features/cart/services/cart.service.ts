@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { AddToCartPayload, CartItemNormalized, CartNormalized, CartSummary } from '../models/cart.model';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
@@ -26,7 +27,10 @@ export class CartService {
     return this.cartErrorSubject.value;
   }
 
-  constructor(private readonly http: HttpClient) {
+  constructor(
+    private readonly http: HttpClient,
+    private readonly authService: AuthService
+  ) {
     this.bootstrapCart();
   }
 
@@ -60,25 +64,20 @@ export class CartService {
           this.cartStateSubject.next(cart);
         }),
         catchError((err) => {
+          if (this.isAuthError(err)) {
+            const fallbackCart = this.addToGuestCart(payload, quantity);
+            this.cartErrorSubject.next(null);
+            this.cartStateSubject.next(fallbackCart);
+            return of(fallbackCart);
+          }
           this.handleServerError(err);
           return of(this.cartStateSubject.value);
         })
       );
     }
 
-    const cart = this.readGuestCart();
-    const variantId = payload.variantId || null;
-    const existing = cart.items.find((item) => item.productId === payload.productId && (item.variantId || null) === variantId);
-
-    if (existing) {
-      existing.quantity = Math.max(1, existing.quantity + quantity);
-      existing.selected = true;
-    } else {
-      cart.items.unshift(this.createGuestItem(payload, quantity));
-    }
-
     try {
-      return of(this.persistGuestCart(cart));
+      return of(this.addToGuestCart(payload, quantity));
     } catch {
       this.cartErrorSubject.next({ code: 'GUEST_CART_INVALID', message: 'Guest cart storage is unavailable' });
       return of(this.getEmptyCart('guest'));
@@ -247,7 +246,11 @@ export class CartService {
     const guestCart = this.readGuestCart();
     if (!guestCart.items.length) return this.getCurrentCart();
 
-    const queue = [...guestCart.items];
+    const queue = guestCart.items.filter((item) => !!item.productId && Number(item.quantity || 0) > 0);
+    if (!queue.length) {
+      localStorage.removeItem(this.guestCartKey);
+      return this.getCurrentCart();
+    }
     // Run sequentially with imperative fallback to keep code compact.
     // TODO: switch to backend bulk merge endpoint when available.
     return new Observable<CartNormalized>((subscriber) => {
@@ -266,7 +269,7 @@ export class CartService {
         this.addToCart({
           productId: queue[idx].productId,
           variantId: queue[idx].variantId,
-          quantity: queue[idx].quantity,
+          quantity: Math.max(1, Number(queue[idx].quantity || 1)),
           productName: queue[idx].productName,
           brandName: queue[idx].brandName,
           variantLabel: queue[idx].variantLabel,
@@ -288,11 +291,33 @@ export class CartService {
   }
 
   private isLoggedIn(): boolean {
-    const token = localStorage.getItem('token');
+    const token = this.authService.getToken();
     if (!token) return false;
     const payload = this.decodeJwtPayload(token);
+    const exp = Number(payload?.['exp'] || 0);
+    if (exp > 0 && exp * 1000 <= Date.now()) return false;
     const accountType = String(payload?.['account_type'] || payload?.['accountType'] || '').toLowerCase();
-    return accountType === 'customer';
+    return accountType === 'customer' || accountType === 'admin';
+  }
+
+  private isAuthError(err: any): boolean {
+    const status = Number(err?.status || err?.error?.status || 0);
+    return status === 401 || status === 403;
+  }
+
+  private addToGuestCart(payload: AddToCartPayload, quantity: number): CartNormalized {
+    const cart = this.readGuestCart();
+    const variantId = payload.variantId || null;
+    const existing = cart.items.find((item) => item.productId === payload.productId && (item.variantId || null) === variantId);
+
+    if (existing) {
+      existing.quantity = Math.max(1, existing.quantity + quantity);
+      existing.selected = true;
+    } else {
+      cart.items.unshift(this.createGuestItem(payload, quantity));
+    }
+
+    return this.persistGuestCart(cart);
   }
 
   private decodeJwtPayload(token: string): Record<string, any> | null {

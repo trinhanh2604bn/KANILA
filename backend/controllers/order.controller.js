@@ -32,7 +32,7 @@ const resolveAuthCustomer = async (req) => {
   if (customer) return customer;
 
   const account = await Account.findById(accountId).select("_id account_type email username");
-  if (!account || account.account_type !== "customer") return null;
+  if (!account) return null;
   customer = await Customer.create({
     account_id: account._id,
     customer_code: await generateCustomerCode(),
@@ -179,7 +179,7 @@ const getMyOrderById = async (req, res) => {
     }
     const customer = await resolveAuthCustomer(req);
     if (!customer) {
-      return res.status(403).json({ success: false, message: "Customer account required" });
+      return res.status(403).json({ success: false, message: "Authenticated account required" });
     }
 
     const order = await Order.findOne({ _id: id, customer_id: customer._id })

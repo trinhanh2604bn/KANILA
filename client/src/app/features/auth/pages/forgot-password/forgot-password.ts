@@ -27,7 +27,12 @@ export class ForgotPassword {
   constructor(private router: Router, private authService: AuthService) {}
 
   sendEmail() {
-    if (!this.email) return;
+    const email = this.email.trim().toLowerCase();
+    if (!email || !this.isValidEmail(email)) {
+      this.emailNotFound = true;
+      return;
+    }
+    this.email = email;
 
     this.authService.checkEmail(this.email).subscribe({
       next: (res) => {
@@ -98,6 +103,10 @@ export class ForgotPassword {
         alert("Có lỗi xảy ra trong quá trình đặt lại mật khẩu. Vui lòng thử lại!");
       }
     });
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
   }
 }
 

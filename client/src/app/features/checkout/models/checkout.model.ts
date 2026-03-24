@@ -8,23 +8,10 @@ export interface CheckoutIssue {
   currentUnitPrice?: number;
 }
 
-export interface BuyNowCheckoutItem {
+export interface BuyNowCheckoutPayload {
   productId: string;
   variantId: string | null;
   quantity: number;
-  productName: string;
-  variantName: string;
-  imageUrl: string;
-  unitPrice: number;
-  compareAtPrice?: number | null;
-  brandName?: string;
-  stockStatus?: string;
-}
-
-export interface BuyNowCheckoutContext {
-  source: 'buy_now';
-  createdAt: string;
-  items: BuyNowCheckoutItem[];
 }
 
 export interface CheckoutAddressPayload {

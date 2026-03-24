@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service';
 import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { LoginRequest } from '../../../../core/models/auth.model';
 
 @Component({
   selector: 'app-login',
@@ -14,7 +15,6 @@ import { ToastService } from '../../../../core/services/toast.service';
   styleUrl: './login.css'
 })
 export class Login implements OnInit {
-  [x: string]: any;
   loginData = {
     email: '',
     password: ''
@@ -39,20 +39,47 @@ export class Login implements OnInit {
 
   onLogin() {
     this.showError = false;
+    const email = this.loginData.email.trim().toLowerCase();
+    const password = this.loginData.password;
+    if (!email || !password) {
+      this.showError = true;
+      this.toast.warning('Vui lòng nhập email và mật khẩu.');
+      return;
+    }
+    if (!this.isValidEmail(email)) {
+      this.showError = true;
+      this.toast.warning('Email không đúng định dạng.');
+      return;
+    }
 
-    this.authService.login(this.loginData).subscribe({
-      next: (res: any) => {
-        if (res.success) {
-          localStorage.setItem('token', res.data.token);
-          this.cartService.syncGuestCartAfterLogin().subscribe(() => {
-            this.toast.success('Giỏ hàng của bạn đã được đồng bộ.');
-          });
-          this.router.navigate(['/home']); 
+    const payload: LoginRequest = { email, password };
+    this.authService.login(payload).subscribe({
+      next: (res) => {
+        if (res.success && res?.data?.token) {
+          this.authService.setToken(res.data.token);
+
+          if (this.authService.isCustomerAccountFromToken()) {
+            this.cartService.syncGuestCartAfterLogin().subscribe({
+              next: () => {
+                this.toast.success('Giỏ hàng của bạn đã được đồng bộ.');
+              },
+              error: () => {
+                // Keep sign-in successful even if cart sync has recoverable errors.
+                this.toast.warning('Đăng nhập thành công, nhưng đồng bộ giỏ hàng chưa hoàn tất.');
+              },
+            });
+          }
+
+          this.toast.success('Đăng nhập thành công.');
+          this.router.navigate(['/home']);
+          return;
         }
+        this.showError = true;
+        this.toast.error(res.message || 'Đăng nhập thất bại.');
       },
       error: (err: any) => {
-        this.showError = true; 
-        console.error('Login failed:', err);
+        this.showError = true;
+        this.toast.error(err?.error?.message || 'Email hoặc mật khẩu không đúng.');
       }
     });
   }
@@ -60,5 +87,9 @@ export class Login implements OnInit {
   goTo(platform: string) {
     if (platform === 'google') window.open('https://mail.google.com/', '_blank');
     if (platform === 'facebook') window.open('https://www.facebook.com/', '_blank');
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
   }
 }

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { catchError, of } from 'rxjs';
+import { catchError, of, take } from 'rxjs';
 import { ProductDetailContentSections, ProductDetailData } from '../../models/product-detail.model';
 import { ProductDetailService } from '../../services/product-detail.service';
 import { ProductCardComponent } from '../../../home/pages/components/product-card/product-card';
@@ -9,6 +9,7 @@ import { Product } from '../../../../core/models/product.model';
 import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
+import { AuthService } from '../../../../core/services/auth.service';
 
 interface PdpShade {
   id: string;
@@ -248,7 +249,8 @@ export class CatalogProductDetailPageComponent implements OnInit {
     private readonly detailService: ProductDetailService,
     private readonly cartService: CartService,
     private readonly toast: ToastService,
-    private readonly checkoutService: CheckoutService
+    private readonly checkoutService: CheckoutService,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -367,7 +369,7 @@ export class CatalogProductDetailPageComponent implements OnInit {
       return;
     }
 
-    const variantId = this.selectedShadeId || null;
+    const variantId = this.resolveVariantIdForApi(this.selectedShadeId);
     this.cartService
       .addToCart({
         productId: this.productId,
@@ -409,20 +411,25 @@ export class CatalogProductDetailPageComponent implements OnInit {
       this.toast.warning('Sản phẩm hiện không còn khả dụng.');
       return;
     }
+    if (!this.isAuthenticated()) {
+      this.toast.warning('Vui lòng đăng nhập để sử dụng Mua ngay.');
+      this.router.navigate(['/auth/login']);
+      return;
+    }
 
-    this.checkoutService.setBuyNowContext({
+    this.checkoutService.createBuyNowCheckoutSession({
       productId: this.productId,
-      variantId: this.selectedShadeId || null,
+      variantId: this.resolveVariantIdForApi(this.selectedShadeId),
       quantity: this.quantity,
-      productName: this.productName,
-      variantName: this.selectedShade?.name || 'Default',
-      imageUrl: this.gallery[0]?.url || '',
-      unitPrice: this.currentPrice,
-      compareAtPrice: this.oldPrice,
-      brandName: this.brandName,
-      stockStatus: this.stockText.toLowerCase().includes('hết') ? 'out_of_stock' : 'in_stock',
+    }).pipe(take(1)).subscribe({
+      next: (session) => {
+        this.router.navigate(['/checkout'], { queryParams: { sessionId: session.sessionId } });
+      },
+      error: (err) => {
+        const issues = this.checkoutService.mapIssues(err);
+        this.toast.error(issues[0]?.message || 'Không thể mua ngay. Vui lòng thử lại.');
+      }
     });
-    this.router.navigate(['/checkout'], { queryParams: { mode: 'buy_now' } });
   }
 
   setTab(tab: (typeof this.infoTabs)[number]): void {
@@ -565,5 +572,20 @@ export class CatalogProductDetailPageComponent implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  private isValidObjectId(value: string | null | undefined): boolean {
+    const id = String(value || '').trim();
+    return /^[a-f\d]{24}$/i.test(id);
+  }
+
+  private resolveVariantIdForApi(value: string | null | undefined): string | null {
+    const id = String(value || '').trim();
+    // Backend auto-picks first active variant when variantId is null.
+    return this.isValidObjectId(id) ? id : null;
+  }
+
+  private isAuthenticated(): boolean {
+    return this.authService.isAuthenticated();
   }
 }

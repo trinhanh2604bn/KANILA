@@ -26,7 +26,6 @@ const accountSchema = new mongoose.Schema(
     },
     username: {
       type: String,
-      default: "",
       trim: true,
       unique: true,
       sparse: true,
