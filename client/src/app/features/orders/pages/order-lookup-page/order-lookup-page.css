@@ -1,0 +1,5 @@
+.lookup-page { max-width: 560px; margin: 28px auto; padding: 0 12px; }
+.card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 16px; display: grid; gap: 8px; }
+input { border: 1px solid #ddd; border-radius: 10px; padding: 10px 12px; }
+button { border: 0; border-radius: 10px; padding: 12px 14px; background: #8c1530; color: #fff; }
+.error { color: #b00020; }

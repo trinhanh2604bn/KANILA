@@ -389,6 +389,113 @@ const getMyOrderTracking = async (req, res) => {
   }
 };
 
+// POST /api/orders/guest/lookup
+const lookupGuestOrder = async (req, res) => {
+  try {
+    const orderNumber = String(req.body?.orderNumber || "").trim().toUpperCase();
+    const phone = String(req.body?.phone || "").trim();
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!orderNumber || (!phone && !email)) {
+      return res.status(400).json({ success: false, message: "orderNumber and phone or email are required" });
+    }
+
+    const order = await Order.findOne({
+      owner_type: "guest",
+      order_number: orderNumber,
+      ...(phone ? { guest_phone: phone } : {}),
+      ...(email ? { guest_email: email } : {}),
+    }).lean();
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    return res.status(200).json({
+      success: true,
+      message: "Guest order found",
+      data: {
+        orderId: String(order._id),
+        orderNumber: order.order_number,
+        orderStatus: order.order_status,
+        paymentStatus: order.payment_status,
+        placedAt: order.placed_at,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/orders/guest/:id/summary
+const getGuestOrderSummary = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const guestSessionId = String(req.headers["x-guest-session-id"] || "").trim();
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid order ID" });
+    const order = await Order.findById(id).lean();
+    if (!order || order.owner_type !== "guest") {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+    if (guestSessionId && String(order.guest_session_id || "") !== guestSessionId) {
+      return res.status(403).json({ success: false, message: "Guest session mismatch" });
+    }
+    const [items, addresses, totals] = await Promise.all([
+      OrderItem.find({ order_id: id }).lean(),
+      OrderAddress.find({ order_id: id }).lean(),
+      OrderTotal.findOne({ order_id: id }).lean(),
+    ]);
+    return res.status(200).json({
+      success: true,
+      message: "Guest order summary loaded",
+      data: {
+        ...order,
+        items,
+        order_addresses: addresses,
+        order_total: totals || null,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/orders/guest/:id/tracking
+const getGuestOrderTracking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const guestSessionId = String(req.headers["x-guest-session-id"] || "").trim();
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid order ID" });
+    const order = await Order.findById(id).lean();
+    if (!order || order.owner_type !== "guest") return res.status(404).json({ success: false, message: "Order not found" });
+    if (guestSessionId && String(order.guest_session_id || "") !== guestSessionId) {
+      return res.status(403).json({ success: false, message: "Guest session mismatch" });
+    }
+    const shipments = await Shipment.find({ order_id: id }).select("_id").lean();
+    const shipmentIds = shipments.map((x) => x._id);
+    const events = await ShipmentEvent.find({ shipmentId: { $in: shipmentIds } }).sort({ eventTime: -1 }).lean();
+    return res.status(200).json({
+      success: true,
+      message: "Guest order tracking loaded",
+      data: {
+        orderId: String(order._id),
+        orderNumber: order.order_number,
+        orderStatus: order.order_status,
+        paymentStatus: order.payment_status,
+        fulfillmentStatus: order.fulfillment_status,
+        paymentMethod: null,
+        shipment: null,
+        latestUpdateAt: order.updated_at || order.placed_at,
+        events: events.map((e) => ({
+          code: e.eventCode || "",
+          status: e.eventStatus || "",
+          description: e.eventDescription || "",
+          timestamp: e.eventTime || e.createdAt,
+          location: e.locationText || "",
+          source: "shipment_event",
+        })),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // POST /api/orders
 const createOrder = async (req, res) => {
   try {
@@ -544,6 +651,9 @@ module.exports = {
   getMyOrders,
   getMyOrderById,
   getMyOrderTracking,
+  lookupGuestOrder,
+  getGuestOrderSummary,
+  getGuestOrderTracking,
   createOrder,
   updateOrder,
   patchOrder,

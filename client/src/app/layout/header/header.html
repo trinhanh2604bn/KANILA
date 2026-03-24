@@ -6,7 +6,7 @@
   <div class="main-header py-2" style="background-color: var(--kanila-red);">
     <div class="container">
       <div class="d-flex align-items-center justify-content-between gap-3">
-        
+
         <a routerLink="/" class="text-decoration-none flex-shrink-0">
           <img src="assets/images/logobg.png" alt="Kanila logo" style="height: 45px;">
         </a>
@@ -17,18 +17,21 @@
 
             <li class="nav-item-mega position-static">
               <a routerLink="/catalog" class="nav-link-header d-flex align-items-center">
-                Sản phẩm 
+                Sản phẩm
               </a>
 
               <div class="mega-menu bg-white rounded-3 p-4 shadow">
                 <div class="container">
                   <div class="mega-grid-top">
                     <div class="mega-categories-grid">
+
                       <div class="mega-col" *ngFor="let col of megaColumns">
-                        <h6 class="mega-col-title">{{ col.title }}</h6>
+                        <a class="text-decoration-none mega-title-link" (click)="onMegaColumnShortcutClick(col.shortcutSlug)">
+                          <h6 class="mega-col-title">{{ col.title }}</h6>
+                        </a>
                         <ul class="list-unstyled mb-0">
                           <li *ngFor="let item of col.items">
-                            <a class="mega-link" (click)="onCategoryClick(item)">{{ item.name }}</a>
+                            <a class="mega-link" (click)="onMegaItemClick(col.parent, item)">{{ item.name }}</a>
                           </li>
                         </ul>
                       </div>
@@ -41,8 +44,8 @@
 
                     <aside class="mega-brand-panel">
                       <div class="mega-brand-head">
-                        <h6 class="mega-col-title mb-0">Thương hiệu</h6>
-                        <a class="mega-brand-viewall" routerLink="/catalog">Xem tất cả</a>
+                        <h6 class="mega-col-title mb-0" style="cursor: pointer;" routerLink="/brands">Thương hiệu</h6>
+                        <a class="mega-brand-viewall" routerLink="/brands">Xem tất cả</a>
                       </div>
                       <ul class="list-unstyled mb-0 mega-brand-list">
                         <li *ngFor="let brand of topBrands">
@@ -56,8 +59,11 @@
                   <div class="mega-divider"></div>
 
                   <div class="mega-grid-bottom">
+
                     <div class="mega-col">
-                      <h6 class="mega-col-title">New & Trending</h6>
+                      <a routerLink="/catalog" [queryParams]="{ sort: 'popular' }" class="text-decoration-none mega-title-link">
+                        <h6 class="mega-col-title">New & Trending</h6>
+                      </a>
                       <ul class="list-unstyled mb-0">
                         <li><a routerLink="/catalog" [queryParams]="{ sort: 'new' }" class="mega-link">Sản phẩm mới</a></li>
                         <li><a routerLink="/catalog" [queryParams]="{ sort: 'popular' }" class="mega-link">Hot</a></li>
@@ -90,37 +96,7 @@
         </nav>
 
         <div class="flex-grow-1 mx-5 d-none d-md-block" style="max-width: 400px;">
-          <form class="input-group position-relative" (submit)="onSearchSubmit($event)">
-            <input
-              type="text"
-              class="form-control border-0 rounded-start-pill py-2 ps-4 shadow-none"
-              placeholder="Tìm kiếm sản phẩm..."
-              [value]="searchKeyword"
-              (input)="onSearchInput($any($event.target).value)"
-              (focus)="onSearchFocus()"
-              (blur)="onSearchBlur()"
-            >
-            <button class="btn bg-white border-0 rounded-end-pill pe-4" type="submit">
-              <i class="bi bi-search" style="color: var(--kanila-red);"></i>
-            </button>
-
-            <div class="header-search-dropdown shadow-sm" *ngIf="showSuggestions">
-              <div class="header-search-state" *ngIf="searchLoading">Đang tìm kiếm...</div>
-              <button type="button" class="header-search-item" *ngFor="let item of suggestions" (click)="onSuggestionClick(item)">
-                <img *ngIf="item.imageUrl" [src]="item.imageUrl" [alt]="item.name" class="header-search-thumb">
-                <div class="header-search-text">
-                  <div class="header-search-name">{{ item.name }}</div>
-                  <div class="header-search-meta" *ngIf="item.brandName || item.price">
-                    <span *ngIf="item.brandName">{{ item.brandName }}</span>
-                    <span *ngIf="item.price">- {{ item.price | number:'1.0-0' }}đ</span>
-                  </div>
-                </div>
-              </button>
-              <div class="header-search-state" *ngIf="!searchLoading && searchKeyword.trim() && suggestions.length === 0">
-                Không có sản phẩm phù hợp
-              </div>
-            </div>
-          </form>
+          <app-search-bar></app-search-bar>
         </div>
 
         <div class="d-flex align-items-center gap-4 text-white">
@@ -133,7 +109,6 @@
             <span class="small-label">Giỏ hàng</span>
             <span
               class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-white text-dark"
-              [class.badge-bump]="badgeBump"
               style="font-size: 0.6rem; transform: translate(-50%, -20%) !important;"
               *ngIf="cartBadgeCount > 0"
             >

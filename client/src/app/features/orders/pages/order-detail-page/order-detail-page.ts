@@ -31,9 +31,17 @@ export class OrderDetailPageComponent implements OnInit {
       return;
     }
     this.orderService.getMyOrderById(orderId).pipe(take(1)).subscribe((order) => {
-      this.order = order;
-      this.isLoading = false;
-      this.hasError = !order;
+      if (order) {
+        this.order = order;
+        this.isLoading = false;
+        this.hasError = false;
+        return;
+      }
+      this.orderService.getGuestOrderSummary(orderId).pipe(take(1)).subscribe((guestOrder) => {
+        this.order = guestOrder;
+        this.isLoading = false;
+        this.hasError = !guestOrder;
+      });
     });
   }
 

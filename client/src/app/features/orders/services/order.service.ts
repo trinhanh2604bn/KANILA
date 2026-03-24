@@ -7,12 +7,16 @@ import {
   OrderDetailView,
   OrderTrackingView,
 } from '../models/order.model';
+import { GuestSessionService } from '../../../core/services/guest-session.service';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly ordersApi = 'http://localhost:5000/api/orders';
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly guestSessionService: GuestSessionService
+  ) {}
 
   getMyOrders(page = 1, limit = 10, status = ''): Observable<{
     data: MyOrderListItemView[];
@@ -47,6 +51,29 @@ export class OrderService {
     if (!orderId) return of(null);
     return this.http.get<any>(`${this.ordersApi}/me/${orderId}/tracking`).pipe(
       map((res) => (res?.data || null) as OrderTrackingView),
+      catchError(() => of(null))
+    );
+  }
+
+  getGuestOrderTracking(orderId: string): Observable<OrderTrackingView | null> {
+    if (!orderId) return of(null);
+    return this.http.get<any>(`${this.ordersApi}/guest/${orderId}/tracking`, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => (res?.data || null) as OrderTrackingView),
+      catchError(() => of(null))
+    );
+  }
+
+  getGuestOrderSummary(orderId: string): Observable<OrderDetailView | null> {
+    if (!orderId) return of(null);
+    return this.http.get<any>(`${this.ordersApi}/guest/${orderId}/summary`, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => (res?.data || null) as OrderDetailView),
+      catchError(() => of(null))
+    );
+  }
+
+  lookupGuestOrder(orderNumber: string, phone: string, email: string): Observable<{ orderId: string; orderNumber: string } | null> {
+    return this.http.post<any>(`${this.ordersApi}/guest/lookup`, { orderNumber, phone, email }).pipe(
+      map((res) => (res?.data ? { orderId: String(res.data.orderId), orderNumber: String(res.data.orderNumber) } : null)),
       catchError(() => of(null))
     );
   }

@@ -74,6 +74,7 @@ const loyaltyAccountRoutes = require("./loyaltyAccount.route");
 const loyaltyPointLedgerRoutes = require("./loyaltyPointLedger.route");
 const adminRoutes = require("./admin.route");
 const setupRoutes = require("./setup.route");
+const guestSessionRoutes = require("./guestSession.route");
 
 router.use("/brands", brandRoutes);
 router.use("/categories", categoryRoutes);
@@ -141,6 +142,7 @@ router.use("/loyalty-accounts", loyaltyAccountRoutes);
 router.use("/loyalty-point-ledger", loyaltyPointLedgerRoutes);
 router.use("/admin", adminRoutes);
 router.use("/setup", setupRoutes);
+router.use("/guest-sessions", guestSessionRoutes);
 
 // One-time migration route (remove after running)
 const migrateRoute = require("./migrate.route");

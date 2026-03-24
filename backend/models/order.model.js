@@ -5,6 +5,35 @@ const mongoose = require("mongoose");
  */
 const orderSchema = new mongoose.Schema(
   {
+    owner_type: {
+      type: String,
+      enum: ["customer", "guest"],
+      default: "customer",
+      index: true,
+    },
+    guest_session_id: {
+      type: String,
+      default: null,
+      trim: true,
+      index: true,
+    },
+    guest_email: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+    guest_phone: {
+      type: String,
+      default: "",
+      trim: true,
+      index: true,
+    },
+    guest_full_name: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     order_number: {
       type: String,
       required: true,
@@ -15,7 +44,7 @@ const orderSchema = new mongoose.Schema(
     customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
-      required: true,
+      required: false,
       index: true,
     },
     checkout_session_id: {

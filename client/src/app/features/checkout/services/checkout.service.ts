@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { CartService } from '../../cart/services/cart.service';
+import { GuestSessionService } from '../../../core/services/guest-session.service';
+import { AuthService } from '../../../core/services/auth.service';
 import {
   BuyNowCheckoutPayload,
   CheckoutIssue,
@@ -22,7 +24,9 @@ export class CheckoutService {
   private readonly ordersApi = 'http://localhost:5000/api/orders';
   constructor(
     private readonly http: HttpClient,
-    private readonly cartService: CartService
+    private readonly cartService: CartService,
+    private readonly guestSessionService: GuestSessionService,
+    private readonly authService: AuthService
   ) {}
 
   prepareCheckout(): Observable<{ success: boolean; issues: CheckoutIssue[] }> {
@@ -36,6 +40,11 @@ export class CheckoutService {
   }
 
   createCheckoutSession(payload: CheckoutSessionUpdatePayload): Observable<CheckoutSessionView> {
+    if (!this.authService.isAuthenticated()) {
+      return this.http.post<any>(`${this.checkoutApi}/guest/me`, payload, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+        map((res) => res?.data as CheckoutSessionView)
+      );
+    }
     return this.http.post<any>(`${this.checkoutApi}/me`, payload).pipe(
       map((res) => res?.data as CheckoutSessionView)
     );
@@ -48,18 +57,33 @@ export class CheckoutService {
   }
 
   getMyCheckoutSessionById(sessionId: string): Observable<CheckoutSessionView> {
+    if (!this.authService.isAuthenticated()) {
+      return this.http.get<any>(`${this.checkoutApi}/guest/me/${sessionId}`, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+        map((res) => res?.data as CheckoutSessionView)
+      );
+    }
     return this.http.get<any>(`${this.checkoutApi}/me/${sessionId}`).pipe(
       map((res) => res?.data as CheckoutSessionView)
     );
   }
 
   updateCheckoutSession(sessionId: string, payload: CheckoutSessionUpdatePayload): Observable<CheckoutSessionView> {
+    if (!this.authService.isAuthenticated()) {
+      return this.http.patch<any>(`${this.checkoutApi}/guest/${sessionId}`, payload, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+        map((res) => res?.data as CheckoutSessionView)
+      );
+    }
     return this.http.patch<any>(`${this.checkoutApi}/${sessionId}`, payload).pipe(
       map((res) => res?.data as CheckoutSessionView)
     );
   }
 
   placeOrder(sessionId: string, customerNote = ''): Observable<PlaceOrderResult> {
+    if (!this.authService.isAuthenticated()) {
+      return this.http.post<any>(`${this.checkoutApi}/guest/${sessionId}/place-order`, { customerNote }, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+        map((res) => res?.data as PlaceOrderResult)
+      );
+    }
     return this.http.post<any>(`${this.checkoutApi}/${sessionId}/place-order`, { customerNote }).pipe(
       map((res) => res?.data as PlaceOrderResult)
     );

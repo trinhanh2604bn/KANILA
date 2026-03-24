@@ -5,6 +5,18 @@ const mongoose = require("mongoose");
  */
 const checkoutSessionSchema = new mongoose.Schema(
   {
+    owner_type: {
+      type: String,
+      enum: ["customer", "guest"],
+      default: "customer",
+      index: true,
+    },
+    guest_session_id: {
+      type: String,
+      default: null,
+      index: true,
+      trim: true,
+    },
     cart_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Cart",
@@ -14,8 +26,23 @@ const checkoutSessionSchema = new mongoose.Schema(
     customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
-      required: [true, "Customer ID is required"],
+      required: false,
       index: true,
+    },
+    guest_email: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    guest_phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    guest_full_name: {
+      type: String,
+      default: "",
+      trim: true,
     },
     checkout_status: {
       type: String,

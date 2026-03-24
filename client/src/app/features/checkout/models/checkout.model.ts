@@ -70,6 +70,7 @@ export interface CheckoutSessionUpdatePayload {
   paymentMethodId?: string | null;
   couponCode?: string | null;
   shippingAddress?: CheckoutAddressPayload;
+  email?: string | null;
 }
 
 export interface PlaceOrderResult {

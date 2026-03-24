@@ -4,6 +4,7 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { AddToCartPayload, CartItemNormalized, CartNormalized, CartSummary } from '../models/cart.model';
 import { AuthService } from '../../../core/services/auth.service';
+import { GuestSessionService } from '../../../core/services/guest-session.service';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
@@ -29,8 +30,10 @@ export class CartService {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly guestSessionService: GuestSessionService
   ) {
+    this.guestSessionService.bootstrap().subscribe();
     this.bootstrapCart();
   }
 
@@ -47,9 +50,15 @@ export class CartService {
       );
     }
 
-    const guest = this.readGuestCart();
-    this.cartStateSubject.next(guest);
-    return of(guest);
+    return this.http.get<any>(`${this.apiUrl}/guest/me`, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'guest')),
+      tap((cart) => this.cartStateSubject.next(cart)),
+      catchError(() => {
+        const fallback = this.getEmptyCart('guest');
+        this.cartStateSubject.next(fallback);
+        return of(fallback);
+      })
+    );
   }
 
   addToCart(payload: AddToCartPayload): Observable<CartNormalized> {
@@ -76,12 +85,17 @@ export class CartService {
       );
     }
 
-    try {
-      return of(this.addToGuestCart(payload, quantity));
-    } catch {
-      this.cartErrorSubject.next({ code: 'GUEST_CART_INVALID', message: 'Guest cart storage is unavailable' });
-      return of(this.getEmptyCart('guest'));
-    }
+    return this.http.post<any>(`${this.apiUrl}/guest/items`, { ...payload, quantity }, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'guest')),
+      tap((cart) => {
+        this.cartErrorSubject.next(null);
+        this.cartStateSubject.next(cart);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return of(this.cartStateSubject.value);
+      })
+    );
   }
 
   updateCartItemQuantity(itemIdOrKey: string, quantity: number): Observable<CartNormalized> {
@@ -102,11 +116,17 @@ export class CartService {
       );
     }
 
-    const cart = this.readGuestCart();
-    const item = cart.items.find((x) => x.cartItemId === itemIdOrKey);
-    if (!item) return of(cart);
-    item.quantity = qty;
-    return of(this.persistGuestCart(cart));
+    return this.http.patch<any>(`${this.apiUrl}/guest/items/${itemIdOrKey}/quantity`, { quantity: qty }, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'guest')),
+      tap((cart) => {
+        this.cartErrorSubject.next(null);
+        this.cartStateSubject.next(cart);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return of(this.cartStateSubject.value);
+      })
+    );
   }
 
   removeCartItem(itemIdOrKey: string): Observable<CartNormalized> {
@@ -125,9 +145,17 @@ export class CartService {
       );
     }
 
-    const cart = this.readGuestCart();
-    cart.items = cart.items.filter((x) => x.cartItemId !== itemIdOrKey);
-    return of(this.persistGuestCart(cart));
+    return this.http.delete<any>(`${this.apiUrl}/guest/items/${itemIdOrKey}`, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'guest')),
+      tap((cart) => {
+        this.cartErrorSubject.next(null);
+        this.cartStateSubject.next(cart);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return of(this.cartStateSubject.value);
+      })
+    );
   }
 
   toggleCartItemSelection(itemIdOrKey: string, selected: boolean): Observable<CartNormalized> {
@@ -146,11 +174,17 @@ export class CartService {
       );
     }
 
-    const cart = this.readGuestCart();
-    const item = cart.items.find((x) => x.cartItemId === itemIdOrKey);
-    if (!item) return of(cart);
-    item.selected = selected;
-    return of(this.persistGuestCart(cart));
+    return this.http.patch<any>(`${this.apiUrl}/guest/items/${itemIdOrKey}/selection`, { selected }, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'guest')),
+      tap((cart) => {
+        this.cartErrorSubject.next(null);
+        this.cartStateSubject.next(cart);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return of(this.cartStateSubject.value);
+      })
+    );
   }
 
   toggleSelectAll(selected: boolean): Observable<CartNormalized> {
@@ -168,9 +202,17 @@ export class CartService {
       );
     }
 
-    const cart = this.readGuestCart();
-    cart.items = cart.items.map((item) => ({ ...item, selected }));
-    return of(this.persistGuestCart(cart));
+    return this.http.patch<any>(`${this.apiUrl}/guest/selection`, { selected }, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'guest')),
+      tap((cart) => {
+        this.cartErrorSubject.next(null);
+        this.cartStateSubject.next(cart);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return of(this.cartStateSubject.value);
+      })
+    );
   }
 
   removeSelectedItems(): Observable<CartNormalized> {
@@ -188,9 +230,17 @@ export class CartService {
       );
     }
 
-    const cart = this.readGuestCart();
-    cart.items = cart.items.filter((item) => !item.selected);
-    return of(this.persistGuestCart(cart));
+    return this.http.delete<any>(`${this.apiUrl}/guest/items-selected`, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'guest')),
+      tap((cart) => {
+        this.cartErrorSubject.next(null);
+        this.cartStateSubject.next(cart);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return of(this.cartStateSubject.value);
+      })
+    );
   }
 
   prepareCheckout(): Observable<{ success: boolean; data: CartNormalized; issues: Array<{ code: string; message: string; cartItemId?: string }> }> {
@@ -212,16 +262,20 @@ export class CartService {
       );
     }
 
-    const cart = this.readGuestCart();
-    const issues: Array<{ code: string; message: string; cartItemId?: string }> = [];
-    cart.items
-      .filter((item) => item.selected)
-      .forEach((item) => {
-        if (item.stockStatus === 'out_of_stock') {
-          issues.push({ code: 'INSUFFICIENT_STOCK', message: 'Insufficient stock', cartItemId: item.cartItemId });
-        }
-      });
-    return of({ success: issues.length === 0, data: cart, issues });
+    return this.http.get<any>(`${this.apiUrl}/guest/checkout-prepare`, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => ({
+        success: !!res?.success,
+        data: this.normalizeIncomingCart(res?.data, 'guest'),
+        issues: Array.isArray(res?.issues) ? res.issues : [],
+      })),
+      tap((result) => {
+        this.cartStateSubject.next(result.data);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return of({ success: false, data: this.cartStateSubject.value, issues: [] });
+      })
+    );
   }
 
   getCartSummary(): Observable<CartSummary> {

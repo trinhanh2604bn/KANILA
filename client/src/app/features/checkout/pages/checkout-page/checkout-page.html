@@ -59,6 +59,12 @@
               <small class="error" *ngIf="invalidPhone">Vui lòng nhập số điện thoại hợp lệ.</small>
             </label>
 
+            <label class="field">
+              <span>Email (để nhận cập nhật đơn hàng)</span>
+              <input type="email" [(ngModel)]="email" [class.invalid]="invalidEmail" placeholder="you@example.com" />
+              <small class="error" *ngIf="invalidEmail">Email không đúng định dạng.</small>
+            </label>
+
             <label class="field field--full">
               <span>Địa chỉ</span>
               <input type="text" [(ngModel)]="addressLine" [class.invalid]="invalidAddress" placeholder="Street, ward, district..." />

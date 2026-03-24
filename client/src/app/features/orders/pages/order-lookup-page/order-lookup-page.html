@@ -1,0 +1,14 @@
+<main class="lookup-page">
+  <section class="card">
+    <h1>Tra cứu đơn hàng</h1>
+    <p>Nhập mã đơn hàng cùng số điện thoại hoặc email đã dùng khi đặt hàng.</p>
+    <label>Mã đơn hàng</label>
+    <input [(ngModel)]="orderNumber" placeholder="VD: GORD12345678" />
+    <label>Số điện thoại</label>
+    <input [(ngModel)]="phone" placeholder="09xxxxxxxx" />
+    <label>Email</label>
+    <input [(ngModel)]="email" placeholder="you@example.com" />
+    <p class="error" *ngIf="error">{{ error }}</p>
+    <button type="button" (click)="lookup()" [disabled]="searching">{{ searching ? 'Đang tra cứu...' : 'Tra cứu đơn hàng' }}</button>
+  </section>
+</main>

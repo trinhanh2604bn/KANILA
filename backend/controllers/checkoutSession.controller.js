@@ -67,11 +67,41 @@ const resolveAuthCustomer = async (req) => {
   return customer;
 };
 
+const resolveGuestSessionId = (req) => {
+  const id =
+    req.headers["x-guest-session-id"] ||
+    req.body?.guestSessionId ||
+    req.query?.guestSessionId;
+  return String(id || "").trim().slice(0, 128);
+};
+
 const ensureActiveCart = async (customerId) => {
   let cart = await Cart.findOne({ customer_id: customerId, cart_status: "active" }).sort({ updated_at: -1 });
   if (!cart) {
     cart = await Cart.create({
       customer_id: customerId,
+      cart_status: "active",
+      currency_code: "VND",
+      item_count: 0,
+      subtotal_amount: 0,
+      discount_amount: 0,
+      total_amount: 0,
+    });
+  }
+  return cart;
+};
+
+const ensureActiveGuestCart = async (guestSessionId) => {
+  let cart = await Cart.findOne({
+    owner_type: "guest",
+    guest_session_id: guestSessionId,
+    cart_status: "active",
+  }).sort({ updated_at: -1 });
+  if (!cart) {
+    cart = await Cart.create({
+      owner_type: "guest",
+      guest_session_id: guestSessionId,
+      customer_id: null,
       cart_status: "active",
       currency_code: "VND",
       item_count: 0,
@@ -257,7 +287,11 @@ const toCheckoutSessionPayload = async (session) => {
     sessionId: String(session._id),
     checkoutStatus: session.checkout_status,
     cartId: String(session.cart_id),
-    customerId: String(session.customer_id),
+    customerId: session.customer_id ? String(session.customer_id) : null,
+    guestSessionId: session.guest_session_id || null,
+    guestEmail: session.guest_email || "",
+    guestPhone: session.guest_phone || "",
+    guestFullName: session.guest_full_name || "",
     shippingAddress,
     selectedShippingMethodId: session.selected_shipping_method_id ? String(session.selected_shipping_method_id) : null,
     selectedPaymentMethodId: session.selected_payment_method_id ? String(session.selected_payment_method_id) : null,
@@ -993,6 +1027,250 @@ const placeMyCheckoutSessionOrder = async (req, res) => {
   }
 };
 
+// POST /api/checkout-sessions/guest/prepare
+const prepareGuestCheckoutSession = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    const cart = await ensureActiveGuestCart(guestSessionId);
+    const selectedItems = await CartItem.find({ cart_id: cart._id, selected: true }).sort({ added_at: -1 });
+    if (!selectedItems.length) {
+      return res.status(400).json({ success: false, message: "No selected cart items to checkout" });
+    }
+    const { issues } = await validateSelectedItems(selectedItems);
+    if (issues.length) return res.status(409).json({ success: false, message: "Checkout prepare failed", issues });
+    const summary = computeCartSummary(selectedItems);
+    return res.status(200).json({ success: true, message: "Guest checkout is ready", data: { summary } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/checkout-sessions/guest/me
+const createGuestCheckoutSession = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    const cart = await ensureActiveGuestCart(guestSessionId);
+    const selectedItems = await CartItem.find({ cart_id: cart._id, selected: true }).sort({ added_at: -1 });
+    if (!selectedItems.length) return res.status(400).json({ success: false, message: "No selected cart items to checkout" });
+    const { issues } = await validateSelectedItems(selectedItems);
+    if (issues.length) return res.status(409).json({ success: false, message: "Checkout prepare failed", issues });
+
+    const summary = computeCartSummary(selectedItems);
+    const session = await CheckoutSession.create({
+      owner_type: "guest",
+      guest_session_id: guestSessionId,
+      cart_id: cart._id,
+      customer_id: null,
+      checkout_status: "in_progress",
+      currency_code: "VND",
+      subtotal_amount: toMoney(summary.subtotal),
+      shipping_fee_amount: toMoney(summary.shippingFee),
+      discount_amount: toMoney(summary.discountTotal),
+      tax_amount: 0,
+      total_amount: toMoney(summary.grandTotal),
+      expires_at: new Date(Date.now() + 30 * 60 * 1000),
+      guest_full_name: String(req.body?.shippingAddress?.recipientName || ""),
+      guest_phone: String(req.body?.shippingAddress?.phone || ""),
+      guest_email: String(req.body?.email || ""),
+    });
+    const payload = await toCheckoutSessionPayload(session);
+    return res.status(201).json({ success: true, message: "Guest checkout session created", data: payload });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/checkout-sessions/guest/me/:id
+const getGuestCheckoutSessionById = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    const { id } = req.params;
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid session id" });
+    const session = await CheckoutSession.findById(id);
+    if (!session || session.owner_type !== "guest" || String(session.guest_session_id || "") !== guestSessionId) {
+      return res.status(404).json({ success: false, message: "Guest checkout session not found" });
+    }
+    const payload = await toCheckoutSessionPayload(session);
+    return res.status(200).json({ success: true, message: "Guest checkout session loaded", data: payload });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// PATCH /api/checkout-sessions/guest/:id
+const updateGuestCheckoutSession = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    const { id } = req.params;
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid session id" });
+    const session = await CheckoutSession.findById(id);
+    if (!session || session.owner_type !== "guest" || String(session.guest_session_id || "") !== guestSessionId) {
+      return res.status(404).json({ success: false, message: "Guest checkout session not found" });
+    }
+    if (session.checkout_status !== "in_progress") return res.status(409).json({ success: false, message: "Checkout session is not editable" });
+
+    const selectedItems = await CartItem.find({ cart_id: session.cart_id, selected: true }).sort({ added_at: -1 });
+    const { issues } = await validateSelectedItems(selectedItems);
+    if (issues.length) return res.status(409).json({ success: false, message: "Checkout prepare failed", issues });
+    const summary = computeCartSummary(selectedItems);
+    const shippingAddress = req.body?.shippingAddress;
+    if (shippingAddress) {
+      if (!shippingAddress.recipientName || !shippingAddress.phone || !shippingAddress.addressLine1 || !shippingAddress.city) {
+        return res.status(400).json({ success: false, code: CHECKOUT_ERROR.INVALID_ADDRESS, message: "Invalid shipping address" });
+      }
+      let selectedAddress = session.selected_shipping_address_id ? await CheckoutAddress.findById(session.selected_shipping_address_id) : null;
+      if (!selectedAddress) {
+        selectedAddress = await CheckoutAddress.create({
+          checkout_session_id: session._id,
+          address_type: "shipping",
+          recipient_name: shippingAddress.recipientName,
+          phone: shippingAddress.phone,
+          address_line_1: shippingAddress.addressLine1,
+          district: shippingAddress.district || "",
+          city: shippingAddress.city,
+          country_code: shippingAddress.countryCode || "VN",
+          is_selected: true,
+        });
+      } else {
+        selectedAddress.recipient_name = shippingAddress.recipientName;
+        selectedAddress.phone = shippingAddress.phone;
+        selectedAddress.address_line_1 = shippingAddress.addressLine1;
+        selectedAddress.district = shippingAddress.district || "";
+        selectedAddress.city = shippingAddress.city;
+        selectedAddress.country_code = shippingAddress.countryCode || "VN";
+        await selectedAddress.save();
+      }
+      session.selected_shipping_address_id = selectedAddress._id;
+      session.guest_full_name = shippingAddress.recipientName;
+      session.guest_phone = shippingAddress.phone;
+    }
+    if (req.body?.email) session.guest_email = String(req.body.email).trim().toLowerCase();
+    if (req.body?.paymentMethodId && validateObjectId(String(req.body.paymentMethodId))) {
+      session.selected_payment_method_id = req.body.paymentMethodId;
+    }
+    if (req.body?.shippingMethodId && validateObjectId(String(req.body.shippingMethodId))) {
+      session.selected_shipping_method_id = req.body.shippingMethodId;
+    }
+    session.subtotal_amount = toMoney(summary.subtotal);
+    session.discount_amount = toMoney(summary.discountTotal);
+    session.shipping_fee_amount = toMoney(summary.shippingFee);
+    session.total_amount = Math.max(0, toMoney(summary.grandTotal));
+    await session.save();
+    const payload = await toCheckoutSessionPayload(session);
+    return res.status(200).json({ success: true, message: "Guest checkout session updated", data: payload });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/checkout-sessions/guest/:id/place-order
+const placeGuestCheckoutSessionOrder = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    const { id } = req.params;
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid session id" });
+    const session = await CheckoutSession.findById(id);
+    if (!session || session.owner_type !== "guest" || String(session.guest_session_id || "") !== guestSessionId) {
+      return res.status(404).json({ success: false, message: "Guest checkout session not found" });
+    }
+    if (session.checkout_status !== "in_progress") return res.status(409).json({ success: false, message: "Checkout session is not active" });
+
+    const selectedItems = await CartItem.find({ cart_id: session.cart_id, selected: true }).sort({ added_at: -1 });
+    if (!selectedItems.length) return res.status(400).json({ success: false, message: "No selected cart items to place order" });
+    const { issues, enriched } = await validateSelectedItems(selectedItems);
+    if (issues.length) return res.status(409).json({ success: false, message: "Checkout requires review", issues });
+    const shippingAddress = session.selected_shipping_address_id ? await CheckoutAddress.findById(session.selected_shipping_address_id) : null;
+    if (!shippingAddress) return res.status(400).json({ success: false, code: CHECKOUT_ERROR.INVALID_ADDRESS, message: "Shipping address is required" });
+
+    const ts = Date.now().toString().slice(-8);
+    const orderNumber = `GORD${ts}`;
+    const order = await Order.create({
+      owner_type: "guest",
+      guest_session_id: guestSessionId,
+      guest_email: session.guest_email || String(req.body?.email || "").trim().toLowerCase(),
+      guest_phone: session.guest_phone || shippingAddress.phone || "",
+      guest_full_name: session.guest_full_name || shippingAddress.recipient_name || "",
+      customer_id: null,
+      checkout_session_id: session._id,
+      order_number: orderNumber,
+      currency_code: "VND",
+      order_status: "confirmed",
+      payment_status: "unpaid",
+      fulfillment_status: "unfulfilled",
+      customer_note: req.body?.customerNote || "",
+      placed_at: new Date(),
+    });
+
+    for (const info of enriched) {
+      const item = info.item;
+      const unit = toMoney(item.final_unit_price_amount ?? item.unit_price_amount);
+      const qty = Math.max(1, Number(item.quantity || 1));
+      // eslint-disable-next-line no-await-in-loop
+      await OrderItem.create({
+        order_id: order._id,
+        product_id: item.product_id,
+        variant_id: item.variant_id,
+        sku_snapshot: item.sku_snapshot || info.variant?.sku || String(item.variant_id),
+        product_name_snapshot: item.product_name_snapshot || info.product?.productName || "Product",
+        variant_name_snapshot: item.variant_name_snapshot || info.variant?.variantName || "Default",
+        quantity: qty,
+        unit_list_price_amount: toMoney(item.compare_at_price_amount || unit),
+        unit_sale_price_amount: unit,
+        unit_final_price_amount: unit,
+        line_subtotal_amount: unit * qty,
+        line_discount_amount: 0,
+        line_total_amount: unit * qty,
+        currency_code: "VND",
+      });
+    }
+
+    await OrderAddress.create({
+      order_id: order._id,
+      address_type: "shipping",
+      recipient_name: shippingAddress.recipient_name,
+      phone: shippingAddress.phone,
+      address_line_1: shippingAddress.address_line_1,
+      district: shippingAddress.district || "",
+      city: shippingAddress.city,
+      country_code: shippingAddress.country_code || "VN",
+    });
+    await OrderTotal.create({
+      order_id: order._id,
+      subtotal_amount: toMoney(session.subtotal_amount),
+      item_discount_amount: 0,
+      order_discount_amount: toMoney(session.discount_amount),
+      shipping_fee_amount: toMoney(session.shipping_fee_amount),
+      tax_amount: 0,
+      grand_total_amount: toMoney(session.total_amount),
+      refunded_amount: 0,
+      currency_code: "VND",
+    });
+
+    session.checkout_status = "completed";
+    await session.save();
+    await CartItem.deleteMany({ cart_id: session.cart_id, selected: true });
+
+    return res.status(201).json({
+      success: true,
+      message: "Guest order placed successfully",
+      data: {
+        orderId: String(order._id),
+        orderNumber: order.order_number,
+        orderStatus: order.order_status,
+        paymentStatus: order.payment_status,
+        checkoutSessionId: String(session._id),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAllCheckoutSessions,
   getCheckoutSessionById,
@@ -1001,6 +1279,11 @@ module.exports = {
   updateCheckoutSession,
   deleteCheckoutSession,
   createMyCheckoutSession,
+  prepareGuestCheckoutSession,
+  createGuestCheckoutSession,
+  getGuestCheckoutSessionById,
+  updateGuestCheckoutSession,
+  placeGuestCheckoutSessionOrder,
   createMyBuyNowCheckoutSession,
   getMyCheckoutSessionById,
   updateMyCheckoutSession,

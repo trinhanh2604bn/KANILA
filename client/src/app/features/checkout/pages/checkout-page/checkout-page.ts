@@ -67,6 +67,7 @@ export class CheckoutPageComponent implements OnInit {
   uiHint = '';
 
   contactName = '';
+  email = '';
   phone = '';
   addressLine = '';
   note = '';
@@ -83,13 +84,6 @@ export class CheckoutPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (!this.isAuthenticated()) {
-      this.checkoutIssues = ['Vui lòng đăng nhập để tiếp tục thanh toán.'];
-      this.toast.warning(this.checkoutIssues[0]);
-      this.router.navigate(['/auth/login']);
-      return;
-    }
-
     forkJoin({
       shipping: this.checkoutService.getShippingMethods().pipe(catchError(() => of<ShippingMethodApiOption[]>([]))),
       payment: this.checkoutService.getPaymentMethods().pipe(catchError(() => of<PaymentMethodApiOption[]>([]))),
@@ -148,6 +142,12 @@ export class CheckoutPageComponent implements OnInit {
     return this.formSubmitted && !/^[0-9]{9,11}$/.test(phone);
   }
 
+  get invalidEmail(): boolean {
+    const email = this.email.trim().toLowerCase();
+    if (!email) return false;
+    return this.formSubmitted && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  }
+
   get invalidAddress(): boolean {
     return this.formSubmitted && this.addressLine.trim().length < 8;
   }
@@ -168,7 +168,7 @@ export class CheckoutPageComponent implements OnInit {
 
   placeOrder(): void {
     this.formSubmitted = true;
-    if (this.invalidName || this.invalidPhone || this.invalidAddress || !this.cartItems.length) return;
+    if (this.invalidName || this.invalidPhone || this.invalidEmail || this.invalidAddress || !this.cartItems.length) return;
     if (!this.checkoutSessionId) {
       this.toast.error('Không thể tạo phiên thanh toán. Vui lòng thử lại.');
       return;
@@ -259,6 +259,7 @@ export class CheckoutPageComponent implements OnInit {
               countryCode: 'VN',
             }
           : undefined,
+      email: this.email || null,
     };
 
     const req$ = this.checkoutSessionId

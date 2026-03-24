@@ -30,9 +30,17 @@ export class OrderTrackingPageComponent implements OnInit {
       return;
     }
     this.orderService.getMyOrderTracking(orderId).pipe(take(1)).subscribe((data) => {
-      this.tracking = data;
-      this.isLoading = false;
-      this.hasError = !data;
+      if (data) {
+        this.tracking = data;
+        this.isLoading = false;
+        this.hasError = false;
+        return;
+      }
+      this.orderService.getGuestOrderTracking(orderId).pipe(take(1)).subscribe((guestData) => {
+        this.tracking = guestData;
+        this.isLoading = false;
+        this.hasError = !guestData;
+      });
     });
   }
 }

@@ -9,6 +9,11 @@ const {
   updateCheckoutSession,
   deleteCheckoutSession,
   createMyCheckoutSession,
+  prepareGuestCheckoutSession,
+  createGuestCheckoutSession,
+  getGuestCheckoutSessionById,
+  updateGuestCheckoutSession,
+  placeGuestCheckoutSessionOrder,
   createMyBuyNowCheckoutSession,
   getMyCheckoutSessionById,
   updateMyCheckoutSession,
@@ -20,6 +25,12 @@ router.post("/me/buy-now", authMiddleware, createMyBuyNowCheckoutSession);
 router.get("/me/:id", authMiddleware, getMyCheckoutSessionById);
 router.patch("/:id", authMiddleware, updateMyCheckoutSession);
 router.post("/:id/place-order", authMiddleware, placeMyCheckoutSessionOrder);
+
+router.post("/guest/prepare", prepareGuestCheckoutSession);
+router.post("/guest/me", createGuestCheckoutSession);
+router.get("/guest/me/:id", getGuestCheckoutSessionById);
+router.patch("/guest/:id", updateGuestCheckoutSession);
+router.post("/guest/:id/place-order", placeGuestCheckoutSessionOrder);
 
 router.get("/", getAllCheckoutSessions);
 router.get("/cart/:cart_id", getSessionsByCartId);

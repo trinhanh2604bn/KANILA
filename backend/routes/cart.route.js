@@ -9,13 +9,21 @@ const {
   updateCart,
   deleteCart,
   getMyCart,
+  getGuestCart,
   addItemToMyCart,
+  addItemToGuestCart,
   updateMyCartItemQuantity,
+  updateGuestCartItemQuantity,
   toggleMyCartItemSelection,
+  toggleGuestCartItemSelection,
   toggleMyCartSelectionAll,
+  toggleGuestCartSelectionAll,
   removeItemFromMyCart,
+  removeItemFromGuestCart,
   removeSelectedFromMyCart,
+  removeSelectedFromGuestCart,
   prepareMyCartCheckout,
+  prepareGuestCartCheckout,
 } = require("../controllers/cart.controller");
 
 router.get("/me", authMiddleware, getMyCart);
@@ -26,6 +34,15 @@ router.patch("/me/items/:itemId/selection", authMiddleware, toggleMyCartItemSele
 router.patch("/me/selection", authMiddleware, toggleMyCartSelectionAll);
 router.delete("/me/items/:itemId", authMiddleware, removeItemFromMyCart);
 router.delete("/me/items-selected", authMiddleware, removeSelectedFromMyCart);
+
+router.get("/guest/me", getGuestCart);
+router.get("/guest/checkout-prepare", prepareGuestCartCheckout);
+router.post("/guest/items", addItemToGuestCart);
+router.patch("/guest/items/:itemId/quantity", updateGuestCartItemQuantity);
+router.patch("/guest/items/:itemId/selection", toggleGuestCartItemSelection);
+router.patch("/guest/selection", toggleGuestCartSelectionAll);
+router.delete("/guest/items/:itemId", removeItemFromGuestCart);
+router.delete("/guest/items-selected", removeSelectedFromGuestCart);
 
 router.get("/", getAllCarts);
 router.get("/customer/:customer_id", getCartsByCustomerId);

@@ -77,37 +77,53 @@ export class OrderSuccessPageComponent {
     }
 
     this.orderService.getMyOrderById(this.orderId).pipe(take(1)).subscribe((order) => {
-      if (!order) return;
-      this.orderNumber = order.order_number || this.orderNumber || this.orderId;
-      this.orderDate = order.placed_at ? new Date(order.placed_at) : this.orderDate;
-      this.paymentStatus = this.mapPaymentStatus(order.payment_status);
-      this.orderStatus = this.mapOrderStatus(order.order_status);
-      this.orderedItems = (order.items || []).map((item) => ({
-        id: item._id,
-        brand: 'KANILA',
-        name: item.product_name_snapshot,
-        variant: item.variant_name_snapshot,
-        image: 'assets/images/banner/nen.png',
-        quantity: Number(item.quantity || 1),
-        lineTotal: Number(item.line_total_amount || 0),
-      }));
-      this.subtotal = Number(order.order_total?.subtotal_amount || this.subtotal);
-      this.discount = Number(order.order_total?.order_discount_amount || this.discount);
-      this.shippingFee = Number(order.order_total?.shipping_fee_amount || this.shippingFee);
-      this.totalPaid = Number(order.order_total?.grand_total_amount || this.totalPaid);
-
-      const shipping = (order.order_addresses || []).find((x) => x.address_type === 'shipping');
-      if (shipping) {
-        this.customerName = shipping.recipient_name || this.customerName;
-        this.customerPhone = shipping.phone || this.customerPhone;
-        this.shippingAddress = [shipping.address_line_1, shipping.district, shipping.city].filter(Boolean).join(', ');
+      if (!order) {
+        this.orderService.getGuestOrderSummary(this.orderId).pipe(take(1)).subscribe((guestOrder) => {
+          if (!guestOrder) {
+            this.hasError = true;
+            this.isLoading = false;
+            return;
+          }
+          this.bindOrder(guestOrder);
+          this.isLoading = false;
+          this.hasError = false;
+        });
+        return;
       }
+      this.bindOrder(order);
       this.isLoading = false;
       this.hasError = false;
     }, () => {
       this.hasError = true;
       this.isLoading = false;
     });
+  }
+
+  private bindOrder(order: any): void {
+    this.orderNumber = order.order_number || this.orderNumber || this.orderId;
+    this.orderDate = order.placed_at ? new Date(order.placed_at) : this.orderDate;
+    this.paymentStatus = this.mapPaymentStatus(order.payment_status);
+    this.orderStatus = this.mapOrderStatus(order.order_status);
+    this.orderedItems = (order.items || []).map((item: any) => ({
+      id: item._id,
+      brand: 'KANILA',
+      name: item.product_name_snapshot,
+      variant: item.variant_name_snapshot,
+      image: 'assets/images/banner/nen.png',
+      quantity: Number(item.quantity || 1),
+      lineTotal: Number(item.line_total_amount || 0),
+    }));
+    this.subtotal = Number(order.order_total?.subtotal_amount || this.subtotal);
+    this.discount = Number(order.order_total?.order_discount_amount || this.discount);
+    this.shippingFee = Number(order.order_total?.shipping_fee_amount || this.shippingFee);
+    this.totalPaid = Number(order.order_total?.grand_total_amount || this.totalPaid);
+
+    const shipping = (order.order_addresses || []).find((x: any) => x.address_type === 'shipping');
+    if (shipping) {
+      this.customerName = shipping.recipient_name || this.customerName;
+      this.customerPhone = shipping.phone || this.customerPhone;
+      this.shippingAddress = [shipping.address_line_1, shipping.district, shipping.city].filter(Boolean).join(', ');
+    }
   }
 
   continueShopping(): void {

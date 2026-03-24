@@ -5,11 +5,23 @@ const mongoose = require("mongoose");
  */
 const cartSchema = new mongoose.Schema(
   {
+    owner_type: {
+      type: String,
+      enum: ["customer", "guest"],
+      default: "customer",
+      index: true,
+    },
     customer_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
-      required: [true, "Customer ID is required"],
+      required: false,
       index: true,
+    },
+    guest_session_id: {
+      type: String,
+      default: null,
+      index: true,
+      trim: true,
     },
     cart_status: {
       type: String,

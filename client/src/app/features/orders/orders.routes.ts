@@ -7,6 +7,11 @@ export const ORDERS_ROUTES: Routes = [
       import('./pages/my-orders-page/my-orders-page').then((m) => m.MyOrdersPageComponent),
   },
   {
+    path: 'lookup',
+    loadComponent: () =>
+      import('./pages/order-lookup-page/order-lookup-page').then((m) => m.OrderLookupPageComponent),
+  },
+  {
     path: 'success',
     loadComponent: () =>
       import('./pages/order-success-page/order-success-page').then((m) => m.OrderSuccessPageComponent),

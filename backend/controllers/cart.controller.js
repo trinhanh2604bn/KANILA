@@ -135,11 +135,41 @@ const findCustomerByAuth = async (req) => {
   return customer;
 };
 
+const resolveGuestSessionId = (req) => {
+  const id =
+    req.headers["x-guest-session-id"] ||
+    req.body?.guestSessionId ||
+    req.query?.guestSessionId;
+  return String(id || "").trim().slice(0, 128);
+};
+
 const ensureActiveCartForCustomer = async (customerId) => {
   let cart = await Cart.findOne({ customer_id: customerId, cart_status: "active" }).sort({ updated_at: -1 });
   if (!cart) {
     cart = await Cart.create({
       customer_id: customerId,
+      cart_status: "active",
+      currency_code: "VND",
+      item_count: 0,
+      subtotal_amount: 0,
+      discount_amount: 0,
+      total_amount: 0,
+    });
+  }
+  return cart;
+};
+
+const ensureActiveCartForGuest = async (guestSessionId) => {
+  let cart = await Cart.findOne({
+    owner_type: "guest",
+    guest_session_id: guestSessionId,
+    cart_status: "active",
+  }).sort({ updated_at: -1 });
+  if (!cart) {
+    cart = await Cart.create({
+      owner_type: "guest",
+      guest_session_id: guestSessionId,
+      customer_id: null,
       cart_status: "active",
       currency_code: "VND",
       item_count: 0,
@@ -344,6 +374,25 @@ const getMyCart = async (req, res) => {
   }
 };
 
+// GET /api/carts/guest/me
+const getGuestCart = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    if (!guestSessionId) {
+      return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    }
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(200).json({
+      success: true,
+      message: "Get guest cart successfully",
+      data: { ...normalized, source: "guest", customerId: null, guestSessionId },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // POST /api/carts/me/items
 const addItemToMyCart = async (req, res) => {
   try {
@@ -466,6 +515,112 @@ const addItemToMyCart = async (req, res) => {
   }
 };
 
+// POST /api/carts/guest/items
+const addItemToGuestCart = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    if (!guestSessionId) {
+      return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    }
+
+    const { productId, variantId, quantity = 1 } = req.body || {};
+    const qty = Math.max(1, Number(quantity || 1));
+    if (!productId || !validateObjectId(productId)) {
+      return res.status(400).json({ success: false, message: "productId is required" });
+    }
+
+    const product = await Product.findById(productId).populate("brandId", "brandName");
+    if (!product || product.isActive === false || product.productStatus === "inactive") {
+      return res.status(409).json({ success: false, code: CART_ERROR.PRODUCT_UNAVAILABLE, message: "Product is unavailable" });
+    }
+
+    let variant = null;
+    if (variantId && validateObjectId(variantId)) {
+      variant = await ProductVariant.findOne({ _id: variantId, productId: product._id });
+    }
+    if (!variant) variant = await ProductVariant.findOne({ productId: product._id, variantStatus: "active" }).sort({ createdAt: 1 });
+    if (!variant) variant = await ProductVariant.findOne({ productId: product._id }).sort({ createdAt: 1 });
+    if (!variant) variant = await ensureDefaultVariantForProduct(product);
+    if (!variant) {
+      return res.status(409).json({ success: false, code: CART_ERROR.VARIANT_UNAVAILABLE, message: "Variant is unavailable" });
+    }
+
+    const availableStock = getAvailableStockForProduct(product);
+    if (qty > availableStock) {
+      return res.status(409).json({
+        success: false,
+        code: CART_ERROR.INSUFFICIENT_STOCK,
+        message: "Insufficient stock for requested quantity",
+        data: { availableStock, requestedQuantity: qty },
+      });
+    }
+
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    const lineKey = buildLineKey(product._id, variant._id);
+    const existing = await CartItem.findOne({
+      cart_id: cart._id,
+      $or: [{ line_key: lineKey }, { product_id: product._id, variant_id: variant._id }],
+    });
+
+    const unitPrice = Number(product.price || 0);
+    const compareAt = Number(req.body?.compareAtPrice || unitPrice || 0);
+    const payload = {
+      product_id: product._id,
+      cart_id: cart._id,
+      variant_id: variant._id,
+      sku_snapshot: variant.sku || product.productCode || String(product._id),
+      product_name_snapshot: product.productName || "Product",
+      variant_name_snapshot: variant.variantName || "Default",
+      brand_name_snapshot: product.brandId?.brandName || "",
+      image_url_snapshot: product.imageUrl || "",
+      compare_at_price_amount: compareAt > unitPrice ? compareAt : 0,
+      stock_status: Number(product.stock || 0) > 0 ? "in_stock" : "out_of_stock",
+      unit_price_amount: unitPrice,
+      discount_amount: 0,
+      final_unit_price_amount: unitPrice,
+      selected: true,
+      line_key: lineKey,
+    };
+
+    if (existing) {
+      const nextQty = Math.max(1, Number(existing.quantity || 1) + qty);
+      if (nextQty > availableStock) {
+        return res.status(409).json({
+          success: false,
+          code: CART_ERROR.INSUFFICIENT_STOCK,
+          message: "Insufficient stock for requested quantity",
+          data: { availableStock, requestedQuantity: nextQty },
+        });
+      }
+      existing.quantity = nextQty;
+      existing.unit_price_amount = payload.unit_price_amount;
+      existing.discount_amount = payload.discount_amount;
+      existing.final_unit_price_amount = payload.final_unit_price_amount;
+      existing.line_total_amount = existing.final_unit_price_amount * existing.quantity;
+      existing.product_name_snapshot = payload.product_name_snapshot;
+      existing.variant_name_snapshot = payload.variant_name_snapshot;
+      existing.brand_name_snapshot = payload.brand_name_snapshot;
+      existing.image_url_snapshot = payload.image_url_snapshot;
+      existing.compare_at_price_amount = payload.compare_at_price_amount;
+      existing.stock_status = payload.stock_status;
+      existing.selected = true;
+      existing.line_key = lineKey;
+      await existing.save();
+    } else {
+      await CartItem.create({ ...payload, quantity: qty, line_total_amount: payload.final_unit_price_amount * qty });
+    }
+
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(200).json({
+      success: true,
+      message: "Item added to guest cart successfully",
+      data: { ...normalized, source: "guest", customerId: null, guestSessionId },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // PATCH /api/carts/me/items/:itemId/quantity
 const updateMyCartItemQuantity = async (req, res) => {
   try {
@@ -519,6 +674,39 @@ const updateMyCartItemQuantity = async (req, res) => {
   }
 };
 
+// PATCH /api/carts/guest/items/:itemId/quantity
+const updateGuestCartItemQuantity = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    const { itemId } = req.params;
+    const quantity = Math.max(1, Number(req.body?.quantity || 1));
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    if (!validateObjectId(itemId)) return res.status(400).json({ success: false, message: "Invalid cart item id" });
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    const item = await CartItem.findOne({ _id: itemId, cart_id: cart._id }).populate("product_id").populate("variant_id");
+    if (!item) return res.status(404).json({ success: false, message: "Cart item not found" });
+    const product = await Product.findById(item.product_id).populate("brandId", "brandName");
+    const variant = await ProductVariant.findById(item.variant_id);
+    if (!product || product.isActive === false || product.productStatus === "inactive") {
+      return res.status(409).json({ success: false, code: CART_ERROR.PRODUCT_UNAVAILABLE, message: "Product is unavailable" });
+    }
+    if (!variant || variant.variantStatus === "inactive") {
+      return res.status(409).json({ success: false, code: CART_ERROR.VARIANT_UNAVAILABLE, message: "Variant is unavailable" });
+    }
+    const availableStock = getAvailableStockForProduct(product);
+    if (quantity > availableStock) {
+      return res.status(409).json({ success: false, code: CART_ERROR.INSUFFICIENT_STOCK, message: "Insufficient stock", data: { availableStock } });
+    }
+    item.quantity = quantity;
+    applySnapshotPricingFromProduct(item, product);
+    await item.save();
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(200).json({ success: true, message: "Guest cart item updated", data: { ...normalized, source: "guest", customerId: null, guestSessionId } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // PATCH /api/carts/me/items/:itemId/selection
 const toggleMyCartItemSelection = async (req, res) => {
   try {
@@ -548,6 +736,25 @@ const toggleMyCartItemSelection = async (req, res) => {
   }
 };
 
+const toggleGuestCartItemSelection = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    const { itemId } = req.params;
+    const selected = req.body?.selected !== false;
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    if (!validateObjectId(itemId)) return res.status(400).json({ success: false, message: "Invalid cart item id" });
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    const item = await CartItem.findOne({ _id: itemId, cart_id: cart._id });
+    if (!item) return res.status(404).json({ success: false, message: "Cart item not found" });
+    item.selected = selected;
+    await item.save();
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(200).json({ success: true, message: "Guest selection updated", data: { ...normalized, source: "guest", customerId: null, guestSessionId } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // PATCH /api/carts/me/selection
 const toggleMyCartSelectionAll = async (req, res) => {
   try {
@@ -560,6 +767,20 @@ const toggleMyCartSelectionAll = async (req, res) => {
     await CartItem.updateMany({ cart_id: cart._id }, { $set: { selected } });
     const normalized = await loadNormalizedCart(cart, customer._id);
     return res.status(200).json({ success: true, message: "Cart selection updated", data: normalized });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const toggleGuestCartSelectionAll = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    const selected = req.body?.selected !== false;
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    await CartItem.updateMany({ cart_id: cart._id }, { $set: { selected } });
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(200).json({ success: true, message: "Guest selection updated", data: { ...normalized, source: "guest", customerId: null, guestSessionId } });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -585,6 +806,21 @@ const removeItemFromMyCart = async (req, res) => {
   }
 };
 
+const removeItemFromGuestCart = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    const { itemId } = req.params;
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    if (!validateObjectId(itemId)) return res.status(400).json({ success: false, message: "Invalid cart item id" });
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    await CartItem.findOneAndDelete({ _id: itemId, cart_id: cart._id });
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(200).json({ success: true, message: "Guest cart item removed", data: { ...normalized, source: "guest", customerId: null, guestSessionId } });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // DELETE /api/carts/me/items-selected
 const removeSelectedFromMyCart = async (req, res) => {
   try {
@@ -596,6 +832,19 @@ const removeSelectedFromMyCart = async (req, res) => {
     await CartItem.deleteMany({ cart_id: cart._id, selected: true });
     const normalized = await loadNormalizedCart(cart, customer._id);
     return res.status(200).json({ success: true, message: "Selected cart items removed", data: normalized });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const removeSelectedFromGuestCart = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    await CartItem.deleteMany({ cart_id: cart._id, selected: true });
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(200).json({ success: true, message: "Selected guest items removed", data: { ...normalized, source: "guest", customerId: null, guestSessionId } });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -672,6 +921,41 @@ const prepareMyCartCheckout = async (req, res) => {
   }
 };
 
+const prepareGuestCartCheckout = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+    const cart = await ensureActiveCartForGuest(guestSessionId);
+    const items = await CartItem.find({ cart_id: cart._id, selected: true }).populate("product_id").populate("variant_id");
+    const issues = [];
+    for (const item of items) {
+      const product = item.product_id ? await Product.findById(item.product_id) : null;
+      const variant = item.variant_id ? await ProductVariant.findById(item.variant_id) : null;
+      if (!product || product.isActive === false || product.productStatus === "inactive") {
+        issues.push({ code: CART_ERROR.PRODUCT_UNAVAILABLE, cartItemId: String(item._id), message: "Product is unavailable" });
+        continue;
+      }
+      if (!variant || variant.variantStatus === "inactive") {
+        issues.push({ code: CART_ERROR.VARIANT_UNAVAILABLE, cartItemId: String(item._id), message: "Variant is unavailable" });
+        continue;
+      }
+      const availableStock = getAvailableStockForProduct(product);
+      if (Number(item.quantity || 0) > availableStock) {
+        issues.push({ code: CART_ERROR.INSUFFICIENT_STOCK, cartItemId: String(item._id), message: "Insufficient stock", availableStock });
+      }
+    }
+    const normalized = await loadNormalizedCart(cart, null);
+    return res.status(issues.length ? 409 : 200).json({
+      success: issues.length === 0,
+      message: issues.length ? "Guest cart requires review before checkout" : "Guest cart checkout is ready",
+      data: { ...normalized, source: "guest", customerId: null, guestSessionId },
+      issues,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAllCarts,
   getCartById,
@@ -680,12 +964,20 @@ module.exports = {
   updateCart,
   deleteCart,
   getMyCart,
+  getGuestCart,
   addItemToMyCart,
+  addItemToGuestCart,
   updateMyCartItemQuantity,
+  updateGuestCartItemQuantity,
   toggleMyCartItemSelection,
+  toggleGuestCartItemSelection,
   toggleMyCartSelectionAll,
+  toggleGuestCartSelectionAll,
   removeItemFromMyCart,
+  removeItemFromGuestCart,
   removeSelectedFromMyCart,
+  removeSelectedFromGuestCart,
   prepareMyCartCheckout,
+  prepareGuestCartCheckout,
   buildEmptyNormalizedCart,
 };
