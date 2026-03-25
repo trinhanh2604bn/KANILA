@@ -1,0 +1,72 @@
+<section class="card-soft section-card">
+  <div class="section-title-row">
+    <div>
+      <h2>Đánh giá của bạn</h2>
+      <p>Theo dõi trạng thái đánh giá và chỉnh sửa khi cần.</p>
+    </div>
+  </div>
+
+  <div class="skeleton-list" *ngIf="loading">
+    <div class="skeleton-card" *ngFor="let _ of [1,2,3]"></div>
+  </div>
+
+  <div class="empty" *ngIf="!loading && !reviews.length">
+    <div class="empty-icon"><i class="bi bi-star"></i></div>
+    <strong>Bạn chưa có đánh giá</strong>
+    <p>Chia sẻ trải nghiệm để giúp người khác chọn đúng sản phẩm.</p>
+    <a routerLink="/catalog" class="btn-ghost">Khám phá sản phẩm</a>
+    <a routerLink="/account/orders" class="btn-ghost" style="margin-top: 10px;">Xem đơn hàng để viết đánh giá</a>
+  </div>
+
+  <div class="review-list" *ngIf="!loading && reviews.length">
+    <article class="review-item" *ngFor="let r of reviews">
+      <div class="review-main">
+        <div class="review-thumbnail">
+          <img
+            *ngIf="r.productId?.imageUrl"
+            [src]="r.productId.imageUrl"
+            [alt]="r.productId?.productName || 'Product'"
+          />
+          <div class="thumb-placeholder" *ngIf="!r.productId?.imageUrl"></div>
+        </div>
+
+        <div class="review-content">
+          <div class="review-top">
+            <div class="review-title">
+              <strong>{{ r.productId?.productName || 'Sản phẩm' }}</strong>
+              <span class="muted" *ngIf="r.variantId?.variantName"> · {{ r.variantId.variantName }}</span>
+            </div>
+            <span class="status-chip" [ngClass]="statusClass(r.reviewStatus)">{{ statusLabel(r.reviewStatus) }}</span>
+          </div>
+
+          <div class="rating-row" aria-label="Rating">
+            <span class="stars">{{ '★'.repeat(clampedRating(r.rating)) }}{{ '☆'.repeat(5 - clampedRating(r.rating)) }}</span>
+            <span class="muted" *ngIf="(r.helpfulCount ?? 0) > 0">· Hữu ích: {{ r.helpfulCount }}</span>
+          </div>
+
+          <h4 class="review-subtitle" *ngIf="r.reviewTitle">{{ r.reviewTitle }}</h4>
+          <p class="review-body">{{ r.reviewContent || '' }}</p>
+
+          <div class="review-media-row" *ngIf="mediaByReviewId[r._id]?.length">
+            <img
+              *ngFor="let url of (mediaByReviewId[r._id] || []) | slice:0:6"
+              class="media-thumb"
+              [src]="url"
+              alt="Review media"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="review-actions">
+        <button class="btn-ghost" type="button" [disabled]="!canEdit(r) || busyReviewId === r._id" (click)="editReview(r)">
+          Chỉnh sửa
+        </button>
+        <button class="btn-ghost danger" type="button" [disabled]="busyReviewId === r._id" (click)="deleteReview(r)">
+          Xóa
+        </button>
+      </div>
+    </article>
+  </div>
+</section>
+

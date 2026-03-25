@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { AccountOrderService, MyOrderDetailView, MyOrderTrackingView } from '../../services/order.service';
 
@@ -17,7 +17,11 @@ export class OrderDetailPageComponent implements OnInit {
   detail: MyOrderDetailView | null = null;
   tracking: MyOrderTrackingView | null = null;
 
-  constructor(private readonly route: ActivatedRoute, private readonly orderService: AccountOrderService) {}
+  constructor(
+    private readonly route: ActivatedRoute,
+    private readonly orderService: AccountOrderService,
+    private readonly router: Router
+  ) {}
 
   ngOnInit(): void {
     const id = String(this.route.snapshot.paramMap.get('id') || '');
@@ -71,5 +75,9 @@ export class OrderDetailPageComponent implements OnInit {
         this.loading = false;
       });
     });
+  }
+
+  goWriteReview(orderItemId: string): void {
+    this.router.navigate(['/account/reviews/write', orderItemId]);
   }
 }

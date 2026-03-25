@@ -50,7 +50,7 @@ interface ReviewRow {
   verifiedPurchaseFlag?: boolean;
   helpfulCount?: number;
   createdAt?: string;
-  customer_id?: { full_name?: string };
+  customer_id?: { full_name?: string; avatar_url?: string };
   variantId?: { variantName?: string };
 }
 
@@ -144,6 +144,11 @@ export class ProductDetailService {
     );
   }
 
+  voteReview(reviewId: string, voteType: 'helpful' | 'not_helpful'): Observable<any> {
+    // Server derives customer from JWT (no customer_id needed from client).
+    return this.http.post<ApiResponse<any>>(`${this.apiBase}/reviews/${reviewId}/vote`, { voteType });
+  }
+
   private buildFrom(
     product: Product | null,
     relatedProducts: Product[],
@@ -163,8 +168,8 @@ export class ProductDetailService {
     const variantList = this.mapVariants(variants, inventory);
     const ratingDist = this.mapRatingDistribution(reviewSummary, reviews);
     const reviewList = this.mapReviews(reviews, reviewMedia);
-    const useDemoReviews = !opts?.skipReviewFallback && reviewList.length === 0;
-    const reviewsOut = useDemoReviews ? this.buildFallbackReviews() : reviewList;
+    // Reviews must be database-backed; do not inject demo/fallback reviews.
+    const reviewsOut = reviewList;
     const breadcrumb = this.findCategoryPath(product.categoryId?._id ?? '', categories);
     const currentPrice = Number(product.price ?? 0);
     const oldPrice =
@@ -385,7 +390,7 @@ export class ProductDetailService {
     return reviews.map((r, index) => ({
       id: r._id,
       userName: r.customer_id?.full_name || `Khách hàng ${index + 1}`,
-      avatar: `https://i.pravatar.cc/100?img=${(index % 70) + 1}`,
+      avatar: r.customer_id?.avatar_url || `https://i.pravatar.cc/100?img=${(index % 70) + 1}`,
       verified: !!r.verifiedPurchaseFlag,
       shade: r.variantId?.variantName || '',
       rating: r.rating ?? 5,
@@ -393,6 +398,7 @@ export class ProductDetailService {
       body: r.reviewContent || '',
       images: mediaByReview.get(r._id) ?? [],
       date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '',
+      createdAtMs: r.createdAt ? new Date(r.createdAt).getTime() : 0,
       helpful: r.helpfulCount ?? 0,
     }));
   }
@@ -473,24 +479,6 @@ export class ProductDetailService {
       { id: 'f1', sku: 'N15', name: 'N15 Light Neutral', shadeCode: 'N15', shadeName: 'Light Neutral', undertone: 'Neutral', swatchColor: '#f5d7be', inStock: true, stockQty: 30 },
       { id: 'f2', sku: 'W20', name: 'W20 Warm Beige', shadeCode: 'W20', shadeName: 'Warm Beige', undertone: 'Warm', swatchColor: '#e9bf9f', inStock: true, stockQty: 18 },
       { id: 'f3', sku: 'C23', name: 'C23 Soft Sand', shadeCode: 'C23', shadeName: 'Soft Sand', undertone: 'Cool', swatchColor: '#d8a888', inStock: true, stockQty: 12 },
-    ];
-  }
-
-  private buildFallbackReviews(): ProductDetailReview[] {
-    return [
-      {
-        id: 'fallback-1',
-        userName: 'Ngoc Anh',
-        avatar: 'https://i.pravatar.cc/100?img=11',
-        verified: true,
-        shade: 'W20 Warm Beige',
-        rating: 5,
-        title: 'Nền mịn và bền màu',
-        body: 'Dễ tán, tiệp da và vẫn đẹp sau nhiều giờ làm việc.',
-        images: [],
-        date: '12/03/2026',
-        helpful: 7,
-      },
     ];
   }
 

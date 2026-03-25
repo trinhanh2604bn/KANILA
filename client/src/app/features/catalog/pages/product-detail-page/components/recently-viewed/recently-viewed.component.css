@@ -1,28 +1,39 @@
-.reco-block { padding: 16px; margin-bottom: 14px; }
-.reco-block h3 {
-  margin: 0 0 14px;
-  color: #4f1a2d;
+/* Container chính */
+.reco-block {
+  padding: 12px; /* Giảm từ 16px */
+  margin-bottom: 12px;
 }
 
+.reco-block h3 {
+  margin: 0 0 10px;
+  color: #4f1a2d;
+  font-size: 1.1rem; /* Giảm nhẹ font size tiêu đề khối */
+}
+
+/* Cấu hình Grid cho danh sách Card */
 .reco-scroll {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(240px, 1fr);
-  gap: 14px;
+  /* Thu nhỏ chiều rộng card: từ 240px xuống 160px */
+  grid-auto-columns: minmax(160px, 1fr);
+  gap: 10px; /* Thu hẹp khoảng cách giữa các card */
   overflow-x: auto;
   padding: 2px 2px 10px;
+  scrollbar-width: thin; /* Làm thanh cuộn nhỏ lại trên Firefox */
 }
 
-.pdp-reco-card-host { display: block; }
+.pdp-reco-card-host {
+  display: block;
+}
 
-/* Equal-height lock for all recommendation cards */
+/* Căn chỉnh chiều cao bằng nhau cho các card */
 .reco-block .reco-scroll {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(240px, 1fr);
+  grid-auto-columns: minmax(160px, 1fr);
   grid-auto-rows: auto;
   align-items: stretch;
-  gap: 14px;
+  gap: 10px;
 }
 
 .reco-block .pdp-reco-card-host {
@@ -36,8 +47,10 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  border-radius: 12px; /* Bo góc nhỏ lại cho hợp kích thước */
 }
 
+/* Phần hình ảnh */
 :host ::ng-deep .reco-block .pdp-reco-card-host .product-card__media,
 :host ::ng-deep .reco-block .pdp-reco-card-host .product-card__image-row,
 :host ::ng-deep .reco-block .pdp-reco-card-host .product-card__image-wrap {
@@ -50,7 +63,7 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  border-radius: 14px 14px 0 0;
+  border-radius: 12px 12px 0 0;
 }
 
 :host ::ng-deep .reco-block .pdp-reco-card-host .product-card__img {
@@ -59,31 +72,37 @@
   object-fit: cover;
 }
 
+/* Nội dung text bên dưới */
 :host ::ng-deep .reco-block .pdp-reco-card-host .product-card__body {
   display: flex;
   flex: 1;
   flex-direction: column;
+  padding: 8px; /* Giảm padding bên trong card */
 }
 
 :host ::ng-deep .reco-block .pdp-reco-card-host .product-card__title {
+  font-size: 13px; /* Chữ nhỏ hơn */
+  line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.7em;
+  min-height: 2.6em; /* Khớp với 2 dòng chữ nhỏ */
 }
 
 :host ::ng-deep .reco-block .pdp-reco-card-host .product-card__price-row {
-  margin-top: auto;
+  margin-top: 6px;
+  font-size: 14px;
 }
 
+/* Skeleton Loading cho Card nhỏ */
 .pdp-skeleton-card {
   height: 100%;
-  min-height: 420px;
-  border-radius: 16px;
+  min-height: 260px; /* Giảm mạnh từ 420px để cân bằng với card mới */
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   position: relative;
   overflow: hidden;
 }

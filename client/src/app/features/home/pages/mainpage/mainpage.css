@@ -1,11 +1,163 @@
+/* ============================================= */
+/* COUPON CAMPAIGN — Premium Voucher Tickets     */
+/* ============================================= */
 .coupon-campaign { margin: 24px 0; }
-.campaign-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-.campaign-grid article { border: 1px solid #f1d5e1; border-radius: 14px; background: #fff8fb; padding: 12px; box-shadow: 0 10px 20px rgba(127, 45, 78, 0.06); }
-.campaign-grid strong { color: #7f2d4d; display: block; }
-.campaign-grid p { margin: 6px 0; color: #673347; }
-.campaign-grid small { color: #946379; }
-.campaign-grid button { margin-top: 8px; border: 1px solid #e5bfd0; border-radius: 10px; padding: 7px 10px; background: #fff; color: #8f2e56; font-weight: 600; }
-@media (max-width: 900px) { .campaign-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+.campaign-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.coupon-ticket {
+  position: relative;
+  display: flex;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #f3e2eb;
+  box-shadow: 0 4px 16px rgba(127, 45, 78, 0.06);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.coupon-ticket:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(127, 45, 78, 0.14);
+}
+
+/* Left accent panel */
+.coupon-ticket__left {
+  flex: 0 0 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 16px 8px;
+  background: linear-gradient(135deg, #ff6b8a 0%, #c2185b 100%);
+  color: #fff;
+  position: relative;
+}
+.coupon-ticket[data-index="1"] .coupon-ticket__left {
+  background: linear-gradient(135deg, #ff8a65 0%, #e65100 100%);
+}
+.coupon-ticket[data-index="2"] .coupon-ticket__left {
+  background: linear-gradient(135deg, #7c4dff 0%, #4a148c 100%);
+}
+.coupon-ticket[data-index="3"] .coupon-ticket__left {
+  background: linear-gradient(135deg, #26c6da 0%, #00695c 100%);
+}
+
+.coupon-ticket__icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.coupon-ticket__discount {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.coupon-ticket__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+}
+
+/* Right content panel */
+.coupon-ticket__right {
+  flex: 1;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.coupon-ticket__code {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border: 1.5px dashed #d4a0b5;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #8f2949;
+  letter-spacing: 0.06em;
+  background: #fff5f9;
+}
+
+.coupon-ticket__desc {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #5f2d42;
+  line-height: 1.35;
+}
+
+.coupon-ticket__min {
+  font-size: 0.74rem;
+  color: #9a7a85;
+}
+
+.coupon-ticket__btn {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6b1e2e 0%, #d4344e 100%);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.coupon-ticket__btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(107, 30, 46, 0.3);
+}
+.coupon-ticket__btn.saved {
+  background: #e8dce2;
+  color: #7a5567;
+  cursor: default;
+}
+.coupon-ticket__btn:disabled {
+  opacity: 0.85;
+}
+
+/* Ticket notches (semicircle cutouts) */
+.coupon-ticket__notch {
+  position: absolute;
+  left: 80px;
+  width: 20px;
+  height: 10px;
+  background: #fff8fb;
+  z-index: 2;
+}
+.coupon-ticket__notch--top {
+  top: -1px;
+  border-radius: 0 0 10px 10px;
+  box-shadow: inset 0 2px 4px rgba(127, 45, 78, 0.08);
+}
+.coupon-ticket__notch--bottom {
+  bottom: -1px;
+  border-radius: 10px 10px 0 0;
+  box-shadow: inset 0 -2px 4px rgba(127, 45, 78, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .campaign-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .campaign-grid { grid-template-columns: 1fr; }
+  .coupon-ticket__left { flex: 0 0 72px; }
+  .coupon-ticket__notch { left: 62px; }
+}
 /* Aligns with client layout: <main class="container py-2"> — slider stays full-width above. */
 .mainpage-content {
   box-sizing: border-box;

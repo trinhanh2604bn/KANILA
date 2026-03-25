@@ -46,6 +46,14 @@
           <div>
             <strong>{{ it.product_name_snapshot || 'Sản phẩm' }}</strong>
             <p>{{ it.variant_name_snapshot || '' }}</p>
+            <button
+              *ngIf="detail.order_status === 'completed' && it._id"
+              type="button"
+              class="btn-review"
+              (click)="goWriteReview(it._id)"
+            >
+              Viết đánh giá
+            </button>
           </div>
           <div>x{{ it.quantity || 0 }}</div>
           <div>{{ it.line_total_amount || 0 | number }} đ</div>

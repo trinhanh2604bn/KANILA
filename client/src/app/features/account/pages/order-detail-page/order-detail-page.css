@@ -22,6 +22,23 @@ p { margin: 6px 0 0; font-size: 0.84rem; color: #8d5a71; }
 .items li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; border-top: 1px dashed #edd3df; padding-top: 8px; }
 .error { margin-top: 10px; color: #a4294d; font-size: 0.82rem; }
 .loading { margin-top: 10px; color: #8d5a71; }
+
+.btn-review {
+  margin-top: 8px;
+  border: 1px solid #efc5da;
+  background: #fff7fb;
+  color: #7f2448;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-review:hover {
+  border-color: #d6a4b8;
+  transform: translateY(-1px);
+}
 @media (max-width: 900px) {
   .meta, .timeline, .grid { grid-template-columns: 1fr; }
 }

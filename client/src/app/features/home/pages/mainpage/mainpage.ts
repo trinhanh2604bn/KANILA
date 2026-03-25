@@ -1,7 +1,7 @@
 import { take } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Header } from '../../../../layout/header/header';
 import { Footer } from '../../../../layout/footer/footer';
 import { Slider } from '../components/slider/slider';
@@ -31,11 +31,10 @@ import { CouponAvailableItem, CouponService } from '../../../account/services/co
     Bfslider,
     Brand,
     Roya,
-  Footer,
-Header,
-GlobalToastComponent,
-ScrollToTop,
-],
+    Footer,
+    Header,
+    GlobalToastComponent,
+    ScrollToTop, RouterLink],
   templateUrl: './mainpage.html',
   styleUrl: './mainpage.css',
 })

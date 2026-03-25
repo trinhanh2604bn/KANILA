@@ -13,8 +13,8 @@ export const routes: Routes = [
       import('./layout/admin-shell/admin-shell.component').then(m => m.AdminShellComponent),
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', loadComponent: () => import('./features/dashboard/pages/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent) },
       { path: 'accounts', loadChildren: () => import('./features/accounts/accounts.routes').then(m => m.accountsRoutes) },
+      { path: 'dashboard', loadComponent: () => import('./features/dashboard/pages/dashboard/dashboard-page.component').then(m => m.DashboardPageComponent) },
       { path: 'roles', loadChildren: () => import('./features/roles/roles.routes').then(m => m.rolesRoutes) },
       { path: 'products', loadChildren: () => import('./features/products/products.routes').then(m => m.productsRoutes) },
       { path: 'categories', loadChildren: () => import('./features/categories/categories.routes').then(m => m.categoriesRoutes) },

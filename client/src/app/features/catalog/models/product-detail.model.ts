@@ -30,6 +30,7 @@ export interface ProductDetailReview {
   images: string[];
   date: string;
   helpful: number;
+  createdAtMs?: number;
 }
 
 export interface ProductDetailRecommendation {

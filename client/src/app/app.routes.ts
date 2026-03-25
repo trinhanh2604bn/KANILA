@@ -8,6 +8,7 @@ import { ChallengeJoinPage } from './features/community/pages/challenges/challen
 import { GalleryDetailPage } from './features/community/pages/gallery/gallery-detail/gallery-detail';
 import { GalleryPage } from './features/community/pages/gallery/gallery';
 import { CommunityComponent } from './features/community/pages/communityhome/communityhome';
+import { CatalogBrandPageComponent } from './features/catalog/pages/brand-page/brand-page';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'home' },
   { path: 'home', loadChildren: () => import('./features/home/home.routes').then((m) => m.HOME_ROUTES) },
@@ -41,6 +42,8 @@ export const routes: Routes = [
             { path: 'community/challenges', component: ChallengesPage },
             { path: 'community/profile', component: ProfilePage },
             { path: 'community/post/:id', component: PostDetailPage },
+            {path: 'brand', component: CatalogBrandPageComponent},
+
 
     ],
   },

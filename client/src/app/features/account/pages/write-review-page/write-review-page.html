@@ -1,0 +1,102 @@
+<section class="card-soft section-card">
+  <div class="section-title-row">
+    <div>
+      <h2>Viết đánh giá</h2>
+      <p>Chia sẻ trải nghiệm thật để giúp khách hàng chọn đúng sản phẩm.</p>
+    </div>
+  </div>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <div *ngIf="!loading && preview">
+    <div class="product-preview">
+      <img class="product-preview-img" [src]="preview.productImageUrl" [alt]="preview.productName" />
+      <div class="product-preview-info">
+        <strong>{{ preview.productName }}</strong>
+        <div class="muted">
+          {{ preview.variantLabel }}
+          <span *ngIf="preview.orderNumber">· Đơn #{{ preview.orderNumber }}</span>
+        </div>
+        <div class="muted" *ngIf="preview.orderPlacedAt">
+          Mua ngày: {{ preview.orderPlacedAt | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty" *ngIf="!loading && preview && !eligible">
+    <div class="empty-icon"><i class="bi bi-lock-fill"></i></div>
+    <strong>Bạn hiện không đủ điều kiện để viết đánh giá</strong>
+    <p>Chỉ các đơn hàng hoàn tất mới có thể gửi đánh giá. Cảm ơn bạn vì sự tin tưởng dành cho KANILA.</p>
+  </div>
+
+  <div *ngIf="!loading && preview && eligible" class="review-form">
+    <div class="form-row">
+      <label>Số sao</label>
+      <div class="star-row" role="radiogroup" aria-label="Rating">
+        <button
+          *ngFor="let s of ratingStars"
+          type="button"
+          class="star-btn"
+          [class.active]="rating >= s"
+          (click)="setRating(s)"
+        >
+          ★
+        </button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Tiêu đề (ngắn gọn)</label>
+      <input class="input" type="text" [value]="reviewTitle" (input)="reviewTitle = ($any($event.target).value || '')" placeholder="Ví dụ: Mịn nhẹ, lên da sang và không bị bết" />
+    </div>
+
+    <div class="form-row">
+      <label>Nội dung đánh giá</label>
+      <textarea
+        class="textarea"
+        rows="6"
+        [value]="reviewContent"
+        (input)="reviewContent = ($any($event.target).value || '')"
+        placeholder="Chia sẻ rõ kết cấu, độ che phủ, thời gian bền màu, cảm giác trên da..."
+      ></textarea>
+      <small class="hint">Gợi ý: Nêu rõ loại da, hiệu ứng finish và độ bám sau vài giờ sử dụng.</small>
+    </div>
+
+    <div class="form-row">
+      <label>Ảnh review (tùy chọn)</label>
+      <div class="upload-box">
+        <i class="bi bi-cloud-arrow-up-fill upload-icon"></i>
+        <div class="upload-title">Chọn ảnh (tối đa 6 ảnh)</div>
+        <input type="file" class="file-input" accept="image/*" multiple (change)="onFilesSelected($any($event.target).files)" />
+        <div class="upload-note">Mỗi ảnh tối đa 2MB. Ảnh sẽ được hiển thị ngay trong bài.</div>
+      </div>
+    </div>
+
+    <div class="media-previews" *ngIf="mediaBase64.length">
+      <div class="media-preview" *ngFor="let url of mediaBase64; let i = index">
+        <img [src]="url" alt="Preview" />
+        <button class="remove-media" type="button" (click)="removeMediaAt(i)">✕</button>
+      </div>
+    </div>
+
+    <div class="form-error" *ngIf="formError">{{ formError }}</div>
+
+    <div class="actions">
+      <button class="btn-primary" type="button" [disabled]="submitting" (click)="submit()">
+        <span *ngIf="!submitting">{{ existingReviewId ? 'Cập nhật' : 'Gửi đánh giá' }}</span>
+        <span *ngIf="submitting">Đang gửi...</span>
+      </button>
+      <button class="btn-ghost" type="button" [disabled]="submitting" routerLink="/account/reviews">
+        Quay lại
+      </button>
+    </div>
+
+    <div class="success" *ngIf="success">
+      <i class="bi bi-check-circle-fill"></i>
+      <strong>Hoàn tất!</strong>
+      <p>Đánh giá của bạn đã được ghi nhận. Chúng mình sẽ duyệt sớm nhất có thể.</p>
+    </div>
+  </div>
+</section>
+

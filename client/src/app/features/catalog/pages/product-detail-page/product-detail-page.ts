@@ -13,6 +13,7 @@ import { WishlistService } from '../../../account/services/wishlist.service';
 import { CouponAvailableItem, CouponService } from '../../../account/services/coupon.service';
 import { SameBrandSectionComponent } from './components/same-brand/same-brand.component';
 import { RecentlyViewedSectionComponent } from './components/recently-viewed/recently-viewed.component';
+import { HttpClient } from '@angular/common/http';
 
 interface PdpShade {
   id: string;
@@ -38,6 +39,7 @@ interface PdpReview {
   body: string;
   images: string[];
   date: string;
+  createdAtMs: number;
   helpful: number;
 }
 
@@ -63,7 +65,7 @@ interface PdpMiniProduct {
   styleUrl: './product-detail-page.css',
 })
 export class CatalogProductDetailPageComponent implements OnInit {
-  readonly reviewInsightTags: string[] = ['Mịn lì tự nhiên', 'Bền màu lâu trôi', 'Dễ tán', 'Không xuống tông'];
+  reviewInsightTags: string[] = [];
   breadcrumb = ['Trang chủ', 'Face', 'Kem nền'];
   productName = 'Kanila Velvet Skin Cushion Foundation SPF50+';
   productSubtitle = 'Luminous matte finish, buildable coverage, seamless blend';
@@ -177,69 +179,36 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   // Same Brand + Recently Viewed are rendered via dedicated components (see `components/`).
 
-  reviews: PdpReview[] = [
-    {
-      id: 'r1',
-      userName: 'Mai Anh',
-      avatar: 'https://i.pravatar.cc/100?img=5',
-      verified: true,
-      shade: 'W20 Warm Beige',
-      rating: 5,
-      title: 'Đẹp mịn như filter, vẫn nhẹ mặt',
-      body: 'Finish rất sang, không bị mốc vùng cánh mũi sau 8 tiếng văn phòng. Layer thêm vẫn không dày.',
-      images: ['https://images.unsplash.com/photo-1603575448364-4f4f0f3c9033?auto=format&fit=crop&w=600&q=80'],
-      date: '12/03/2026',
-      helpful: 22,
-    },
-    {
-      id: 'r2',
-      userName: 'Quynh Le',
-      avatar: 'https://i.pravatar.cc/100?img=32',
-      verified: true,
-      shade: 'N15 Light Neutral',
-      rating: 4,
-      title: 'Che phủ tốt, nền không bị xỉn',
-      body: 'Mình da hỗn hợp thiên dầu, tầm 6 tiếng vẫn đẹp. Khuyên set nhẹ vùng chữ T để kiểm dầu tốt hơn.',
-      images: [],
-      date: '07/03/2026',
-      helpful: 14,
-    },
-    {
-      id: 'r3',
-      userName: 'Linh Chi',
-      avatar: 'https://i.pravatar.cc/100?img=15',
-      verified: false,
-      shade: 'C23 Soft Sand',
-      rating: 5,
-      title: 'Ảnh lên tông da cực tự nhiên',
-      body: 'Texture mỏng, tán bằng mút siêu nhanh. Độ bám rất tốt cả khi đi ngoài trời.',
-      images: ['https://images.unsplash.com/photo-1596704017254-9f1d2d3ed3f4?auto=format&fit=crop&w=600&q=80'],
-      date: '03/03/2026',
-      helpful: 9,
-    },
-    {
-      id: 'r4',
-      userName: 'Thanh Vy',
-      avatar: 'https://i.pravatar.cc/100?img=47',
-      verified: true,
-      shade: 'W27 Honey',
-      rating: 3,
-      title: 'Tông đẹp nhưng cần dưỡng kỹ',
-      body: 'Da khô như mình thì prep kỹ sẽ đẹp hơn nhiều. Sau khi dưỡng đủ ẩm thì finish rất xịn.',
-      images: [],
-      date: '27/02/2026',
-      helpful: 6,
-    },
-  ];
+  reviews: PdpReview[] = [];
 
   selectedImageIndex = 0;
-  selectedShadeId = this.shades[1].id;
+  selectedShadeId = this.shades[1]?.id ?? this.shades[0]?.id ?? '';
   quantity = 1;
-  reviewFilter: 'all' | '5' | '4' | '3' | '2' | '1' | 'withImage' | 'verified' = 'all';
+  reviewFilter: 'all' | '5' | '4' | '3' | '2' | '1' | 'withImage' | 'verified' | 'helpful' = 'all';
+  reviewSort: 'newest' | 'mostHelpful' | 'highestRating' | 'lowestRating' = 'newest';
+  reviewShadeFilter: string | null = null;
+  reviewSkinTypeFilter: string | null = null;
+  helpfulVotingIds = new Set<string>();
+  lightboxOpen = false;
+  lightboxImages: string[] = [];
+  lightboxIndex = 0;
   stickyVisible = false;
   isAddingToCart = false;
   wished = false;
   availableCoupons: CouponAvailableItem[] = [];
+
+  // --- Write Review Modal ---
+  writeReviewOpen = false;
+  writeReviewRating = 5;
+  writeReviewTitle = '';
+  writeReviewContent = '';
+  writeReviewMediaBase64: string[] = [];
+  writeReviewMediaBusy = false;
+  writeReviewSubmitting = false;
+  writeReviewSuccess = false;
+  writeReviewError = '';
+  writeReviewStars = [1, 2, 3, 4, 5];
+  private readonly apiUrl = 'http://localhost:5000/api';
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -249,7 +218,8 @@ export class CatalogProductDetailPageComponent implements OnInit {
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
     private readonly wishlistService: WishlistService,
-    private readonly couponService: CouponService
+    private readonly couponService: CouponService,
+    private readonly http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -299,10 +269,23 @@ export class CatalogProductDetailPageComponent implements OnInit {
   }
 
   get filteredReviews(): PdpReview[] {
-    if (this.reviewFilter === 'all') return this.reviews;
-    if (this.reviewFilter === 'withImage') return this.reviews.filter((r) => r.images.length > 0);
-    if (this.reviewFilter === 'verified') return this.reviews.filter((r) => r.verified);
-    return this.reviews.filter((r) => r.rating === Number(this.reviewFilter));
+    let list = this.reviews.slice();
+
+    if (this.reviewFilter === 'withImage') list = list.filter((r) => r.images.length > 0);
+    else if (this.reviewFilter === 'verified') list = list.filter((r) => r.verified);
+    else if (this.reviewFilter === 'helpful') list = list.filter((r) => r.helpful > 0);
+    else if (this.reviewFilter !== 'all') list = list.filter((r) => r.rating === Number(this.reviewFilter));
+
+    if (this.reviewShadeFilter) list = list.filter((r) => r.shade === this.reviewShadeFilter);
+    if (this.reviewSkinTypeFilter) list = list.filter((r) => this.deriveSkinTypeTag(r) === this.reviewSkinTypeFilter);
+
+    const ms = (r: PdpReview) => Number(r.createdAtMs ?? 0);
+    if (this.reviewSort === 'newest') list.sort((a, b) => ms(b) - ms(a));
+    else if (this.reviewSort === 'mostHelpful') list.sort((a, b) => (b.helpful ?? 0) - (a.helpful ?? 0) || ms(b) - ms(a));
+    else if (this.reviewSort === 'highestRating') list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || ms(b) - ms(a));
+    else if (this.reviewSort === 'lowestRating') list.sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0) || ms(b) - ms(a));
+
+    return list;
   }
 
   get totalRatingSlots(): number {
@@ -321,6 +304,25 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   get hasRatingData(): boolean {
     return [1, 2, 3, 4, 5].some((star) => (this.ratingDistribution[star] ?? 0) > 0);
+  }
+
+  get availableReviewShades(): string[] {
+    const set = new Set<string>();
+    for (const r of this.reviews) {
+      const s = String(r.shade ?? '').trim();
+      if (s) set.add(s);
+    }
+    // Keep UI calm: show only a subset.
+    return Array.from(set).slice(0, 12);
+  }
+
+  get availableReviewSkinTypes(): string[] {
+    const set = new Set<string>();
+    for (const r of this.reviews) {
+      const t = this.deriveSkinTypeTag(r);
+      if (t) set.add(t);
+    }
+    return Array.from(set).slice(0, 6);
   }
 
   get customerReviewPhotos(): string[] {
@@ -363,6 +365,293 @@ export class CatalogProductDetailPageComponent implements OnInit {
   scrollToReviews(): void {
     const section = document.getElementById('pdp-reviews');
     section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  goToMyReviews(): void {
+    this.router.navigate(['/account/reviews']);
+  }
+
+  // ============ WRITE REVIEW MODAL ============
+
+  openWriteReview(): void {
+    this.writeReviewOpen = true;
+    this.writeReviewRating = 5;
+    this.writeReviewTitle = '';
+    this.writeReviewContent = '';
+    this.writeReviewMediaBase64 = [];
+    this.writeReviewSuccess = false;
+    this.writeReviewError = '';
+    this.writeReviewSubmitting = false;
+  }
+
+  closeWriteReview(): void {
+    this.writeReviewOpen = false;
+  }
+
+  setWriteReviewRating(v: number): void {
+    this.writeReviewRating = Math.max(1, Math.min(5, v));
+  }
+
+  async onWriteReviewFilesSelected(files: FileList | null): Promise<void> {
+    if (!files || !files.length) return;
+    const list = Array.from(files).slice(0, 6);
+    const MAX_MB = 2;
+    this.writeReviewError = '';
+    this.writeReviewMediaBusy = true;
+    try {
+      const readOne = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+          if (!file.type.startsWith('image/')) return reject(new Error('Chỉ nhận ảnh.'));
+          if (file.size > MAX_MB * 1024 * 1024) return reject(new Error('Mỗi ảnh tối đa 2MB.'));
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(new Error('Không thể đọc tệp.'));
+          reader.readAsDataURL(file);
+        });
+      const base64 = await Promise.all(list.map((f) => readOne(f)));
+      this.writeReviewMediaBase64 = base64.filter(Boolean);
+    } catch (e: any) {
+      this.writeReviewError = e?.message || 'Không thể tải ảnh.';
+    } finally {
+      this.writeReviewMediaBusy = false;
+    }
+  }
+
+  removeWriteReviewMediaAt(i: number): void {
+    this.writeReviewMediaBase64 = this.writeReviewMediaBase64.filter((_, idx) => idx !== i);
+  }
+
+  submitWriteReview(): void {
+    if (this.writeReviewSubmitting) return;
+    this.writeReviewSuccess = false;
+    this.writeReviewError = '';
+
+    if (!this.productId) {
+      this.writeReviewError = 'Không xác định được sản phẩm.';
+      return;
+    }
+    if (!this.writeReviewRating || this.writeReviewRating < 1 || this.writeReviewRating > 5) {
+      this.writeReviewError = 'Vui lòng chọn số sao.';
+      return;
+    }
+    if (!this.writeReviewTitle.trim()) {
+      this.writeReviewError = 'Vui lòng nhập tiêu đề đánh giá.';
+      return;
+    }
+    if (!this.writeReviewContent.trim() || this.writeReviewContent.trim().length < 20) {
+      this.writeReviewError = 'Vui lòng viết nội dung chi tiết (tối thiểu 20 ký tự).';
+      return;
+    }
+
+    this.writeReviewSubmitting = true;
+
+    this.http
+      .post<any>(`${this.apiUrl}/reviews/submit-direct`, {
+        productId: this.productId,
+        variantId: this.resolveVariantIdForApi(this.selectedShadeId),
+        rating: this.writeReviewRating,
+        reviewTitle: this.writeReviewTitle.trim(),
+        reviewContent: this.writeReviewContent.trim(),
+        mediaUrls: this.writeReviewMediaBase64,
+      })
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.writeReviewSubmitting = false;
+          this.writeReviewSuccess = true;
+          this.toast.success('Đã gửi đánh giá! Cảm ơn bạn đã chia sẻ trải nghiệm.');
+          setTimeout(() => {
+            this.writeReviewOpen = false;
+          }, 1500);
+        },
+        error: (err) => {
+          this.writeReviewSubmitting = false;
+          const msg = err?.error?.message || err?.message || '';
+          if (msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('đăng nhập')) {
+            this.writeReviewError = 'Vui lòng đăng nhập để viết đánh giá.';
+          } else {
+            this.writeReviewError = msg || 'Không thể gửi đánh giá. Vui lòng thử lại.';
+          }
+        },
+      });
+  }
+
+  setReviewFilter(filter: 'all' | '5' | '4' | '3' | '2' | '1' | 'withImage' | 'verified' | 'helpful'): void {
+    this.reviewFilter = filter;
+  }
+
+  setReviewSort(sort: 'newest' | 'mostHelpful' | 'highestRating' | 'lowestRating'): void {
+    this.reviewSort = sort;
+  }
+
+  setReviewShade(shade: string | null): void {
+    this.reviewShadeFilter = shade && shade.trim() ? shade : null;
+  }
+
+  setReviewSkinType(skinType: string | null): void {
+    this.reviewSkinTypeFilter = skinType && skinType.trim() ? skinType : null;
+  }
+
+  voteHelpful(reviewId: string): void {
+    if (this.helpfulVotingIds.has(reviewId)) return;
+    this.helpfulVotingIds.add(reviewId);
+
+    this.detailService
+      .voteReview(reviewId, 'helpful')
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          const helpfulCount = res?.data?.helpfulCount;
+          this.reviews = this.reviews.map((r) => (r.id === reviewId ? { ...r, helpful: typeof helpfulCount === 'number' ? helpfulCount : r.helpful + 1 } : r));
+          this.helpfulVotingIds.delete(reviewId);
+        },
+        error: () => {
+          this.helpfulVotingIds.delete(reviewId);
+          this.toast.error('Không thể ghi nhận "Hữu ích" ngay lúc này. Vui lòng thử lại.');
+        },
+      });
+  }
+
+  reportReview(reviewId: string): void {
+    // Backend report pipeline can be added later; UI shows a truthful placeholder now.
+    // Keeping it non-blocking to avoid breaking the reviews UX.
+    this.toast.warning('Chức năng báo cáo sẽ được bật ở bản tiếp theo.');
+  }
+
+  openReviewLightbox(images: string[], index: number): void {
+    this.lightboxImages = images.slice(0, 20);
+    this.lightboxIndex = Math.max(0, Math.min(index, this.lightboxImages.length - 1));
+    this.lightboxOpen = true;
+  }
+
+  closeReviewLightbox(): void {
+    this.lightboxOpen = false;
+    this.lightboxImages = [];
+    this.lightboxIndex = 0;
+  }
+
+  lightboxPrev(): void {
+    if (!this.lightboxImages.length) return;
+    this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxImages.length) % this.lightboxImages.length;
+  }
+
+  lightboxNext(): void {
+    if (!this.lightboxImages.length) return;
+    this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxImages.length;
+  }
+
+  getReviewContextTags(review: PdpReview): string[] {
+    const tags: string[] = [];
+    const shade = String(review.shade ?? '').trim();
+    if (shade) tags.push(`Shade ${shade}`);
+    // Verified purchase is shown via a dedicated badge in the card header.
+
+    const raw = `${review.title ?? ''} ${review.body ?? ''}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    const pick = (patterns: string[], label: string) => (patterns.some((p) => raw.includes(p)) ? label : null);
+
+    const skin =
+      pick(['da dau', 'dau nhon', 'dau tron', 'kiem dau'], 'Da dầu') ||
+      pick(['da kho', 'kho', 'cang kho'], 'Da khô') ||
+      pick(['hon hop', 'da hon hop', 'combo'], 'Da hỗn hợp') ||
+      pick(['nhay cam', 'kich ung'], 'Da nhạy cảm');
+    if (skin) tags.push(skin);
+
+    const finish = pick(['semi matte', 'matte', 'li tu nhien', 'li tu nhien', 'min', 'min li'], 'Finish lì') || pick(['bong', 'glow', 'luminous'], 'Finish glow');
+    if (finish) tags.push(finish);
+
+    const coverage =
+      pick(['che phu', 'coverage', 'phu do', 'muc do phu'], 'Coverage vừa/đủ che') ||
+      pick(['che phu cao', 'phu cao'], 'Coverage cao');
+    if (coverage) tags.push(coverage);
+
+    return tags.slice(0, 4);
+  }
+
+  private deriveSkinTypeTag(review: PdpReview): string | null {
+    const raw = `${review.title ?? ''} ${review.body ?? ''}`
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    if (raw.includes('da dau') || raw.includes('kiem dau') || raw.includes('dau nhon') || raw.includes('dau tron')) return 'Da dầu';
+    if (raw.includes('da kho') || raw.includes('cang kho')) return 'Da khô';
+    if (raw.includes('hon hop') || raw.includes('da hon hop') || raw.includes('combo')) return 'Da hỗn hợp';
+    if (raw.includes('nhay cam') || raw.includes('kich ung')) return 'Da nhạy cảm';
+    return null;
+  }
+
+  private updateReviewInsights(): void {
+    if (!this.reviews.length) {
+      this.reviewInsightTags = [];
+      return;
+    }
+
+    const countBy = (items: string[]) => {
+      const m = new Map<string, number>();
+      for (const it of items) m.set(it, (m.get(it) ?? 0) + 1);
+      return m;
+    };
+
+    const normalize = (s: string) =>
+      String(s ?? '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const shadeMentions: string[] = [];
+    const skinMentions: string[] = [];
+    const finishMentions: string[] = [];
+    const benefitMentions: string[] = [];
+
+    const BENEFITS = [
+      { patterns: ['mịn li', 'min li', 'min'], label: 'Mịn lì tự nhiên' },
+      { patterns: ['bền màu', 'ben mau', 'lau troi'], label: 'Bền màu lâu trôi' },
+      { patterns: ['dễ tán', 'de tan'], label: 'Dễ tán' },
+      { patterns: ['khong xuong tong', 'xuong tong'], label: 'Không xuống tông' },
+    ];
+
+    for (const r of this.reviews) {
+      const raw = normalize(`${r.title ?? ''} ${r.body ?? ''}`);
+
+      if (r.shade) shadeMentions.push(r.shade);
+
+      if (raw.includes('da dau') || raw.includes('kiem dau') || raw.includes('dau nhon') || raw.includes('dau tron')) skinMentions.push('Da dầu');
+      else if (raw.includes('da kho') || raw.includes('cang kho')) skinMentions.push('Da khô');
+      else if (raw.includes('hon hop') || raw.includes('da hon hop') || raw.includes('combo')) skinMentions.push('Da hỗn hợp');
+      else if (raw.includes('nhay cam') || raw.includes('kich ung')) skinMentions.push('Da nhạy cảm');
+
+      if (raw.includes('bong') || raw.includes('glow') || raw.includes('luminous')) finishMentions.push('Finish glow');
+      else if (raw.includes('matte') || raw.includes('semi matte') || raw.includes('li') || raw.includes('min')) finishMentions.push('Finish lì');
+
+      const benefitHit = BENEFITS.find((b) => b.patterns.some((p) => raw.includes(p)));
+      if (benefitHit) benefitMentions.push(benefitHit.label);
+    }
+
+    const topOne = (m: Map<string, number>) => {
+      let best = '';
+      let bestVal = -1;
+      for (const [k, v] of m.entries()) {
+        if (v > bestVal) {
+          best = k;
+          bestVal = v;
+        }
+      }
+      return best || null;
+    };
+
+    const topShade = topOne(countBy(shadeMentions));
+    const topSkin = topOne(countBy(skinMentions));
+    const topFinish = topOne(countBy(finishMentions));
+    const topBenefit = topOne(countBy(benefitMentions));
+
+    const tags: string[] = [];
+    if (topBenefit) tags.push(topBenefit);
+    if (topSkin) tags.push(topSkin);
+    if (topShade) tags.push(`Shade ${topShade}`);
+    if (topFinish) tags.push(topFinish);
+
+    this.reviewInsightTags = tags.slice(0, 6);
   }
 
   addToCartFeedback(): void {
@@ -451,10 +740,6 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   setTab(tab: (typeof this.infoTabs)[number]): void {
     this.activeTab = tab;
-  }
-
-  setReviewFilter(filter: 'all' | '5' | '4' | '3' | '2' | '1' | 'withImage' | 'verified'): void {
-    this.reviewFilter = filter;
   }
 
   saveCoupon(couponId: string): void {
@@ -556,8 +841,11 @@ export class CatalogProductDetailPageComponent implements OnInit {
           images: r.images,
           date: r.date,
           helpful: r.helpful,
+          createdAtMs: r.createdAtMs ?? 0,
         }))
       : [];
+
+    this.updateReviewInsights();
   }
 
   private toMiniProducts(items: ProductDetailData['recommendations']['similarProducts']): PdpMiniProduct[] {

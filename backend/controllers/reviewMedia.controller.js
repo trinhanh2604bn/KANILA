@@ -33,7 +33,8 @@ const getMediaByProductId = async (req, res) => {
   try {
     const { productId } = req.params;
     if (!validateObjectId(productId)) return res.status(400).json({ success: false, message: "Invalid product ID" });
-    const reviewDocs = await Review.find({ productId }).select("_id").lean();
+    // PDP only shows approved reviews, so media should be filtered the same way.
+    const reviewDocs = await Review.find({ productId, reviewStatus: "approved" }).select("_id").lean();
     const reviewIds = reviewDocs.map((r) => r._id);
     if (!reviewIds.length) {
       return res.status(200).json({ success: true, message: "Get review media by product successfully", count: 0, data: [] });

@@ -14,6 +14,7 @@ const reviewSchema = new mongoose.Schema(
     verifiedPurchaseFlag: { type: Boolean, default: false },
     approvedByAccountId: { type: mongoose.Schema.Types.ObjectId, ref: "Account", default: null },
     approvedAt: { type: Date, default: null },
+    adminNote: { type: String, default: "" },
   },
   { timestamps: true }
 );

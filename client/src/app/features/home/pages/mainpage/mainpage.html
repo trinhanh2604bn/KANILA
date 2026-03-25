@@ -37,19 +37,49 @@
   <section class="coupon-campaign" *ngIf="campaignCoupons.length">
     <app-divider title="ƯU ĐÃI ĐANG DIỄN RA" buttonText="Xem thêm"></app-divider>
     <div class="campaign-grid">
-      <article *ngFor="let cp of campaignCoupons">
-        <strong>{{ cp.couponCode }}</strong>
-        <p>
-          {{
-            cp.discountType === 'percentage'
-              ? ('Giảm ' + cp.discountValue + '%')
-              : cp.discountType === 'free_shipping'
-                ? 'Miễn phí ship'
-                : ('Giảm ' + (cp.discountValue | number) + 'đ')
-          }}
-        </p>
-        <small>Đơn tối thiểu {{ cp.minOrderAmount | number }}đ</small>
-        <button type="button" [disabled]="cp.isSaved" (click)="saveCampaignCoupon(cp._id)">{{ cp.isSaved ? 'Đã lưu' : 'Lưu mã' }}</button>
+      <article class="coupon-ticket" *ngFor="let cp of campaignCoupons; let i = index" [attr.data-index]="i">
+        <div class="coupon-ticket__left">
+          <span class="coupon-ticket__icon">
+            {{ cp.discountType === 'free_shipping' ? '🚚' : '🏷️' }}
+          </span>
+          <span class="coupon-ticket__discount">
+            {{
+              cp.discountType === 'percentage'
+                ? (cp.discountValue + '%')
+                : cp.discountType === 'free_shipping'
+                  ? 'FREE'
+                  : ((cp.discountValue | number) + 'đ')
+            }}
+          </span>
+          <span class="coupon-ticket__label">
+            {{ cp.discountType === 'free_shipping' ? 'SHIP' : 'GIẢM' }}
+          </span>
+        </div>
+        <div class="coupon-ticket__right">
+          <div class="coupon-ticket__code">{{ cp.couponCode }}</div>
+          <p class="coupon-ticket__desc">
+            {{
+              cp.discountType === 'percentage'
+                ? ('Giảm ' + cp.discountValue + '% đơn hàng')
+                : cp.discountType === 'free_shipping'
+                  ? 'Miễn phí vận chuyển'
+                  : ('Giảm ' + (cp.discountValue | number) + 'đ')
+            }}
+          </p>
+          <small class="coupon-ticket__min">Đơn tối thiểu {{ cp.minOrderAmount | number }}đ</small>
+          <button
+            class="coupon-ticket__btn"
+            type="button"
+            [disabled]="cp.isSaved"
+            [class.saved]="cp.isSaved"
+            (click)="saveCampaignCoupon(cp._id)"
+          >
+            <i class="bi" [class.bi-bookmark-plus]="!cp.isSaved" [class.bi-bookmark-check-fill]="cp.isSaved"></i>
+            {{ cp.isSaved ? 'Đã lưu' : 'Lưu mã' }}
+          </button>
+        </div>
+        <div class="coupon-ticket__notch coupon-ticket__notch--top"></div>
+        <div class="coupon-ticket__notch coupon-ticket__notch--bottom"></div>
       </article>
     </div>
   </section>
@@ -248,10 +278,10 @@
       </ng-template>
 
       <div class="anhbg__cta">
-        <button type="button" class="anhbg__cta-btn" (click)="goCategory()">
+<a routerLink="/catalog">        <button type="button" class="anhbg__cta-btn" (click)="goCategory()">
           <span class="anhbg__cta-icon" aria-hidden="true"><i class="bi bi-send-fill"></i></span>
           <span class="anhbg__cta-text">Khám phá thêm</span>
-        </button>
+        </button></a>
       </div>
     </div>
   </div>

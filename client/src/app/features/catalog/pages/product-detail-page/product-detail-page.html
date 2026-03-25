@@ -191,7 +191,7 @@
       <h3>Texture & Result Inspiration</h3>
       <div class="visual-grid">
         <article>
-          <img src="https://images.unsplash.com/photo-1590156202996-79f2b73f95c1?auto=format&fit=crop&w=900&q=80" alt="Texture close-up" />
+          <img src="https://t3.ftcdn.net/jpg/11/12/44/28/360_F_1112442836_86wcpqdtq5EaNs6Knjazuw0rAaNo82TV.jpg" alt="Texture close-up" />
           <p>Texture close-up</p>
         </article>
         <article>
@@ -250,7 +250,7 @@
             <span>{{ recommendPercent }}% hài lòng</span>
           </div>
         </div>
-        <button class="write-review-btn"><span>✍️</span>Viết đánh giá</button>
+        <button class="write-review-btn" (click)="openWriteReview()"><span>✍️</span>Viết đánh giá</button>
       </div>
 
       <div class="rating-overview">
@@ -259,9 +259,8 @@
           <span>{{ starText(rating) }}</span>
           <p class="avg-rating-count" *ngIf="hasReviews">{{ reviewCount | number }} đánh giá</p>
           <p class="avg-rating-reco" *ngIf="hasReviews">{{ recommendPercent }}% recommend sản phẩm này</p>
-          <div class="avg-rating-insights" *ngIf="hasReviews">
-            <small>Best for combination skin</small>
-            <small>Most users say: easy to blend</small>
+          <div class="avg-rating-insights" *ngIf="hasReviews && reviewInsightTags.length">
+            <small *ngFor="let t of reviewInsightTags.slice(0,2)">{{ t }}</small>
           </div>
           <p class="avg-rating-empty" *ngIf="!hasReviews">Chưa có đánh giá. Hãy là người đầu tiên chia sẻ trải nghiệm!</p>
         </div>
@@ -285,9 +284,12 @@
 
       <div class="review-insights">
         <h4>Khách hàng yêu thích</h4>
-        <div class="insight-tags">
+        <div class="insight-tags" *ngIf="reviewInsightTags.length; else insightEmpty">
           <span *ngFor="let tag of reviewInsightTags"><i>✓</i>{{ tag }}</span>
         </div>
+        <ng-template #insightEmpty>
+          <small class="muted">Chưa có dữ liệu phù hợp từ khách hàng.</small>
+        </ng-template>
       </div>
 
       <div class="review-media-strip" *ngIf="customerReviewPhotos.length">
@@ -308,8 +310,31 @@
         <button [class.active]="reviewFilter==='1'" (click)="setReviewFilter('1')">1★</button>
         <button [class.active]="reviewFilter==='withImage'" (click)="setReviewFilter('withImage')">Có hình</button>
         <button [class.active]="reviewFilter==='verified'" (click)="setReviewFilter('verified')">Đã mua hàng</button>
-        <button class="is-passive" type="button">Theo shade</button>
-        <button class="is-passive" type="button">Theo loại da</button>
+        <button [class.active]="reviewFilter==='helpful'" (click)="setReviewFilter('helpful')">Hữu ích</button>
+
+        <select class="review-shade-select" [value]="reviewShadeFilter || ''" (change)="setReviewShade($any($event.target).value || null)">
+          <option value="">Theo shade</option>
+          <option *ngFor="let shade of availableReviewShades" [value]="shade">{{ shade }}</option>
+        </select>
+
+        <select
+          class="review-shade-select"
+          [value]="reviewSkinTypeFilter || ''"
+          (change)="setReviewSkinType($any($event.target).value || null)"
+        >
+          <option value="">Theo loại da</option>
+          <option *ngFor="let t of availableReviewSkinTypes" [value]="t">{{ t }}</option>
+        </select>
+      </div>
+
+      <div class="review-sort-row">
+        <label>Sort:</label>
+        <select class="review-sort-select" [value]="reviewSort" (change)="setReviewSort($any($event.target).value)">
+          <option value="newest">Mới nhất</option>
+          <option value="mostHelpful">Hữu ích nhất</option>
+          <option value="highestRating">Đánh giá cao</option>
+          <option value="lowestRating">Đánh giá thấp</option>
+        </select>
       </div>
 
       <div class="review-list" *ngIf="filteredReviews.length; else emptyReviewState">
@@ -323,18 +348,34 @@
             <span class="verified-badge" *ngIf="review.verified">Verified Purchase</span>
           </header>
           <div class="review-stars">{{ starText(review.rating) }}</div>
-          <div class="review-context">
-            <span>Shade {{ review.shade }}</span>
-            <span>Da hỗn hợp</span>
-            <span>Coverage medium</span>
-            <span>Natural finish</span>
+          <div class="review-context" *ngIf="getReviewContextTags(review).length">
+            <span *ngFor="let tag of getReviewContextTags(review)">{{ tag }}</span>
           </div>
-          <h5>{{ review.title }}</h5>
-          <p class="review-body">{{ review.body }}</p>
+          <h5 *ngIf="review.title">{{ review.title }}</h5>
+          <p class="review-body" *ngIf="review.body">{{ review.body }}</p>
           <div class="review-images" *ngIf="review.images.length">
-            <img *ngFor="let image of review.images" [src]="image" alt="Review image" />
+            <button
+              class="review-image-thumb"
+              type="button"
+              *ngFor="let image of review.images; let i = index"
+              (click)="openReviewLightbox(review.images, i)"
+            >
+              <img [src]="image" alt="Review image" />
+            </button>
           </div>
-          <button class="helpful-btn">Hữu ích ({{ review.helpful }})</button>
+          <div class="review-actions">
+            <button
+              class="helpful-btn"
+              type="button"
+              [disabled]="helpfulVotingIds.has(review.id)"
+              (click)="voteHelpful(review.id)"
+            >
+              Hữu ích ({{ review.helpful }})
+            </button>
+            <button class="report-btn" type="button" (click)="reportReview(review.id); $event.stopPropagation()">
+              Báo cáo
+            </button>
+          </div>
         </article>
       </div>
       <ng-template #emptyReviewState>
@@ -345,6 +386,109 @@
         </div>
       </ng-template>
     </section>
+
+    <div class="review-lightbox" *ngIf="lightboxOpen" (click)="closeReviewLightbox()">
+      <div class="review-lightbox-inner" (click)="$event.stopPropagation()">
+        <button class="review-lightbox-close" type="button" (click)="closeReviewLightbox()">✕</button>
+        <img class="review-lightbox-img" [src]="lightboxImages[lightboxIndex]" alt="Review photo" />
+        <button class="review-lightbox-nav prev" type="button" (click)="lightboxPrev()">‹</button>
+        <button class="review-lightbox-nav next" type="button" (click)="lightboxNext()">›</button>
+      </div>
+    </div>
+
+    <!-- ========= WRITE REVIEW MODAL ========= -->
+    <div class="wr-overlay" *ngIf="writeReviewOpen" (click)="closeWriteReview()">
+      <div class="wr-modal" (click)="$event.stopPropagation()">
+        <button class="wr-close" type="button" (click)="closeWriteReview()">✕</button>
+
+        <div class="wr-header">
+          <h3>Viết đánh giá</h3>
+          <p>Chia sẻ trải nghiệm thật của bạn về sản phẩm này</p>
+        </div>
+
+        <div class="wr-product">
+          <img [src]="gallery[0]?.url" [alt]="productName" />
+          <div>
+            <strong>{{ productName }}</strong>
+            <span class="muted">{{ selectedShade.name }}</span>
+          </div>
+        </div>
+
+        <!-- Success state -->
+        <div class="wr-success" *ngIf="writeReviewSuccess">
+          <i class="bi bi-check-circle-fill"></i>
+          <strong>Hoàn tất!</strong>
+          <p>Đánh giá của bạn đã được ghi nhận. Chúng mình sẽ duyệt sớm nhất có thể.</p>
+        </div>
+
+        <!-- Form -->
+        <div *ngIf="!writeReviewSuccess" class="wr-form">
+          <div class="wr-row">
+            <label>Số sao</label>
+            <div class="wr-stars">
+              <button
+                *ngFor="let s of writeReviewStars"
+                type="button"
+                class="wr-star-btn"
+                [class.active]="writeReviewRating >= s"
+                (click)="setWriteReviewRating(s)"
+              >★</button>
+            </div>
+          </div>
+
+          <div class="wr-row">
+            <label>Tiêu đề (ngắn gọn)</label>
+            <input
+              class="wr-input"
+              type="text"
+              [value]="writeReviewTitle"
+              (input)="writeReviewTitle = ($any($event.target).value || '')"
+              placeholder="Ví dụ: Mịn nhẹ, lên da sang và không bị bết"
+            />
+          </div>
+
+          <div class="wr-row">
+            <label>Nội dung đánh giá</label>
+            <textarea
+              class="wr-textarea"
+              rows="5"
+              [value]="writeReviewContent"
+              (input)="writeReviewContent = ($any($event.target).value || '')"
+              placeholder="Chia sẻ rõ kết cấu, độ che phủ, thời gian bền màu, cảm giác trên da..."
+            ></textarea>
+            <small class="wr-hint">Tối thiểu 20 ký tự. Đánh giá chi tiết sẽ giúp người khác chọn đúng sản phẩm!</small>
+          </div>
+
+          <div class="wr-row">
+            <label>Ảnh review (tùy chọn)</label>
+            <div class="wr-upload-box">
+              <i class="bi bi-cloud-arrow-up-fill"></i>
+              <span>Chọn ảnh (tối đa 6 ảnh, mỗi ảnh 2MB)</span>
+              <input type="file" class="wr-file-input" accept="image/*" multiple (change)="onWriteReviewFilesSelected($any($event.target).files)" />
+            </div>
+          </div>
+
+          <div class="wr-media-previews" *ngIf="writeReviewMediaBase64.length">
+            <div class="wr-media-preview" *ngFor="let url of writeReviewMediaBase64; let i = index">
+              <img [src]="url" alt="Preview" />
+              <button class="wr-remove-media" type="button" (click)="removeWriteReviewMediaAt(i)">✕</button>
+            </div>
+          </div>
+
+          <div class="wr-error" *ngIf="writeReviewError">{{ writeReviewError }}</div>
+
+          <div class="wr-actions">
+            <button class="wr-submit" type="button" [disabled]="writeReviewSubmitting" (click)="submitWriteReview()">
+              <span *ngIf="!writeReviewSubmitting">Gửi đánh giá</span>
+              <span *ngIf="writeReviewSubmitting">Đang gửi...</span>
+            </button>
+            <button class="wr-cancel" type="button" [disabled]="writeReviewSubmitting" (click)="closeWriteReview()">
+              Hủy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     </ng-container>
   </div>
 

@@ -22,6 +22,7 @@ const {
   patchAccount,
   deleteAccount,
 } = require("../controllers/account.controller");
+const { getMyReviews, patchMyReview, deleteMyReview } = require("../controllers/review.controller");
 
 router.get("/profile-hub", authMiddleware, getProfileHub);
 router.patch("/profile", authMiddleware, patchMyProfile);
@@ -36,6 +37,11 @@ router.post("/change-password", authMiddleware, changeMyPassword);
 router.get("/providers", authMiddleware, getMyProviders);
 router.get("/security-status", authMiddleware, getMySecurityStatus);
 router.delete("/providers/:provider", authMiddleware, unlinkMyProvider);
+
+// Customer review management
+router.get("/reviews", authMiddleware, getMyReviews);
+router.patch("/reviews/:id", authMiddleware, patchMyReview);
+router.delete("/reviews/:id", authMiddleware, deleteMyReview);
 
 router.get("/", getAllAccounts);
 router.post("/", createAccount);

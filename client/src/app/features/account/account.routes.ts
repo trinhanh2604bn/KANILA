@@ -57,6 +57,14 @@ export const ACCOUNT_ROUTES: Routes = [
         loadComponent: () =>
           import('./pages/skin-profile-page/skin-profile-page').then((m) => m.SkinProfilePageComponent),
       },
+      {
+        path: 'reviews',
+        loadComponent: () => import('./pages/my-reviews-page/my-reviews-page').then((m) => m.MyReviewsPageComponent),
+      },
+      {
+        path: 'reviews/write/:orderItemId',
+        loadComponent: () => import('./pages/write-review-page/write-review-page').then((m) => m.WriteReviewPageComponent),
+      },
     ],
   },
 ];
