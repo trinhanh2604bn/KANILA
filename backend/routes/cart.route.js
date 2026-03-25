@@ -24,9 +24,11 @@ const {
   removeSelectedFromGuestCart,
   prepareMyCartCheckout,
   prepareGuestCartCheckout,
+  mergeGuestCartOnLogin,
 } = require("../controllers/cart.controller");
 
 router.get("/me", authMiddleware, getMyCart);
+router.post("/me/merge-guest", authMiddleware, mergeGuestCartOnLogin);
 router.get("/me/checkout-prepare", authMiddleware, prepareMyCartCheckout);
 router.post("/me/items", authMiddleware, addItemToMyCart);
 router.patch("/me/items/:itemId/quantity", authMiddleware, updateMyCartItemQuantity);

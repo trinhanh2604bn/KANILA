@@ -1,4 +1,4 @@
-<main class="checkout-page">
+<main class="checkout-page" [class.checkout-page--customer]="isCustomerCheckout" [class.checkout-page--guest]="!isCustomerCheckout">
   <div class="checkout-shell">
     <section class="checkout-progress" aria-label="Checkout progress">
       <div class="step">
@@ -17,7 +17,17 @@
       </div>
     </section>
 
-    <p class="checkout-context">Bạn đang ở bước thanh toán cuối cùng. Kiểm tra thông tin trước khi đặt đơn.</p>
+    <div class="checkout-intro guest-intro" *ngIf="!isCustomerCheckout">
+      <p class="checkout-banner">Bạn có thể đặt hàng mà không cần đăng nhập</p>
+      <p class="checkout-context">Biểu mẫu ngắn gọn — chỉ cần thông tin giao hàng và thanh toán.</p>
+      <a routerLink="/auth/login" class="checkout-cta-link">Đăng nhập để dùng địa chỉ đã lưu và theo dõi đơn dễ hơn</a>
+    </div>
+
+    <div class="checkout-intro customer-intro" *ngIf="isCustomerCheckout">
+      <p class="checkout-context customer-hero">
+        Thanh toán nhanh với thông tin từ tài khoản <strong>Kanila</strong> của bạn — chỉnh sửa bất cứ lúc nào.
+      </p>
+    </div>
 
     <div class="checkout-layout">
       <section class="checkout-skeleton-layout" *ngIf="showShimmerSkeleton">
@@ -39,160 +49,287 @@
       </section>
 
       <ng-container *ngIf="!showShimmerSkeleton">
-      <section class="checkout-left">
-        <article class="checkout-card">
-          <header class="card-head">
-            <h2><i class="bi bi-geo-alt"></i> Thông tin giao hàng</h2>
-            <button type="button" class="text-link">Change</button>
-          </header>
-
-          <div class="form-grid">
-            <label class="field">
-              <span>Họ và tên</span>
-              <input type="text" [(ngModel)]="contactName" [class.invalid]="invalidName" placeholder="Nguyen Anh" />
-              <small class="error" *ngIf="invalidName">Vui lòng nhập tên người nhận.</small>
-            </label>
-
-            <label class="field">
-              <span>Số điện thoại</span>
-              <input type="tel" [(ngModel)]="phone" (ngModelChange)="onPhoneInput()" [class.invalid]="invalidPhone" placeholder="09xxxxxxxx" />
-              <small class="error" *ngIf="invalidPhone">Vui lòng nhập số điện thoại hợp lệ.</small>
-            </label>
-
-            <label class="field">
-              <span>Email (để nhận cập nhật đơn hàng)</span>
-              <input type="email" [(ngModel)]="email" [class.invalid]="invalidEmail" placeholder="you@example.com" />
-              <small class="error" *ngIf="invalidEmail">Email không đúng định dạng.</small>
-            </label>
-
-            <label class="field field--full">
-              <span>Địa chỉ</span>
-              <input type="text" [(ngModel)]="addressLine" [class.invalid]="invalidAddress" placeholder="Street, ward, district..." />
-              <small class="error" *ngIf="invalidAddress">Địa chỉ chưa đầy đủ (tối thiểu 8 ký tự).</small>
-            </label>
-
-            <label class="field">
-              <span>Tỉnh/Thành phố</span>
-              <input type="text" [(ngModel)]="city" />
-            </label>
-
-            <label class="field">
-              <span>Quận/Huyện</span>
-              <input type="text" [(ngModel)]="district" />
-            </label>
-          </div>
-        </article>
-
-        <article class="checkout-card">
-          <header class="card-head">
-            <h2><i class="bi bi-truck"></i> Phương thức giao hàng</h2>
-          </header>
-          <div class="method-grid">
-            <label class="method-card" *ngFor="let method of shippingMethods" [class.selected]="selectedShippingId === method.id">
-              <input type="radio" name="shippingMethod" [value]="method.id" [(ngModel)]="selectedShippingId" (ngModelChange)="onShippingMethodChange()" />
-              <div class="method-meta">
-                <strong>{{ method.label }}</strong>
-                <span>{{ method.eta }}</span>
+        <section class="checkout-left">
+          <!-- ——— Guest: single form ——— -->
+          <ng-container *ngIf="!isCustomerCheckout">
+            <article class="checkout-card checkout-card--simple">
+              <header class="card-head">
+                <h2><i class="bi bi-person-lines-fill"></i> Thông tin liên hệ &amp; giao hàng</h2>
+              </header>
+              <div class="form-grid">
+                <label class="field">
+                  <span>Họ và tên</span>
+                  <input type="text" [(ngModel)]="contactName" [class.invalid]="invalidName" placeholder="Nguyễn Thị Anh" />
+                  <small class="error" *ngIf="invalidName">Vui lòng nhập tên người nhận.</small>
+                </label>
+                <label class="field">
+                  <span>Số điện thoại</span>
+                  <input type="tel" [(ngModel)]="phone" (ngModelChange)="onPhoneInput()" [class.invalid]="invalidPhone" placeholder="09xxxxxxxx" />
+                  <small class="error" *ngIf="invalidPhone">Vui lòng nhập số điện thoại hợp lệ.</small>
+                </label>
+                <label class="field field--full">
+                  <span>Email (bắt buộc — để nhận xác nhận đơn)</span>
+                  <input type="email" [(ngModel)]="email" [class.invalid]="invalidEmail" placeholder="you@example.com" />
+                  <small class="error" *ngIf="invalidEmail">Vui lòng nhập email hợp lệ.</small>
+                </label>
+                <label class="field field--full">
+                  <span>Địa chỉ giao hàng</span>
+                  <input type="text" [(ngModel)]="addressLine" [class.invalid]="invalidAddress" placeholder="Số nhà, đường, phường/xã..." />
+                  <small class="error" *ngIf="invalidAddress">Địa chỉ chưa đầy đủ (tối thiểu 8 ký tự).</small>
+                </label>
+                <label class="field">
+                  <span>Tỉnh / Thành phố</span>
+                  <input type="text" [(ngModel)]="city" />
+                </label>
+                <label class="field">
+                  <span>Quận / Huyện</span>
+                  <input type="text" [(ngModel)]="district" />
+                </label>
               </div>
-              <div class="method-price">{{ method.fee | number }}đ</div>
-            </label>
-          </div>
-        </article>
+            </article>
 
-        <article class="checkout-card">
-          <header class="card-head">
-            <h2><i class="bi bi-credit-card-2-front"></i> Phương thức thanh toán</h2>
-          </header>
-          <div class="method-grid">
-            <label class="method-card payment" *ngFor="let method of paymentMethods" [class.selected]="selectedPaymentId === method.id">
-              <input type="radio" name="paymentMethod" [value]="method.id" [(ngModel)]="selectedPaymentId" (ngModelChange)="onPaymentMethodChange()" />
-              <i class="bi method-icon" [class]="method.icon"></i>
-              <div class="method-meta">
-                <strong>{{ method.label }}</strong>
-                <span>{{ method.subtitle }}</span>
+            <article class="checkout-card">
+              <header class="card-head">
+                <h2><i class="bi bi-truck"></i> Phương thức giao hàng</h2>
+              </header>
+              <div class="method-grid">
+                <label class="method-card" *ngFor="let method of shippingMethods" [class.selected]="selectedShippingId === method.id">
+                  <input type="radio" name="shippingMethod" [value]="method.id" [(ngModel)]="selectedShippingId" (ngModelChange)="onShippingMethodChange()" />
+                  <div class="method-meta">
+                    <strong>{{ method.label }}</strong>
+                    <span>{{ method.eta }}</span>
+                  </div>
+                  <div class="method-price">{{ method.fee | number }}đ</div>
+                </label>
               </div>
-            </label>
-          </div>
-        </article>
+            </article>
 
-        <article class="checkout-card">
-          <header class="card-head">
-            <h2><i class="bi bi-ticket-perforated"></i> Mã ưu đãi</h2>
-          </header>
-
-          <div class="voucher-row">
-            <input type="text" [(ngModel)]="voucherInput" placeholder="Nhập mã giảm giá" />
-            <button type="button" (click)="applyVoucher()" [disabled]="isSyncingSession">Apply</button>
-          </div>
-
-          <div class="voucher-applied" *ngIf="appliedVoucher">
-            <span>Đã áp dụng: <strong>{{ appliedVoucher }}</strong></span>
-            <span class="discount">Đã tính vào tổng giảm giá</span>
-            <button type="button" class="text-link" (click)="clearVoucher()">Gỡ</button>
-          </div>
-        </article>
-      </section>
-
-      <aside class="checkout-right">
-        <article class="summary-card">
-          <h3>Tóm tắt đơn hàng</h3>
-
-          <div class="free-ship ok" *ngIf="uiHint">{{ uiHint }}</div>
-          <div class="free-ship" *ngIf="isSyncingSession">Đang cập nhật tổng tiền...</div>
-          <div class="checkout-issues" *ngIf="checkoutIssues.length">
-            <p *ngFor="let issue of checkoutIssues">{{ issue }}</p>
-          </div>
-
-          <div class="summary-lines" *ngIf="cartItems.length; else emptyCheckout">
-            <div class="line-item" *ngFor="let item of cartItems">
-              <img [src]="item.image" [alt]="item.name" />
-              <div>
-                <p>{{ item.name }}</p>
-                <small>{{ item.variant }} x{{ item.quantity }}</small>
+            <article class="checkout-card">
+              <header class="card-head">
+                <h2><i class="bi bi-credit-card-2-front"></i> Phương thức thanh toán</h2>
+              </header>
+              <div class="method-grid">
+                <label class="method-card payment" *ngFor="let method of paymentMethods" [class.selected]="selectedPaymentId === method.id">
+                  <input type="radio" name="paymentMethod" [value]="method.id" [(ngModel)]="selectedPaymentId" (ngModelChange)="onPaymentMethodChange()" />
+                  <i class="bi method-icon" [class]="method.icon"></i>
+                  <div class="method-meta">
+                    <strong>{{ method.label }}</strong>
+                    <span>{{ method.subtitle }}</span>
+                  </div>
+                </label>
               </div>
-              <strong>{{ item.price * item.quantity | number }}đ</strong>
-            </div>
-          </div>
-          <ng-template #emptyCheckout>
-            <p class="empty-text">Bạn chưa chọn sản phẩm nào từ giỏ hàng.</p>
-          </ng-template>
+            </article>
 
-          <div class="price-block">
-            <div><span>Tạm tính</span><span>{{ subtotal | number }}đ</span></div>
-            <div><span>Tiết kiệm</span><span class="accent">-{{ savingsTotal | number }}đ</span></div>
-            <div><span>Phí vận chuyển</span><span>{{ shippingFee | number }}đ</span></div>
-            <div class="free-ship" *ngIf="amountToFreeShipping > 0">
-              Mua thêm {{ amountToFreeShipping | number }}đ để được miễn phí vận chuyển.
-            </div>
-            <div class="free-ship ok" *ngIf="amountToFreeShipping === 0 && subtotal > 0">
-              Bạn đã đủ điều kiện miễn phí vận chuyển.
-            </div>
-            <div class="total-row"><span>Tổng thanh toán</span><strong>{{ grandTotal | number }}đ</strong></div>
-          </div>
+            <article class="checkout-card">
+              <header class="card-head">
+                <h2><i class="bi bi-chat-left-text"></i> Ghi chú (tuỳ chọn)</h2>
+              </header>
+              <label class="field field--full">
+                <textarea [(ngModel)]="note" rows="2" placeholder="Giao giờ hành chính, gọi trước khi giao..."></textarea>
+              </label>
+            </article>
 
-          <button type="button" class="cta-btn" [disabled]="placingOrder || isSyncingSession || !cartItems.length" (click)="placeOrder()">
-            <i class="bi bi-shield-lock"></i>
-            {{ placingOrder ? 'Đang xử lý đơn...' : 'Đặt hàng an toàn' }}
-          </button>
+            <article class="checkout-card">
+              <header class="card-head">
+                <h2><i class="bi bi-ticket-perforated"></i> Mã ưu đãi</h2>
+              </header>
+              <div class="voucher-row">
+                <input type="text" [(ngModel)]="voucherInput" placeholder="Nhập mã giảm giá" />
+                <button type="button" (click)="applyVoucher()" [disabled]="isSyncingSession">Áp dụng</button>
+              </div>
+              <div class="voucher-applied" *ngIf="appliedVoucher">
+                <span>Đã áp dụng: <strong>{{ appliedVoucher }}</strong></span>
+                <span class="discount">Đã tính vào tổng giảm giá</span>
+                <button type="button" class="text-link" (click)="clearVoucher()">Gỡ</button>
+              </div>
+            </article>
+          </ng-container>
 
-          <div class="trust-badges">
-            <span><i class="bi bi-patch-check"></i> Sản phẩm chính hãng</span>
-            <span><i class="bi bi-arrow-counterclockwise"></i> Đổi trả linh hoạt</span>
-            <span><i class="bi bi-lock"></i> Thanh toán bảo mật SSL</span>
-          </div>
-        </article>
-      </aside>
+          <!-- ——— Customer: card-based ——— -->
+          <ng-container *ngIf="isCustomerCheckout">
+            <article class="checkout-card customer-card accent-border">
+              <header class="card-head">
+                <h2><i class="bi bi-geo-alt-fill"></i> Địa chỉ giao hàng</h2>
+                <button type="button" class="text-link" (click)="toggleAddressEditor()">{{ showAddressEditor ? 'Đóng' : 'Thay đổi' }}</button>
+              </header>
+              <div class="compact-summary" *ngIf="!showAddressEditor">
+                <p class="summary-line"><strong>{{ contactName }}</strong> · {{ phone }}</p>
+                <p class="summary-muted">{{ addressLine }}, {{ district }}, {{ city }}</p>
+                <p class="summary-hint" *ngIf="!savedAddresses.length">Bạn có thể thêm địa chỉ mới trong phần chỉnh sửa.</p>
+              </div>
+              <div class="customer-expand" *ngIf="showAddressEditor">
+                <label class="field field--full" *ngIf="savedAddresses.length">
+                  <span>Chọn địa chỉ đã lưu</span>
+                  <select [(ngModel)]="selectedSavedAddressId" (ngModelChange)="onSavedAddressSelect()">
+                    <option *ngFor="let a of savedAddresses" [ngValue]="a._id">
+                      {{ a.recipient_name }} — {{ a.address_line_1 }}, {{ a.district }}
+                    </option>
+                  </select>
+                </label>
+                <div class="form-grid">
+                  <label class="field field--full">
+                    <span>Địa chỉ</span>
+                    <input type="text" [(ngModel)]="addressLine" [class.invalid]="invalidAddress" />
+                  </label>
+                  <label class="field">
+                    <span>Tỉnh/Thành</span>
+                    <input type="text" [(ngModel)]="city" />
+                  </label>
+                  <label class="field">
+                    <span>Quận/Huyện</span>
+                    <input type="text" [(ngModel)]="district" />
+                  </label>
+                </div>
+                <button type="button" class="btn-sync" [disabled]="isSyncingSession" (click)="syncCheckoutSession()">Cập nhật phiên thanh toán</button>
+              </div>
+            </article>
+
+            <article class="checkout-card customer-card">
+              <header class="card-head">
+                <h2><i class="bi bi-credit-card-2-front"></i> Phương thức thanh toán</h2>
+                <button type="button" class="text-link" (click)="togglePaymentPicker()">{{ showPaymentPicker ? 'Thu gọn' : 'Thay đổi' }}</button>
+              </header>
+              <div class="compact-summary" *ngIf="!showPaymentPicker">
+                <p class="summary-line">
+                  <i class="bi bi-check-circle-fill text-rose"></i>
+                  {{ selectedPaymentDisplay?.label || 'Chọn phương thức' }}
+                </p>
+                <p class="summary-muted">{{ selectedPaymentDisplay?.subtitle }}</p>
+              </div>
+              <div class="method-grid" *ngIf="showPaymentPicker">
+                <label class="method-card payment" *ngFor="let method of paymentMethods" [class.selected]="selectedPaymentId === method.id">
+                  <input type="radio" name="paymentMethodCust" [value]="method.id" [(ngModel)]="selectedPaymentId" (ngModelChange)="onPaymentMethodChange()" />
+                  <i class="bi method-icon" [class]="method.icon"></i>
+                  <div class="method-meta">
+                    <strong>{{ method.label }}</strong>
+                    <span>{{ method.subtitle }}</span>
+                  </div>
+                </label>
+              </div>
+            </article>
+
+            <article class="checkout-card customer-card">
+              <header class="card-head">
+                <h2><i class="bi bi-person-badge"></i> Người nhận &amp; liên hệ</h2>
+                <button type="button" class="text-link" (click)="toggleRecipientEditor()">{{ showRecipientEditor ? 'Thu gọn' : 'Chỉnh sửa' }}</button>
+              </header>
+              <div class="compact-summary" *ngIf="!showRecipientEditor">
+                <p class="summary-line">{{ contactName }} · {{ phone }}</p>
+                <p class="summary-muted" *ngIf="email">{{ email }}</p>
+              </div>
+              <div class="form-grid" *ngIf="showRecipientEditor">
+                <label class="field">
+                  <span>Họ và tên</span>
+                  <input type="text" [(ngModel)]="contactName" [class.invalid]="invalidName" />
+                </label>
+                <label class="field">
+                  <span>Số điện thoại</span>
+                  <input type="tel" [(ngModel)]="phone" (ngModelChange)="onPhoneInput()" [class.invalid]="invalidPhone" />
+                </label>
+                <label class="field field--full">
+                  <span>Email</span>
+                  <input type="email" [(ngModel)]="email" [class.invalid]="invalidEmail" />
+                </label>
+                <button type="button" class="btn-sync" [disabled]="isSyncingSession" (click)="syncCheckoutSession()">Lưu vào phiên thanh toán</button>
+              </div>
+            </article>
+
+            <article class="checkout-card">
+              <header class="card-head">
+                <h2><i class="bi bi-truck"></i> Vận chuyển</h2>
+              </header>
+              <div class="method-grid method-grid--compact">
+                <label class="method-card" *ngFor="let method of shippingMethods" [class.selected]="selectedShippingId === method.id">
+                  <input type="radio" name="shippingMethodCust" [value]="method.id" [(ngModel)]="selectedShippingId" (ngModelChange)="onShippingMethodChange()" />
+                  <div class="method-meta">
+                    <strong>{{ method.label }}</strong>
+                    <span>{{ method.eta }} · {{ method.fee | number }}đ</span>
+                  </div>
+                </label>
+              </div>
+            </article>
+
+            <article class="checkout-card">
+              <header class="card-head">
+                <h2><i class="bi bi-chat-left-text"></i> Ghi chú đơn hàng</h2>
+              </header>
+              <textarea [(ngModel)]="note" rows="2" class="note-area" placeholder="Tuỳ chọn"></textarea>
+            </article>
+
+            <article class="checkout-card">
+              <header class="card-head">
+                <h2><i class="bi bi-ticket-perforated"></i> Mã ưu đãi</h2>
+              </header>
+              <div class="voucher-row">
+                <input type="text" [(ngModel)]="voucherInput" placeholder="Nhập mã" />
+                <button type="button" (click)="applyVoucher()" [disabled]="isSyncingSession">Áp dụng</button>
+              </div>
+              <div class="voucher-applied" *ngIf="appliedVoucher">
+                <span>Đã áp dụng: <strong>{{ appliedVoucher }}</strong></span>
+                <button type="button" class="text-link" (click)="clearVoucher()">Gỡ</button>
+              </div>
+            </article>
+          </ng-container>
+        </section>
+
+        <aside class="checkout-right">
+          <article class="summary-card" [class.summary-card--customer]="isCustomerCheckout">
+            <h3>Tóm tắt đơn hàng</h3>
+
+            <div class="free-ship ok" *ngIf="uiHint">{{ uiHint }}</div>
+            <div class="free-ship" *ngIf="isSyncingSession">Đang cập nhật tổng tiền...</div>
+            <div class="checkout-issues" *ngIf="checkoutIssues.length">
+              <p *ngFor="let issue of checkoutIssues">{{ issue }}</p>
+            </div>
+
+            <div class="summary-lines" *ngIf="cartItems.length; else emptyCheckout">
+              <div class="line-item" *ngFor="let item of cartItems">
+                <img [src]="item.image" [alt]="item.name" />
+                <div>
+                  <p>{{ item.name }}</p>
+                  <small>{{ item.variant }} x{{ item.quantity }}</small>
+                </div>
+                <strong>{{ item.price * item.quantity | number }}đ</strong>
+              </div>
+            </div>
+            <ng-template #emptyCheckout>
+              <p class="empty-text">Bạn chưa chọn sản phẩm nào từ giỏ hàng.</p>
+            </ng-template>
+
+            <div class="price-block">
+              <div><span>Tạm tính</span><span>{{ subtotal | number }}đ</span></div>
+              <div><span>Tiết kiệm</span><span class="accent">-{{ savingsTotal | number }}đ</span></div>
+              <div><span>Phí vận chuyển</span><span>{{ shippingFee | number }}đ</span></div>
+              <div class="free-ship" *ngIf="amountToFreeShipping > 0">
+                Mua thêm {{ amountToFreeShipping | number }}đ để được miễn phí vận chuyển.
+              </div>
+              <div class="free-ship ok" *ngIf="amountToFreeShipping === 0 && subtotal > 0">Bạn đã đủ điều kiện miễn phí vận chuyển.</div>
+              <div class="total-row"><span>Tổng thanh toán</span><strong>{{ grandTotal | number }}đ</strong></div>
+            </div>
+
+            <button type="button" class="cta-btn" [class.cta-btn--customer]="isCustomerCheckout" [disabled]="placingOrder || isSyncingSession || !cartItems.length" (click)="placeOrder()">
+              <i class="bi bi-shield-lock"></i>
+              {{ placingOrder ? 'Đang xử lý...' : isCustomerCheckout ? 'Hoàn tất đơn hàng' : 'Đặt hàng' }}
+            </button>
+
+            <div class="trust-badges">
+              <span><i class="bi bi-patch-check"></i> Sản phẩm chính hãng</span>
+              <span><i class="bi bi-arrow-counterclockwise"></i> Đổi trả linh hoạt</span>
+              <span><i class="bi bi-lock"></i> Thanh toán an toàn</span>
+            </div>
+          </article>
+        </aside>
       </ng-container>
     </div>
   </div>
 
   <div class="mobile-checkout-bar">
     <div>
-      <small>Total</small>
+      <small>Tổng</small>
       <strong>{{ grandTotal | number }}đ</strong>
     </div>
     <button type="button" [disabled]="placingOrder || isSyncingSession || !cartItems.length" (click)="placeOrder()">
-      <i class="bi bi-shield-lock"></i> Checkout
+      <i class="bi bi-shield-lock"></i> {{ isCustomerCheckout ? 'Đặt hàng' : 'Thanh toán' }}
     </button>
   </div>
 </main>

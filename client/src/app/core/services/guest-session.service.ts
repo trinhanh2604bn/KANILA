@@ -40,4 +40,16 @@ export class GuestSessionService {
     const guestSessionId = this.getGuestSessionIdSync();
     return new HttpHeaders({ 'x-guest-session-id': guestSessionId });
   }
+
+  /** New anonymous session after logout so no prior customer cart/wishlist context leaks. */
+  startFreshGuestSessionAfterLogout(): void {
+    this.cached = '';
+    try {
+      localStorage.removeItem(this.key);
+    } catch {
+      /* ignore */
+    }
+    this.getGuestSessionIdSync();
+    this.bootstrap().subscribe();
+  }
 }

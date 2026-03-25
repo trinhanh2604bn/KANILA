@@ -13,6 +13,7 @@ import {
 } from '../../models/checkout.model';
 import { CheckoutService } from '../../services/checkout.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { AccountHubService, CustomerAddressRecord, ProfileHubView } from '../../../../core/services/account-hub.service';
 
 interface CheckoutLineItem {
   id: string;
@@ -74,39 +75,69 @@ export class CheckoutPageComponent implements OnInit {
   city = 'TP. Ho Chi Minh';
   district = 'Quận 1';
 
+  profileHub: ProfileHubView | null = null;
+  savedAddresses: CustomerAddressRecord[] = [];
+  selectedSavedAddressId: string | null = null;
+  showAddressEditor = false;
+  showRecipientEditor = false;
+  showPaymentPicker = false;
+  customerContextLoaded = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly cartService: CartService,
     private readonly checkoutService: CheckoutService,
     private readonly toast: ToastService,
     private readonly router: Router,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly accountHub: AccountHubService
   ) {}
 
+  get isCustomerCheckout(): boolean {
+    return this.authService.isAuthenticated() && this.authService.isCustomerAccountFromToken();
+  }
+
+  get selectedPaymentDisplay(): PaymentMethodOption | undefined {
+    return this.paymentMethods.find((m) => m.id === this.selectedPaymentId);
+  }
+
   ngOnInit(): void {
+    const sessionId = this.route.snapshot.queryParamMap.get('sessionId');
     forkJoin({
       shipping: this.checkoutService.getShippingMethods().pipe(catchError(() => of<ShippingMethodApiOption[]>([]))),
       payment: this.checkoutService.getPaymentMethods().pipe(catchError(() => of<PaymentMethodApiOption[]>([]))),
     }).subscribe(({ shipping, payment }) => {
-      if (shipping.length) {
-        this.shippingMethods = shipping.map((m) => this.toUiShippingMethod(m));
-        this.selectedShippingId = this.shippingMethods[0].id;
-      }
-      if (payment.length) {
-        this.paymentMethods = payment.map((m) => this.toUiPaymentMethod(m));
-        this.selectedPaymentId = this.paymentMethods[0].id;
+      this.applyMethodLists(shipping, payment);
+      this.preferCodIfPossible();
+
+      if (this.isCustomerCheckout && !sessionId) {
+        forkJoin({
+          hub: this.accountHub.getProfileHub().pipe(catchError(() => of(null))),
+          addresses: this.accountHub.getAddresses().pipe(catchError(() => of([] as CustomerAddressRecord[]))),
+        })
+          .pipe(take(1))
+          .subscribe(({ hub, addresses }) => {
+            this.profileHub = hub;
+            this.savedAddresses = addresses;
+            this.customerContextLoaded = true;
+            this.prefillCustomerFromProfile();
+            this.bootstrapCheckoutSession();
+          });
+        return;
       }
       this.bootstrapCheckoutSession();
     });
   }
 
   get selectedShipping(): ShippingMethodOption {
-    return this.shippingMethods.find((m) => m.id === this.selectedShippingId) ?? {
-      id: '',
-      label: '',
-      eta: '',
-      fee: 0,
-    };
+    return (
+      this.shippingMethods.find((m) => m.id === this.selectedShippingId) ?? {
+        id: '',
+        label: '',
+        eta: '',
+        fee: 0,
+      }
+    );
   }
 
   get shippingFee(): number {
@@ -144,12 +175,43 @@ export class CheckoutPageComponent implements OnInit {
 
   get invalidEmail(): boolean {
     const email = this.email.trim().toLowerCase();
-    if (!email) return false;
-    return this.formSubmitted && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+    if (this.isCustomerCheckout) {
+      if (!email) return false;
+      return this.formSubmitted && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+    }
+    return this.formSubmitted && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email));
   }
 
   get invalidAddress(): boolean {
     return this.formSubmitted && this.addressLine.trim().length < 8;
+  }
+
+  applySavedAddress(addr: CustomerAddressRecord): void {
+    this.selectedSavedAddressId = addr._id;
+    this.contactName = String(addr.recipient_name || this.contactName || '');
+    this.phone = String(addr.phone || this.phone || '').replace(/[^\d]/g, '').slice(0, 11);
+    this.addressLine = String(addr.address_line_1 || '');
+    this.district = String(addr.district || this.district);
+    this.city = String(addr.city || this.city);
+    this.showAddressEditor = false;
+    this.syncCheckoutSession();
+  }
+
+  toggleAddressEditor(): void {
+    this.showAddressEditor = !this.showAddressEditor;
+  }
+
+  toggleRecipientEditor(): void {
+    this.showRecipientEditor = !this.showRecipientEditor;
+  }
+
+  togglePaymentPicker(): void {
+    this.showPaymentPicker = !this.showPaymentPicker;
+  }
+
+  onSavedAddressSelect(): void {
+    const sel = this.savedAddresses.find((a) => a._id === this.selectedSavedAddressId);
+    if (sel) this.applySavedAddress(sel);
   }
 
   applyVoucher(): void {
@@ -174,25 +236,30 @@ export class CheckoutPageComponent implements OnInit {
       return;
     }
     this.placingOrder = true;
-    this.checkoutService.placeOrder(this.checkoutSessionId, this.note || '').pipe(take(1)).subscribe({
-      next: (result) => {
-        this.cartService.getCurrentCart().pipe(take(1)).subscribe();
-        this.placingOrder = false;
-        this.router.navigate(['/orders', 'success'], {
-          queryParams: { id: result.orderId },
-          state: {
-            orderId: result.orderId,
-            orderNumber: result.orderNumber,
-          },
-        });
-      },
-      error: (err) => {
-        this.placingOrder = false;
-        const issues = this.checkoutService.mapIssues(err);
-        this.checkoutIssues = issues.map((x) => x.message);
-        this.toast.error(this.checkoutIssues[0] || 'Đặt hàng thất bại. Vui lòng thử lại.');
-      },
-    });
+    const checkoutAsGuest = !this.isCustomerCheckout;
+    this.checkoutService
+      .placeOrder(this.checkoutSessionId, this.note || '')
+      .pipe(take(1))
+      .subscribe({
+        next: (result) => {
+          this.cartService.getCurrentCart().pipe(take(1)).subscribe();
+          this.placingOrder = false;
+          this.router.navigate(['/orders', 'success'], {
+            queryParams: { id: result.orderId },
+            state: {
+              orderId: result.orderId,
+              orderNumber: result.orderNumber,
+              checkoutAsGuest,
+            },
+          });
+        },
+        error: (err) => {
+          this.placingOrder = false;
+          const issues = this.checkoutService.mapIssues(err);
+          this.checkoutIssues = issues.map((x) => x.message);
+          this.toast.error(this.checkoutIssues[0] || 'Đặt hàng thất bại. Vui lòng thử lại.');
+        },
+      });
   }
 
   onShippingMethodChange(): void {
@@ -207,37 +274,85 @@ export class CheckoutPageComponent implements OnInit {
     this.phone = this.phone.replace(/[^\d]/g, '').slice(0, 11);
   }
 
+  private applyMethodLists(shipping: ShippingMethodApiOption[], payment: PaymentMethodApiOption[]): void {
+    if (shipping.length) {
+      this.shippingMethods = shipping.map((m) => this.toUiShippingMethod(m));
+      this.selectedShippingId = this.shippingMethods[0].id;
+    }
+    if (payment.length) {
+      this.paymentMethods = payment.map((m) => this.toUiPaymentMethod(m));
+      this.selectedPaymentId = this.paymentMethods[0].id;
+    }
+  }
+
+  private preferCodIfPossible(): void {
+    const cod = this.paymentMethods.find((m) => /cod|tiền mặt|cash/i.test(m.label + m.subtitle));
+    if (cod) this.selectedPaymentId = cod.id;
+  }
+
+  private prefillCustomerFromProfile(): void {
+    const hub = this.profileHub;
+    if (!hub?.profile) return;
+    this.contactName = hub.profile.fullName || this.contactName;
+    this.email = hub.profile.email || this.email;
+    this.phone = String(hub.profile.phone || this.phone || '')
+      .replace(/[^\d]/g, '')
+      .slice(0, 11);
+    const def = this.savedAddresses.find((a) => a.is_default_shipping) || this.savedAddresses[0];
+    if (def) {
+      this.selectedSavedAddressId = def._id;
+      this.contactName = String(def.recipient_name || this.contactName);
+      this.phone = String(def.phone || this.phone || '')
+        .replace(/[^\d]/g, '')
+        .slice(0, 11);
+      this.addressLine = String(def.address_line_1 || this.addressLine);
+      this.district = String(def.district || this.district);
+      this.city = String(def.city || this.city);
+    } else if (hub.defaultAddress) {
+      this.contactName = hub.defaultAddress.recipientName || this.contactName;
+      this.phone = String(hub.defaultAddress.phone || this.phone || '')
+        .replace(/[^\d]/g, '')
+        .slice(0, 11);
+    }
+  }
+
   private bootstrapCheckoutSession(): void {
     const requestedSessionId = this.route.snapshot.queryParamMap.get('sessionId');
     if (requestedSessionId) {
       this.isSyncingSession = true;
-      this.checkoutService.getMyCheckoutSessionById(requestedSessionId).pipe(take(1)).subscribe({
-        next: (session) => {
-          this.isSyncingSession = false;
-          this.applySession(session);
-        },
-        error: (err) => {
-          this.isSyncingSession = false;
-          const issues = this.checkoutService.mapIssues(err);
-          this.checkoutIssues = issues.map((x) => x.message);
-        },
-      });
+      this.checkoutService
+        .getMyCheckoutSessionById(requestedSessionId)
+        .pipe(take(1))
+        .subscribe({
+          next: (session) => {
+            this.isSyncingSession = false;
+            this.applySession(session);
+          },
+          error: (err) => {
+            this.isSyncingSession = false;
+            const issues = this.checkoutService.mapIssues(err);
+            this.checkoutIssues = issues.map((x) => x.message);
+          },
+        });
       return;
     }
 
-    this.checkoutService.prepareCheckout().pipe(take(1)).subscribe((ready) => {
-      if (!ready.success) {
-        this.checkoutIssues = ready.issues.map((x) => x.message);
-        if (!this.checkoutIssues.length) {
-          this.checkoutIssues = ['Không thể chuẩn bị thanh toán. Vui lòng kiểm tra lại giỏ hàng.'];
+    this.checkoutService
+      .prepareCheckout()
+      .pipe(take(1))
+      .subscribe((ready) => {
+        if (!ready.success) {
+          this.checkoutIssues = ready.issues.map((x) => x.message);
+          if (!this.checkoutIssues.length) {
+            this.checkoutIssues = ['Không thể chuẩn bị thanh toán. Vui lòng kiểm tra lại giỏ hàng.'];
+          }
+          return;
         }
-        return;
-      }
-      this.syncCheckoutSession();
-    });
+        this.syncCheckoutSession();
+      });
   }
 
-  private syncCheckoutSession(overrides: {
+  syncCheckoutSession(overrides: {
     shippingMethodId?: string | null;
     paymentMethodId?: string | null;
     couponCode?: string | null;
@@ -284,10 +399,6 @@ export class CheckoutPageComponent implements OnInit {
     });
   }
 
-  private isAuthenticated(): boolean {
-    return this.authService.isAuthenticated();
-  }
-
   private applySession(session: CheckoutSessionView): void {
     this.checkoutSessionId = session.sessionId;
     this.appliedVoucher = session.appliedCouponCode || '';
@@ -303,7 +414,7 @@ export class CheckoutPageComponent implements OnInit {
     this.subtotal = session.subtotal;
     this.shippingFeeFromSession = session.shippingFee;
     this.baseDiscount = session.discount;
-    this.voucherDiscount = 0; // backend exposes total discount only; keep voucher line informational
+    this.voucherDiscount = 0;
     this.sessionGrandTotal = session.total;
 
     if (session.selectedShippingMethodId) this.selectedShippingId = session.selectedShippingMethodId;
@@ -315,6 +426,9 @@ export class CheckoutPageComponent implements OnInit {
       this.district = session.shippingAddress.district || this.district;
       this.city = session.shippingAddress.city || this.city;
     }
+    if (session.guestEmail) this.email = session.guestEmail;
+    if (session.guestPhone) this.phone = String(session.guestPhone).replace(/[^\d]/g, '').slice(0, 11);
+    if (session.guestFullName) this.contactName = session.guestFullName;
   }
 
   private toUiShippingMethod(method: ShippingMethodApiOption): ShippingMethodOption {
@@ -331,11 +445,12 @@ export class CheckoutPageComponent implements OnInit {
 
   private toUiPaymentMethod(method: PaymentMethodApiOption): PaymentMethodOption {
     const type = String(method.method_type || '').toLowerCase();
-    const icon = type.includes('bank') || type.includes('transfer')
-      ? 'bi-bank2'
-      : type.includes('wallet')
-        ? 'bi-wallet2'
-        : 'bi-cash-coin';
+    const icon =
+      type.includes('bank') || type.includes('transfer')
+        ? 'bi-bank2'
+        : type.includes('wallet')
+          ? 'bi-wallet2'
+          : 'bi-cash-coin';
     return {
       id: method._id,
       label: method.payment_method_name,

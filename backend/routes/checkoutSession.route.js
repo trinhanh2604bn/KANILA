@@ -11,6 +11,7 @@ const {
   createMyCheckoutSession,
   prepareGuestCheckoutSession,
   createGuestCheckoutSession,
+  createGuestBuyNowCheckoutSession,
   getGuestCheckoutSessionById,
   updateGuestCheckoutSession,
   placeGuestCheckoutSessionOrder,
@@ -20,18 +21,22 @@ const {
   placeMyCheckoutSessionOrder,
 } = require("../controllers/checkoutSession.controller");
 
+// Guest paths first (literal segments before /:id-style routes)
+router.post("/guest/prepare", prepareGuestCheckoutSession);
+router.post("/guest/buy-now", createGuestBuyNowCheckoutSession);
+router.post("/guest/me", createGuestCheckoutSession);
+router.get("/guest/me/:id", getGuestCheckoutSessionById);
+router.patch("/guest/:id", updateGuestCheckoutSession);
+router.post("/guest/:id/place-order", placeGuestCheckoutSessionOrder);
+
+// Authenticated customer checkout
 router.post("/me", authMiddleware, createMyCheckoutSession);
 router.post("/me/buy-now", authMiddleware, createMyBuyNowCheckoutSession);
 router.get("/me/:id", authMiddleware, getMyCheckoutSessionById);
 router.patch("/:id", authMiddleware, updateMyCheckoutSession);
 router.post("/:id/place-order", authMiddleware, placeMyCheckoutSessionOrder);
 
-router.post("/guest/prepare", prepareGuestCheckoutSession);
-router.post("/guest/me", createGuestCheckoutSession);
-router.get("/guest/me/:id", getGuestCheckoutSessionById);
-router.patch("/guest/:id", updateGuestCheckoutSession);
-router.post("/guest/:id/place-order", placeGuestCheckoutSessionOrder);
-
+// Generic CRUD (admin / tooling)
 router.get("/", getAllCheckoutSessions);
 router.get("/cart/:cart_id", getSessionsByCartId);
 router.get("/:id", getCheckoutSessionById);

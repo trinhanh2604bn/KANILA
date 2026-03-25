@@ -9,7 +9,6 @@ import { Product } from '../../../../core/models/product.model';
 import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
-import { AuthService } from '../../../../core/services/auth.service';
 import { WishlistService } from '../../../account/services/wishlist.service';
 
 interface PdpShade {
@@ -252,7 +251,6 @@ export class CatalogProductDetailPageComponent implements OnInit {
     private readonly cartService: CartService,
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
-    private readonly authService: AuthService,
     private readonly wishlistService: WishlistService
   ) {}
 
@@ -420,11 +418,6 @@ export class CatalogProductDetailPageComponent implements OnInit {
     }
     if (this.stockText.toLowerCase().includes('hết')) {
       this.toast.warning('Sản phẩm hiện không còn khả dụng.');
-      return;
-    }
-    if (!this.isAuthenticated()) {
-      this.toast.warning('Vui lòng đăng nhập để sử dụng Mua ngay.');
-      this.router.navigate(['/auth/login']);
       return;
     }
 
@@ -608,9 +601,5 @@ export class CatalogProductDetailPageComponent implements OnInit {
     const id = String(value || '').trim();
     // Backend auto-picks first active variant when variantId is null.
     return this.isValidObjectId(id) ? id : null;
-  }
-
-  private isAuthenticated(): boolean {
-    return this.authService.isAuthenticated();
   }
 }

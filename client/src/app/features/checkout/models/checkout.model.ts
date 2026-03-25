@@ -42,7 +42,11 @@ export interface CheckoutSessionView {
   sessionId: string;
   checkoutStatus: 'in_progress' | 'completed' | 'expired';
   cartId: string;
-  customerId: string;
+  customerId: string | null;
+  guestSessionId?: string | null;
+  guestEmail?: string;
+  guestPhone?: string;
+  guestFullName?: string;
   shippingAddress: {
     recipient_name: string;
     phone: string;

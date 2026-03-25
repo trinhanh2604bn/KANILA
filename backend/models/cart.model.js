@@ -25,7 +25,7 @@ const cartSchema = new mongoose.Schema(
     },
     cart_status: {
       type: String,
-      enum: ["active", "converted", "expired"],
+      enum: ["active", "converted", "expired", "merged"],
       default: "active",
     },
     currency_code: {

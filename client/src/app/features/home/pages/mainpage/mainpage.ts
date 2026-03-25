@@ -197,11 +197,6 @@ export class Mainpage implements OnInit {
       this.toast.warning('Sản phẩm hiện không còn khả dụng.');
       return;
     }
-    if (!this.isAuthenticated()) {
-      this.toast.warning('Vui lòng đăng nhập để sử dụng Mua ngay.');
-      this.router.navigate(['/auth/login']);
-      return;
-    }
     this.checkoutService.createBuyNowCheckoutSession({
       productId,
       variantId: null,

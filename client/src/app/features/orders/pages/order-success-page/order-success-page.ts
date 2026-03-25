@@ -59,6 +59,8 @@ export class OrderSuccessPageComponent {
   orderedItems: OrderedItem[] = [];
   isLoading = true;
   hasError = false;
+  /** True when checkout completed as guest (from router state), or when only guest summary loads. */
+  isGuestSuccess = false;
 
   constructor(
     private readonly router: Router,
@@ -69,6 +71,9 @@ export class OrderSuccessPageComponent {
     const routeOrderId = this.route.snapshot.queryParamMap.get('id') || '';
     this.orderId = String(state?.orderId || routeOrderId || '').trim();
     this.orderNumber = String(state?.orderNumber || '').trim();
+    if (state?.checkoutAsGuest === true) {
+      this.isGuestSuccess = true;
+    }
 
     if (!this.orderId) {
       this.hasError = true;
@@ -76,26 +81,40 @@ export class OrderSuccessPageComponent {
       return;
     }
 
-    this.orderService.getMyOrderById(this.orderId).pipe(take(1)).subscribe((order) => {
-      if (!order) {
+    this.orderService.getMyOrderById(this.orderId).pipe(take(1)).subscribe({
+      next: (order) => {
+        if (!order) {
+          this.orderService.getGuestOrderSummary(this.orderId).pipe(take(1)).subscribe((guestOrder) => {
+            if (!guestOrder) {
+              this.hasError = true;
+              this.isLoading = false;
+              return;
+            }
+            this.isGuestSuccess = true;
+            this.bindOrder(guestOrder);
+            this.isLoading = false;
+            this.hasError = false;
+          });
+          return;
+        }
+        this.isGuestSuccess = false;
+        this.bindOrder(order);
+        this.isLoading = false;
+        this.hasError = false;
+      },
+      error: () => {
         this.orderService.getGuestOrderSummary(this.orderId).pipe(take(1)).subscribe((guestOrder) => {
           if (!guestOrder) {
             this.hasError = true;
             this.isLoading = false;
             return;
           }
+          this.isGuestSuccess = true;
           this.bindOrder(guestOrder);
           this.isLoading = false;
           this.hasError = false;
         });
-        return;
-      }
-      this.bindOrder(order);
-      this.isLoading = false;
-      this.hasError = false;
-    }, () => {
-      this.hasError = true;
-      this.isLoading = false;
+      },
     });
   }
 
@@ -132,12 +151,24 @@ export class OrderSuccessPageComponent {
 
   viewOrderDetails(): void {
     if (!this.orderId) return;
+    if (this.isGuestSuccess) {
+      this.router.navigate(['/orders', this.orderId, 'tracking']);
+      return;
+    }
     this.router.navigate(['/orders', this.orderId]);
   }
 
   trackOrder(): void {
     if (!this.orderId) return;
     this.router.navigate(['/orders', this.orderId, 'tracking']);
+  }
+
+  goRegister(): void {
+    this.router.navigate(['/auth/register']);
+  }
+
+  goOrderLookup(): void {
+    this.router.navigate(['/orders/lookup']);
   }
 
   private addDays(date: Date, days: number): Date {

@@ -7,6 +7,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { BrandService } from '../../core/services/brand.service';
 import { CategoryService } from '../../core/services/category.service';
 import { CartService } from '../../features/cart/services/cart.service';
+import { WishlistService } from '../../features/account/services/wishlist.service';
+import { GuestSessionService } from '../../core/services/guest-session.service';
 import { SearchBarComponent } from './search-bar/search-bar';
 
 @Component({
@@ -72,6 +74,8 @@ export class Header implements OnInit, OnDestroy {
     private readonly categoryService: CategoryService,
     private readonly brandService: BrandService,
     private readonly cartService: CartService,
+    private readonly wishlistService: WishlistService,
+    private readonly guestSessionService: GuestSessionService,
     private readonly router: Router,
     private readonly authService: AuthService
   ) {}
@@ -101,6 +105,10 @@ export class Header implements OnInit, OnDestroy {
       .subscribe((count) => {
         this.cartBadgeCount = Math.max(0, Number(count || 0));
       });
+
+    if (this.authService.isAuthenticated() && this.authService.isCustomerAccountFromToken()) {
+      this.wishlistService.syncWishlistState().pipe(takeUntil(this.destroy$)).subscribe();
+    }
   }
 
   ngOnDestroy(): void {
@@ -144,6 +152,9 @@ export class Header implements OnInit, OnDestroy {
 
   logout(): void {
     this.authService.logout();
+    this.wishlistService.clearLocalState();
+    this.guestSessionService.startFreshGuestSessionAfterLogout();
+    this.cartService.resetAfterLogout().subscribe();
     this.cachedRoleToken = '';
     this.cachedAccountType = '';
     this.accountMenuOpen = false;

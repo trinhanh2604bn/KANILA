@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { CartService } from '../../cart/services/cart.service';
 
 export interface WishlistMeView {
   count: number;
@@ -18,11 +19,13 @@ export interface WishlistItemView {
 @Injectable({ providedIn: 'root' })
 export class WishlistService {
   private readonly api = 'http://localhost:5000/api/wishlist';
-  private readonly cartApi = 'http://localhost:5000/api/carts/me/items';
   private readonly wishedProductIds$ = new BehaviorSubject<Set<string>>(new Set<string>());
   readonly wishedProductIdsState$ = this.wishedProductIds$.asObservable();
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly cartService: CartService
+  ) {}
 
   getMe(): Observable<WishlistMeView | null> {
     return this.http.get<any>(`${this.api}/me`).pipe(
@@ -96,8 +99,12 @@ export class WishlistService {
     );
   }
 
+  clearLocalState(): void {
+    this.wishedProductIds$.next(new Set());
+  }
+
   addToCart(productId: string, variantId?: string | null, quantity = 1): Observable<void> {
-    return this.http.post<any>(this.cartApi, { productId, variantId, quantity }).pipe(map(() => void 0));
+    return this.cartService.addToCart({ productId, variantId: variantId ?? null, quantity }).pipe(map(() => void 0));
   }
 
   private cloneSet(source: Set<string>): Set<string> {

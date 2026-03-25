@@ -125,9 +125,30 @@ const createBuyNowCart = async (customerId) => {
   });
 };
 
+const createGuestBuyNowCart = async (guestSessionId) => {
+  return Cart.create({
+    owner_type: "guest",
+    guest_session_id: guestSessionId,
+    customer_id: null,
+    cart_status: "converted",
+    currency_code: "VND",
+    item_count: 0,
+    subtotal_amount: 0,
+    discount_amount: 0,
+    total_amount: 0,
+  });
+};
+
 const expireInProgressSessions = async (customerId) => {
   await CheckoutSession.updateMany(
     { customer_id: customerId, checkout_status: "in_progress" },
+    { $set: { checkout_status: "expired" } }
+  );
+};
+
+const expireInProgressGuestSessions = async (guestSessionId) => {
+  await CheckoutSession.updateMany(
+    { guest_session_id: guestSessionId, owner_type: "guest", checkout_status: "in_progress" },
     { $set: { checkout_status: "expired" } }
   );
 };
@@ -721,6 +742,105 @@ const createMyBuyNowCheckoutSession = async (req, res) => {
   }
 };
 
+// POST /api/checkout-sessions/guest/buy-now
+const createGuestBuyNowCheckoutSession = async (req, res) => {
+  try {
+    const guestSessionId = resolveGuestSessionId(req);
+    if (!guestSessionId) return res.status(400).json({ success: false, message: "guestSessionId is required" });
+
+    const productIdLegacy = String(req.body?.productId || "").trim();
+    const variantIdRaw = req.body?.variantId;
+    const variantId = variantIdRaw == null ? null : String(variantIdRaw).trim();
+    const quantity = Number(req.body?.quantity || 1);
+
+    if (!validateObjectId(productIdLegacy)) {
+      return res.status(400).json({ success: false, message: "Invalid productId" });
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid quantity" });
+    }
+    if (variantId && !validateObjectId(variantId)) {
+      return res.status(400).json({ success: false, message: "Invalid variantId" });
+    }
+
+    const product = await Product.findById(productIdLegacy).populate("brandId", "brandName");
+    if (!product || product.isActive === false || product.productStatus === "inactive") {
+      return res.status(409).json({
+        success: false,
+        code: CHECKOUT_ERROR.PRODUCT_UNAVAILABLE,
+        message: "Sản phẩm hiện không còn khả dụng.",
+      });
+    }
+
+    let variant = await resolveBuyNowVariant(product._id, variantId);
+    if (!variant) {
+      variant = await ensureDefaultVariantForProduct(product);
+    }
+    if (!variant || variant.variantStatus === "inactive") {
+      return res.status(409).json({
+        success: false,
+        code: CHECKOUT_ERROR.VARIANT_UNAVAILABLE,
+        message: "Phân loại này hiện không còn khả dụng.",
+      });
+    }
+
+    const stock = Math.max(0, Number(product.stock || 0));
+    const qty = Math.max(1, Math.round(quantity));
+    if (qty > stock) {
+      return res.status(409).json({
+        success: false,
+        code: CHECKOUT_ERROR.INSUFFICIENT_STOCK,
+        message: "Số lượng vượt quá tồn kho hiện tại.",
+        availableStock: stock,
+        requestedQuantity: qty,
+      });
+    }
+
+    await expireInProgressGuestSessions(guestSessionId);
+
+    const cart = await createGuestBuyNowCart(guestSessionId);
+    const buyNowItem = await createBuyNowSnapshotItem({
+      cartId: cart._id,
+      product,
+      variant,
+      quantity: qty,
+    });
+    const summary = computeCartSummary([buyNowItem]);
+
+    await Cart.findByIdAndUpdate(cart._id, {
+      item_count: summary.itemCount,
+      subtotal_amount: summary.subtotal,
+      discount_amount: summary.discountTotal,
+      total_amount: summary.grandTotal,
+    });
+
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    const session = await CheckoutSession.create({
+      owner_type: "guest",
+      guest_session_id: guestSessionId,
+      cart_id: cart._id,
+      customer_id: null,
+      checkout_status: "in_progress",
+      currency_code: "VND",
+      subtotal_amount: toMoney(summary.subtotal),
+      shipping_fee_amount: toMoney(summary.shippingFee),
+      discount_amount: toMoney(summary.discountTotal),
+      tax_amount: 0,
+      total_amount: toMoney(summary.grandTotal),
+      expires_at: expiresAt,
+    });
+
+    const payload = await toCheckoutSessionPayload(session);
+    return res.status(201).json({
+      success: true,
+      message: "Guest buy now checkout session created",
+      data: payload,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // PATCH /api/checkout-sessions/:id
 const updateMyCheckoutSession = async (req, res) => {
   try {
@@ -1285,6 +1405,7 @@ module.exports = {
   updateGuestCheckoutSession,
   placeGuestCheckoutSessionOrder,
   createMyBuyNowCheckoutSession,
+  createGuestBuyNowCheckoutSession,
   getMyCheckoutSessionById,
   updateMyCheckoutSession,
   placeMyCheckoutSessionOrder,

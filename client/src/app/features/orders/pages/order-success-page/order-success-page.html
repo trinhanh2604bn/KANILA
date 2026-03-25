@@ -9,10 +9,15 @@
     </section>
 
     <ng-container *ngIf="!isLoading && !hasError">
-    <section class="success-hero card">
+    <section class="success-hero card" [class.success-hero--guest]="isGuestSuccess" [class.success-hero--member]="!isGuestSuccess">
       <div class="success-icon"><i class="bi bi-check2-circle"></i></div>
-      <h1>Đặt hàng thành công</h1>
-      <p class="subtext">Cảm ơn bạn! Đơn hàng của bạn đã được ghi nhận và đang chờ xác nhận từ hệ thống.</p>
+      <h1>{{ isGuestSuccess ? 'Cảm ơn bạn đã đặt hàng tại Kanila' : 'Đặt hàng thành công' }}</h1>
+      <p class="subtext" *ngIf="isGuestSuccess">
+        Đơn của bạn đã được ghi nhận. Bạn có thể tra cứu đơn bằng <strong>mã đơn</strong> cùng <strong>số điện thoại hoặc email</strong> đã dùng khi đặt.
+      </p>
+      <p class="subtext" *ngIf="!isGuestSuccess">
+        Cảm ơn bạn! Đơn hàng đã được lưu vào tài khoản — theo dõi và quản lý dễ dàng trong mục Đơn hàng.
+      </p>
 
       <div class="hero-meta">
         <div>
@@ -32,7 +37,14 @@
           <strong class="paid">{{ paymentStatus }}</strong>
         </div>
       </div>
-      <p class="notify-note">Xác nhận đơn hàng đã được gửi tới email/SĐT của bạn.</p>
+      <p class="notify-note">{{ isGuestSuccess ? 'Lưu mã đơn để tra cứu sau.' : 'Xác nhận đơn hàng đã được gửi tới email/SĐT trong tài khoản của bạn.' }}</p>
+    </section>
+
+    <section class="card guest-lookup-hint" *ngIf="isGuestSuccess">
+      <h2>Tra cứu đơn sau này</h2>
+      <p>Dùng <strong>mã đơn {{ orderNumber }}</strong> kèm số điện thoại hoặc email đặt hàng tại trang tra cứu.</p>
+      <button type="button" class="btn btn-soft" (click)="goOrderLookup()">Tra cứu đơn hàng</button>
+      <button type="button" class="btn btn-ghost" (click)="goRegister()">Tạo tài khoản Kanila</button>
     </section>
 
     <section class="card">
@@ -98,17 +110,19 @@
 
         <article class="card actions">
           <button type="button" class="btn btn-primary" (click)="trackOrder()">
-            <i class="bi bi-geo-alt"></i> Theo dõi đơn hàng
+            <i class="bi bi-geo-alt"></i> Theo dõi vận chuyển
           </button>
-          <button type="button" class="btn btn-soft" (click)="viewOrderDetails()">Xem chi tiết đơn</button>
+          <button type="button" class="btn btn-soft" (click)="viewOrderDetails()">
+            {{ isGuestSuccess ? 'Xem tiến trình đơn' : 'Xem chi tiết trong tài khoản' }}
+          </button>
           <button type="button" class="btn btn-ghost" (click)="continueShopping()">Tiếp tục mua sắm</button>
         </article>
       </aside>
     </div>
 
-    <section class="card">
+    <section class="card" *ngIf="!isGuestSuccess">
       <div class="reco-head">
-        <h3>Có thể bạn sẽ thích</h3>
+        <h3>Gợi ý dành cho bạn</h3>
         <button type="button" class="text-link" (click)="continueShopping()">Xem thêm</button>
       </div>
       <div class="reco-grid">

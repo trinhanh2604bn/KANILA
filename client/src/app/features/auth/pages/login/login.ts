@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { CartService } from '../../../cart/services/cart.service';
+import { WishlistService } from '../../../account/services/wishlist.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { LoginRequest } from '../../../../core/models/auth.model';
 
@@ -27,6 +29,7 @@ export class Login implements OnInit {
     private router: Router,
     private authService: AuthService,
     private cartService: CartService,
+    private wishlistService: WishlistService,
     private toast: ToastService
   ) {}
 
@@ -59,15 +62,20 @@ export class Login implements OnInit {
           this.authService.setToken(res.data.token);
 
           if (this.authService.isCustomerAccountFromToken()) {
-            this.cartService.syncGuestCartAfterLogin().subscribe({
+            forkJoin({
+              cart: this.cartService.mergeGuestCartOnLogin(),
+              wishlist: this.wishlistService.syncWishlistState(),
+            }).subscribe({
               next: () => {
-                this.toast.success('Giỏ hàng của bạn đã được đồng bộ.');
+                this.toast.success('Đăng nhập thành công. Giỏ hàng & yêu thích đã được đồng bộ.');
+                this.router.navigate(['/home']);
               },
               error: () => {
-                // Keep sign-in successful even if cart sync has recoverable errors.
-                this.toast.warning('Đăng nhập thành công, nhưng đồng bộ giỏ hàng chưa hoàn tất.');
+                this.toast.warning('Đăng nhập thành công. Một số dữ liệu chưa đồng bộ — vui lòng tải lại trang.');
+                this.router.navigate(['/home']);
               },
             });
+            return;
           }
 
           this.toast.success('Đăng nhập thành công.');

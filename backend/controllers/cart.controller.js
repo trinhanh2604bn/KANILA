@@ -921,6 +921,128 @@ const prepareMyCartCheckout = async (req, res) => {
   }
 };
 
+// POST /api/carts/me/merge-guest — merge active guest cart into customer cart, mark guest cart merged
+const mergeGuestCartOnLogin = async (req, res) => {
+  try {
+    const customer = await findCustomerByAuth(req);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: "Customer profile not found for current account" });
+    }
+
+    const guestSessionId = resolveGuestSessionId(req);
+    const customerCart = await ensureActiveCartForCustomer(customer._id);
+
+    if (!guestSessionId) {
+      const normalized = await loadNormalizedCart(customerCart, customer._id);
+      return res.status(200).json({ success: true, message: "No guest session id", data: normalized, merged: false });
+    }
+
+    const guestCart = await Cart.findOne({
+      owner_type: "guest",
+      guest_session_id: guestSessionId,
+      cart_status: "active",
+    }).sort({ updated_at: -1 });
+
+    if (!guestCart) {
+      const normalized = await loadNormalizedCart(customerCart, customer._id);
+      return res.status(200).json({ success: true, message: "No guest cart to merge", data: normalized, merged: false });
+    }
+
+    const guestItems = await CartItem.find({ cart_id: guestCart._id }).sort({ added_at: -1 });
+    if (!guestItems.length) {
+      await Cart.findByIdAndUpdate(guestCart._id, {
+        cart_status: "merged",
+        item_count: 0,
+        subtotal_amount: 0,
+        discount_amount: 0,
+        total_amount: 0,
+      });
+      const normalized = await loadNormalizedCart(customerCart, customer._id);
+      return res.status(200).json({ success: true, message: "Guest cart was empty", data: normalized, merged: false });
+    }
+
+    for (const gi of guestItems) {
+      const product = await Product.findById(gi.product_id).populate("brandId", "brandName");
+      const variant = gi.variant_id ? await ProductVariant.findById(gi.variant_id) : null;
+      if (!product || !variant || product.isActive === false || product.productStatus === "inactive" || variant.variantStatus === "inactive") {
+        continue;
+      }
+
+      const availableStock = getAvailableStockForProduct(product);
+      if (availableStock <= 0) continue;
+
+      const lineKey = buildLineKey(product._id, variant._id);
+      const existing = await CartItem.findOne({
+        cart_id: customerCart._id,
+        $or: [{ line_key: lineKey }, { product_id: product._id, variant_id: variant._id }],
+      });
+
+      const unitPrice = Number(product.price || 0);
+      const finalUnit = unitPrice;
+      const compareRaw = toMoney(gi.compare_at_price_amount || 0);
+      const payload = {
+        product_id: product._id,
+        cart_id: customerCart._id,
+        variant_id: variant._id,
+        sku_snapshot: variant.sku || product.productCode || String(product._id),
+        product_name_snapshot: product.productName || "Product",
+        variant_name_snapshot: variant.variantName || "Default",
+        brand_name_snapshot: product.brandId?.brandName || "",
+        image_url_snapshot: product.imageUrl || "",
+        compare_at_price_amount: compareRaw > finalUnit ? compareRaw : 0,
+        stock_status: Number(product.stock || 0) > 0 ? "in_stock" : "out_of_stock",
+        unit_price_amount: unitPrice,
+        discount_amount: 0,
+        final_unit_price_amount: finalUnit,
+        selected: gi.selected !== false,
+        line_key: lineKey,
+      };
+
+      const guestQty = Math.max(1, Number(gi.quantity || 1));
+
+      if (existing) {
+        const nextQty = Math.max(1, Number(existing.quantity || 1) + guestQty);
+        const cappedQty = Math.min(nextQty, availableStock);
+        existing.quantity = cappedQty;
+        existing.unit_price_amount = payload.unit_price_amount;
+        existing.discount_amount = payload.discount_amount;
+        existing.final_unit_price_amount = payload.final_unit_price_amount;
+        existing.line_total_amount = existing.final_unit_price_amount * existing.quantity;
+        existing.product_name_snapshot = payload.product_name_snapshot;
+        existing.variant_name_snapshot = payload.variant_name_snapshot;
+        existing.brand_name_snapshot = payload.brand_name_snapshot;
+        existing.image_url_snapshot = payload.image_url_snapshot;
+        existing.compare_at_price_amount = payload.compare_at_price_amount;
+        existing.stock_status = payload.stock_status;
+        existing.line_key = lineKey;
+        await existing.save();
+      } else {
+        const qty = Math.min(guestQty, availableStock);
+        if (qty < 1) continue;
+        await CartItem.create({
+          ...payload,
+          quantity: qty,
+          line_total_amount: payload.final_unit_price_amount * qty,
+        });
+      }
+    }
+
+    await CartItem.deleteMany({ cart_id: guestCart._id });
+    await Cart.findByIdAndUpdate(guestCart._id, {
+      cart_status: "merged",
+      item_count: 0,
+      subtotal_amount: 0,
+      discount_amount: 0,
+      total_amount: 0,
+    });
+
+    const normalized = await loadNormalizedCart(customerCart, customer._id);
+    return res.status(200).json({ success: true, message: "Guest cart merged into your cart", data: normalized, merged: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const prepareGuestCartCheckout = async (req, res) => {
   try {
     const guestSessionId = resolveGuestSessionId(req);
@@ -979,5 +1101,6 @@ module.exports = {
   removeSelectedFromGuestCart,
   prepareMyCartCheckout,
   prepareGuestCartCheckout,
+  mergeGuestCartOnLogin,
   buildEmptyNormalizedCart,
 };

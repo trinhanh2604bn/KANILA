@@ -33,6 +33,7 @@ export interface CartNormalized {
   cartId: string | null;
   source: 'database' | 'guest';
   customerId: string | null;
+  guestSessionId?: string | null;
   items: CartItemNormalized[];
   summary: CartSummary;
   updatedAt: string;

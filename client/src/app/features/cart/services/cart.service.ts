@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { AddToCartPayload, CartItemNormalized, CartNormalized, CartSummary } from '../models/cart.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { GuestSessionService } from '../../../core/services/guest-session.service';
@@ -9,10 +9,8 @@ import { GuestSessionService } from '../../../core/services/guest-session.servic
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly apiUrl = 'http://localhost:5000/api/carts';
-  private readonly guestCartKey = 'kanila_guest_cart';
   private readonly freeShippingThreshold = 499000;
   private readonly shippingFeeDefault = 30000;
-  private memoryGuestCart: CartNormalized | null = null;
   private readonly cartErrorSubject = new BehaviorSubject<{ code: string; message: string } | null>(null);
 
   private readonly cartStateSubject = new BehaviorSubject<CartNormalized>(this.getEmptyCart('guest'));
@@ -73,12 +71,6 @@ export class CartService {
           this.cartStateSubject.next(cart);
         }),
         catchError((err) => {
-          if (this.isAuthError(err)) {
-            const fallbackCart = this.addToGuestCart(payload, quantity);
-            this.cartErrorSubject.next(null);
-            this.cartStateSubject.next(fallbackCart);
-            return of(fallbackCart);
-          }
           this.handleServerError(err);
           return of(this.cartStateSubject.value);
         })
@@ -283,61 +275,33 @@ export class CartService {
   }
 
   clearCart(): Observable<CartNormalized> {
-    if (this.isLoggedIn()) {
-      return this.toggleSelectAll(true).pipe(
-        map(() => this.cartStateSubject.value),
-        tap(() => this.removeSelectedItems().subscribe())
-      );
-    }
-    const empty = this.getEmptyCart('guest');
-    localStorage.setItem(this.guestCartKey, JSON.stringify(empty));
-    this.cartStateSubject.next(empty);
-    return of(empty);
+    return this.toggleSelectAll(true).pipe(
+      switchMap(() => this.removeSelectedItems()),
+      catchError(() => of(this.cartStateSubject.value))
+    );
   }
 
-  syncGuestCartAfterLogin(): Observable<CartNormalized> {
+  /** Merge DB guest cart into customer cart after login; requires JWT + x-guest-session-id. */
+  mergeGuestCartOnLogin(): Observable<CartNormalized> {
     if (!this.isLoggedIn()) return of(this.cartStateSubject.value);
-    const guestCart = this.readGuestCart();
-    if (!guestCart.items.length) return this.getCurrentCart();
+    return this.http.post<any>(`${this.apiUrl}/me/merge-guest`, {}, { headers: this.guestSessionService.buildGuestHeaders() }).pipe(
+      map((res) => this.normalizeIncomingCart(res?.data, 'database')),
+      tap((cart) => {
+        this.cartErrorSubject.next(null);
+        this.cartStateSubject.next(cart);
+      }),
+      catchError((err) => {
+        this.handleServerError(err);
+        return this.getCurrentCart();
+      })
+    );
+  }
 
-    const queue = guestCart.items.filter((item) => !!item.productId && Number(item.quantity || 0) > 0);
-    if (!queue.length) {
-      localStorage.removeItem(this.guestCartKey);
-      return this.getCurrentCart();
-    }
-    // Run sequentially with imperative fallback to keep code compact.
-    // TODO: switch to backend bulk merge endpoint when available.
-    return new Observable<CartNormalized>((subscriber) => {
-      const processNext = (idx: number) => {
-        if (idx >= queue.length) {
-          localStorage.removeItem(this.guestCartKey);
-          this.getCurrentCart().subscribe({
-            next: (cart) => {
-              subscriber.next(cart);
-              subscriber.complete();
-            },
-            error: (err) => subscriber.error(err),
-          });
-          return;
-        }
-        this.addToCart({
-          productId: queue[idx].productId,
-          variantId: queue[idx].variantId,
-          quantity: Math.max(1, Number(queue[idx].quantity || 1)),
-          productName: queue[idx].productName,
-          brandName: queue[idx].brandName,
-          variantLabel: queue[idx].variantLabel,
-          imageUrl: queue[idx].imageUrl,
-          unitPrice: queue[idx].unitPrice,
-          compareAtPrice: queue[idx].compareAtPrice,
-          stockStatus: queue[idx].stockStatus,
-        }).subscribe({
-          next: () => processNext(idx + 1),
-          error: () => processNext(idx + 1),
-        });
-      };
-      processNext(0);
-    });
+  /** Call after logout + fresh guest session: clears in-memory cart then loads guest cart from API. */
+  resetAfterLogout(): Observable<CartNormalized> {
+    this.cartErrorSubject.next(null);
+    this.cartStateSubject.next(this.getEmptyCart('guest'));
+    return this.getCurrentCart();
   }
 
   private bootstrapCart(): void {
@@ -354,26 +318,6 @@ export class CartService {
     return accountType === 'customer' || accountType === 'admin';
   }
 
-  private isAuthError(err: any): boolean {
-    const status = Number(err?.status || err?.error?.status || 0);
-    return status === 401 || status === 403;
-  }
-
-  private addToGuestCart(payload: AddToCartPayload, quantity: number): CartNormalized {
-    const cart = this.readGuestCart();
-    const variantId = payload.variantId || null;
-    const existing = cart.items.find((item) => item.productId === payload.productId && (item.variantId || null) === variantId);
-
-    if (existing) {
-      existing.quantity = Math.max(1, existing.quantity + quantity);
-      existing.selected = true;
-    } else {
-      cart.items.unshift(this.createGuestItem(payload, quantity));
-    }
-
-    return this.persistGuestCart(cart);
-  }
-
   private decodeJwtPayload(token: string): Record<string, any> | null {
     try {
       const parts = token.split('.');
@@ -385,62 +329,6 @@ export class CartService {
     } catch {
       return null;
     }
-  }
-
-  private createGuestItem(payload: AddToCartPayload, quantity: number): CartItemNormalized {
-    const key = `${payload.productId}::${payload.variantId || 'default'}`;
-    const unitPrice = Number(payload.unitPrice || 0);
-    const compare = Number(payload.compareAtPrice || 0);
-    return {
-      cartItemId: `guest-${key}`,
-      lineKey: key,
-      productId: payload.productId,
-      variantId: payload.variantId || null,
-      productName: payload.productName || 'Product',
-      brandName: payload.brandName || '',
-      variantLabel: payload.variantLabel || '',
-      imageUrl: payload.imageUrl || '',
-      unitPrice,
-      compareAtPrice: compare > unitPrice ? compare : null,
-      discountPercent: compare > unitPrice ? Math.round(((compare - unitPrice) / compare) * 100) : 0,
-      quantity,
-      selected: true,
-      stockStatus: payload.stockStatus || 'in_stock',
-      lineSubtotal: unitPrice * quantity,
-      lineTotal: unitPrice * quantity,
-    };
-  }
-
-  private readGuestCart(): CartNormalized {
-    try {
-      const raw = this.readStorage(this.guestCartKey);
-      if (!raw) return this.memoryGuestCart ?? this.getEmptyCart('guest');
-      const parsed = JSON.parse(raw) as CartNormalized;
-      if (!parsed || !Array.isArray(parsed.items)) {
-        const empty = this.getEmptyCart('guest');
-        this.writeStorage(this.guestCartKey, JSON.stringify(empty));
-        this.memoryGuestCart = empty;
-        return empty;
-      }
-      const normalized = this.normalizeIncomingCart(parsed, 'guest');
-      this.memoryGuestCart = normalized;
-      return normalized;
-    } catch {
-      const empty = this.getEmptyCart('guest');
-      this.memoryGuestCart = empty;
-      this.writeStorage(this.guestCartKey, JSON.stringify(empty));
-      this.cartErrorSubject.next({ code: 'GUEST_CART_INVALID', message: 'Recovered malformed local cart' });
-      return empty;
-    }
-  }
-
-  private persistGuestCart(cart: CartNormalized): CartNormalized {
-    const normalized = this.normalizeIncomingCart(cart, 'guest');
-    this.writeStorage(this.guestCartKey, JSON.stringify(normalized));
-    this.memoryGuestCart = normalized;
-    this.cartErrorSubject.next(null);
-    this.cartStateSubject.next(normalized);
-    return normalized;
   }
 
   private normalizeIncomingCart(input: Partial<CartNormalized> | null | undefined, forceSource: 'database' | 'guest'): CartNormalized {
@@ -465,10 +353,12 @@ export class CartService {
       : [];
 
     const summary = this.computeSummary(items);
+    const guestSessionId = input?.guestSessionId != null ? String(input.guestSessionId) : null;
     return {
-      cartId: input?.cartId || (forceSource === 'guest' ? 'guest-cart' : null),
+      cartId: input?.cartId != null ? String(input.cartId) : null,
       source: forceSource,
-      customerId: input?.customerId || null,
+      customerId: input?.customerId != null ? String(input.customerId) : null,
+      guestSessionId: forceSource === 'guest' ? guestSessionId : null,
       items,
       summary,
       updatedAt: new Date().toISOString(),
@@ -477,9 +367,10 @@ export class CartService {
 
   private getEmptyCart(source: 'database' | 'guest'): CartNormalized {
     return {
-      cartId: source === 'guest' ? 'guest-cart' : null,
+      cartId: null,
       source,
       customerId: null,
+      guestSessionId: null,
       items: [],
       summary: this.computeSummary([]),
       updatedAt: new Date().toISOString(),
@@ -526,22 +417,5 @@ export class CartService {
     };
     const message = mapByCode[code] || fallback;
     this.cartErrorSubject.next({ code, message });
-  }
-
-  private readStorage(key: string): string | null {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  }
-
-  private writeStorage(key: string, value: string): void {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      // Storage can be unavailable (private mode/quota). Keep in-memory fallback.
-      this.memoryGuestCart = this.normalizeIncomingCart(JSON.parse(value), 'guest');
-    }
   }
 }

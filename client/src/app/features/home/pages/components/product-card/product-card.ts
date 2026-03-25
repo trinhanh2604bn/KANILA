@@ -6,7 +6,6 @@ import { Product } from '../../../../../core/models/product.model';
 import { CartService } from '../../../../cart/services/cart.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { CheckoutService } from '../../../../checkout/services/checkout.service';
-import { AuthService } from '../../../../../core/services/auth.service';
 import { WishlistService } from '../../../../account/services/wishlist.service';
 
 @Component({
@@ -28,7 +27,6 @@ export class ProductCardComponent implements OnChanges, OnDestroy {
     private readonly cartService: CartService,
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
-    private readonly authService: AuthService,
     private readonly wishlistService: WishlistService
   ) {}
 
@@ -108,11 +106,6 @@ export class ProductCardComponent implements OnChanges, OnDestroy {
       this.toast.warning('Sản phẩm hiện không còn khả dụng.');
       return;
     }
-    if (!this.isAuthenticated()) {
-      this.toast.warning('Vui lòng đăng nhập để sử dụng Mua ngay.');
-      this.router.navigate(['/auth/login']);
-      return;
-    }
     this.checkoutService.createBuyNowCheckoutSession({
       productId,
       variantId: null,
@@ -178,10 +171,6 @@ export class ProductCardComponent implements OnChanges, OnDestroy {
     if (slugOrId) {
       this.router.navigate(['/catalog', 'product', slugOrId]);
     }
-  }
-
-  private isAuthenticated(): boolean {
-    return this.authService.isAuthenticated();
   }
 
   private bindWishlistState(): void {

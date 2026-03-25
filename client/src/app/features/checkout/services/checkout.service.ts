@@ -51,6 +51,11 @@ export class CheckoutService {
   }
 
   createBuyNowCheckoutSession(payload: BuyNowCheckoutPayload): Observable<CheckoutSessionView> {
+    if (!this.authService.isAuthenticated()) {
+      return this.http
+        .post<any>(`${this.checkoutApi}/guest/buy-now`, payload, { headers: this.guestSessionService.buildGuestHeaders() })
+        .pipe(map((res) => res?.data as CheckoutSessionView));
+    }
     return this.http.post<any>(`${this.checkoutApi}/me/buy-now`, payload).pipe(
       map((res) => res?.data as CheckoutSessionView)
     );

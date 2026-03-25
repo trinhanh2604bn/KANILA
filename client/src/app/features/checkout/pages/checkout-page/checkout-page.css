@@ -547,3 +547,125 @@
     display: flex;
   }
 }
+
+/* Guest vs customer checkout distinction */
+.checkout-page--customer .checkout-shell {
+  max-width: 1200px;
+}
+
+.checkout-intro {
+  margin-bottom: 16px;
+}
+
+.checkout-banner {
+  font-size: 15px;
+  font-weight: 600;
+  color: #7c2d4f;
+  margin: 0 0 6px;
+}
+
+.customer-hero {
+  font-size: 14px;
+  color: #6e3d4f;
+  margin: 0 0 8px;
+}
+
+.checkout-cta-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c2185b;
+  text-decoration: none;
+}
+
+.checkout-cta-link:hover {
+  text-decoration: underline;
+}
+
+.customer-card.accent-border {
+  border-left: 4px solid #e8a4bf;
+  box-shadow: 0 8px 28px rgba(194, 24, 91, 0.08);
+}
+
+.compact-summary {
+  padding: 4px 0 8px;
+}
+
+.summary-line {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #4a2f3a;
+}
+
+.summary-muted {
+  margin: 0;
+  font-size: 13px;
+  color: #8d6173;
+  line-height: 1.45;
+}
+
+.summary-hint {
+  font-size: 12px;
+  color: #a87888;
+  margin: 8px 0 0;
+}
+
+.text-rose {
+  color: #c2185b;
+  margin-right: 6px;
+}
+
+.btn-sync {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #f8e0eb, #fceef3);
+  color: #7c2148;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-sync:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.customer-expand .field select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #f0d5df;
+  background: #fff;
+  font-size: 14px;
+}
+
+.note-area {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #f0d5df;
+  padding: 12px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.method-grid--compact .method-card {
+  padding: 12px 14px;
+}
+
+.summary-card--customer {
+  border: 1px solid rgba(194, 24, 91, 0.12);
+  box-shadow: 0 16px 40px rgba(124, 45, 79, 0.1);
+}
+
+.cta-btn--customer {
+  background: linear-gradient(135deg, #c2185b, #e91e8c);
+  box-shadow: 0 12px 28px rgba(194, 24, 91, 0.35);
+}
+
+.checkout-card--simple {
+  background: #fffdfb;
+}
+
