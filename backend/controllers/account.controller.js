@@ -13,6 +13,10 @@ const AccountAuthProvider = require("../models/accountAuthProvider.model");
 const validateObjectId = require("../utils/validateObjectId");
 const bcrypt = require("bcryptjs");
 const { pickAccountType, pickAccountStatus } = require("../utils/accountBody");
+const {
+  SNAPSHOT_RECOMMENDATION_TYPE,
+  generateSnapshotByAccountId,
+} = require("../services/recommendationSnapshot.service");
 
 const validatePassword = (password) => {
   if (!password || password.length < 6) {
@@ -409,7 +413,7 @@ const getMySkinProfile = async (req, res) => {
 // PATCH /api/account/skin-profile
 const patchMySkinProfile = async (req, res) => {
   try {
-    const { customer } = await resolveAuthAccountAndCustomer(req);
+    const { account, customer } = await resolveAuthAccountAndCustomer(req);
     if (!customer) return res.status(404).json({ success: false, message: "Customer profile not found" });
     const skinType = req.body.skin_type ?? req.body.skinType;
     const skinTone = req.body.skin_tone ?? req.body.skinTone;
@@ -427,6 +431,20 @@ const patchMySkinProfile = async (req, res) => {
     if (favoriteBrands !== undefined) tasks.push(savePreference(customer._id, "favorite_brands", Array.isArray(favoriteBrands) ? favoriteBrands : [favoriteBrands]));
 
     await Promise.all(tasks);
+
+    // Persist recommendation snapshot immediately after skin profile update.
+    // This prevents homepage from recomputing personalized recommendations on every login/load.
+    const accountId = req.user?.account_id || req.user?.accountId || account?._id;
+    if (accountId) {
+      // Synchronous regen keeps homepage consistent with the updated profile.
+      await generateSnapshotByAccountId({
+        accountId,
+        recommendationType: SNAPSHOT_RECOMMENDATION_TYPE,
+        limit: 20,
+        ttlHours: 48,
+      });
+    }
+
     return res.status(200).json({ success: true, message: "Skin profile updated successfully" });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

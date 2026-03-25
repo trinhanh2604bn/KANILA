@@ -1,0 +1,37 @@
+<main class="recommendations-page container py-4">
+  <section class="reco-hero">
+    <div>
+      <h1 class="reco-title">{{ title }}</h1>
+      <p class="reco-subtitle">{{ subtitle }}</p>
+    </div>
+    <button type="button" class="btn-ghost" (click)="goToProfile()">
+      <i class="bi bi-droplet me-2"></i> Cập nhật Beauty DNA
+    </button>
+  </section>
+
+  <section class="reco-state" *ngIf="isLoading">
+    <div class="reco-skeleton-grid" aria-hidden="true">
+      <div class="reco-skeleton-card" *ngFor="let _ of skeletonItems"></div>
+    </div>
+  </section>
+
+  <section class="reco-state" *ngIf="!isLoading && error">
+    <div class="reco-empty">
+      <div class="reco-empty-icon"><i class="bi bi-heart-fill"></i></div>
+      <h3>{{ error }}</h3>
+      <p>Gợi ý sẽ được cập nhật dựa trên hồ sơ làn da của bạn.</p>
+      <button type="button" class="btn-primary" (click)="goToProfile()">
+        <i class="bi bi-stars me-2"></i> Tạo / cập nhật hồ sơ
+      </button>
+    </div>
+  </section>
+
+  <section class="reco-grid-wrap" *ngIf="!isLoading && !error && products.length">
+    <div class="reco-grid">
+      <div *ngFor="let p of products; trackBy: trackById" class="reco-grid-item">
+        <app-product-card [product]="p"></app-product-card>
+      </div>
+    </div>
+  </section>
+</main>
+

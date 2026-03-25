@@ -31,6 +31,7 @@ export class Header implements OnInit, OnDestroy {
       route: ['/catalog'],
       queryParams: { category: 'set-qua' },
       tone: 'tone-gift',
+      imageUrl: 'assets/images/Set.jpg'
     },
     {
       title: 'Sản phẩm Hot',
@@ -40,6 +41,7 @@ export class Header implements OnInit, OnDestroy {
       route: ['/catalog'],
       queryParams: { sort: 'popular' },
       tone: 'tone-hot',
+      imageUrl: 'assets/images/hot.jpg'
     },
     {
       title: 'Deal Hot',
@@ -49,6 +51,7 @@ export class Header implements OnInit, OnDestroy {
       route: ['/catalog', 'sale'],
       queryParams: {},
       tone: 'tone-deal',
+      imageUrl: 'assets/images/Deal.jpg'
     },
     {
       title: 'Cộng đồng Kanila',
@@ -58,6 +61,7 @@ export class Header implements OnInit, OnDestroy {
       route: ['/community'],
       queryParams: {},
       tone: 'tone-community',
+      imageUrl: 'assets/images/community.jpg'
     },
   ];
 

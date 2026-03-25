@@ -649,3 +649,33 @@
   color: #6c757d;
   font-size: 0.9rem;
 }
+
+.mega-feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(172, 1, 64, 0.6)50%, rgba(0, 0, 0, 0.1) 100%);
+  z-index: 1;
+  border-radius: 14px;
+}
+
+
+.mega-feature-bg-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  transition: transform 0.4s ease;
+}
+
+.mega-feature-card:hover .mega-feature-bg-img {
+  transform: scale(1.08);
+}
+
+.mega-feature-icon, .mega-feature-content {
+  position: relative;
+  z-index: 2;
+}

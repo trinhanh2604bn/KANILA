@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { ProductService } from '../../../../../core/services/product.service';
 import { CommonModule } from '@angular/common';
 import { ProductCardComponent } from '../product-card/product-card';
@@ -10,7 +10,7 @@ import { Product } from '../../../../../core/models/product.model';
   templateUrl: './product-slider.html',
   styleUrl: './product-slider.css',
 })
-export class ProductSlider implements OnInit {
+export class ProductSlider implements OnInit, OnChanges {
   /** Bounded pool from paginated API (popular); client slices 5 per view. */
   products: Product[] = [];
   /** Cached slice for *ngFor — updated only when page or data changes (avoids getter + new array every CD) */
@@ -27,9 +27,22 @@ export class ProductSlider implements OnInit {
   /** One “page” = one full row (5 cards) */
   readonly itemsPerPage = 5;
 
+  @Input() productsOverride: Product[] | null = null;
+  @Input() errorOverride: string | null = null;
+
   constructor(private productService: ProductService) {}
 
   ngOnInit(): void {
+    // Override mode (used by personalized homepage): avoid recomputing/reloading.
+    if (this.productsOverride !== null) {
+      this.products = this.productsOverride ?? [];
+      this.errorMessage = this.errorOverride;
+      this.currentPage = 1;
+      this.loading = false;
+      this.refreshPagination();
+      return;
+    }
+
     this.loading = true;
     this.errorMessage = null;
 
@@ -48,6 +61,16 @@ export class ProductSlider implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['productsOverride'] && this.productsOverride !== null) {
+      this.products = this.productsOverride ?? [];
+      this.errorMessage = this.errorOverride;
+      this.currentPage = 1;
+      this.loading = false;
+      this.refreshPagination();
+    }
   }
 
   /** Recompute slice + nav flags — call after `currentPage` or `products` changes */

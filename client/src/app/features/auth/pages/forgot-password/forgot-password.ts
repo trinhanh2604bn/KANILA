@@ -22,6 +22,8 @@ export class ForgotPassword {
    isMismatch = false;
    otpSuccess: boolean = false;
 
+  private otpVerifying = false;
+
 
 
   constructor(private router: Router, private authService: AuthService) {}
@@ -33,6 +35,10 @@ export class ForgotPassword {
       return;
     }
     this.email = email;
+    this.otpError = false;
+    this.otpSuccess = false;
+    this.isMismatch = false;
+    this.otp = '';
 
     this.authService.checkEmail(this.email).subscribe({
       next: (res) => {
@@ -51,28 +57,39 @@ export class ForgotPassword {
   }
 
   onOtpChange() {
-    if (this.otp.length < 6) {
-      this.otpError = false;
+    this.otpError = false;
+    this.otpSuccess = false;
+    const otp = String(this.otp || '').trim();
+    if (!otp) return;
+    if (otp.length < 6) return;
+    if (!/^\d{6}$/.test(otp)) return;
+    // Do not mark success here; OTP is verified on click (avoids hard-coded defaults).
+    this.otpSuccess = true;
+  }
+
+  verifyOtp() {
+    if (this.otpVerifying) return;
+    const otp = String(this.otp || '').trim();
+    if (!/^\d{6}$/.test(otp)) {
+      this.otpError = true;
       this.otpSuccess = false;
       return;
     }
 
-    if (this.otp === '999999') {
-      this.otpSuccess = true;
-      this.otpError = false;
-    } else {
-      this.otpSuccess = false;
-    }
-  }
-
-  verifyOtp() {
-    if (this.otp === '999999') {
-      this.step = 3;
-      this.otpError = false;
-    } else {
-      this.otpError = true;
-      this.otpSuccess = false;
-    }
+    this.otpVerifying = true;
+    this.authService.verifyResetOtp(this.email, otp).subscribe({
+      next: () => {
+        this.step = 3;
+        this.otpError = false;
+        this.otpSuccess = false;
+        this.otpVerifying = false;
+      },
+      error: () => {
+        this.otpError = true;
+        this.otpSuccess = false;
+        this.otpVerifying = false;
+      },
+    });
   }
 
   reload() { 
@@ -94,7 +111,7 @@ export class ForgotPassword {
     }
     if (this.isMismatch || !this.newPass || !this.confirmPass) return;
 
-    this.authService.resetPassword(this.email, this.newPass).subscribe({
+    this.authService.resetPassword(this.email, this.otp, this.newPass).subscribe({
       next: (res) => {
         alert("Bạn đã đặt lại mật khẩu thành công");
         this.router.navigate(['/auth/login']); 

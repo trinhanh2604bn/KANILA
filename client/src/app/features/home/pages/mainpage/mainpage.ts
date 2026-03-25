@@ -17,9 +17,8 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { GlobalToastComponent } from '../../../../layout/global-toast/global-toast';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
 import { AuthService } from '../../../../core/services/auth.service';
-import { RecommendationService, RecommendedProductView } from '../../../../core/services/recommendation.service';
+import { RecommendationService } from '../../../../core/services/recommendation.service';
 import { ProfileHubService } from '../../../account/services/profile-hub.service';
-import { ProductCardComponent } from '../components/product-card/product-card';
 import { ScrollToTop } from '../../../../layout/scroll-to-top/scroll-to-top';
 import { CouponAvailableItem, CouponService } from '../../../account/services/coupon.service';
 
@@ -35,7 +34,8 @@ import { CouponAvailableItem, CouponService } from '../../../account/services/co
   Footer,
 Header,
 GlobalToastComponent,
-ProductCardComponent, ScrollToTop],
+ScrollToTop,
+],
   templateUrl: './mainpage.html',
   styleUrl: './mainpage.css',
 })
@@ -48,7 +48,6 @@ export class Mainpage implements OnInit {
   hoveredFeaturedIndex: number | null = null;
 
   previewProduct: Product | null = null;
-  personalized: RecommendedProductView[] = [];
   personalizedProducts: Product[] = [];
   personalizedLoading = false;
   personalizedError = '';
@@ -227,13 +226,8 @@ export class Mainpage implements OnInit {
     return this.authService.isAuthenticated();
   }
 
-  goToRecommendedDetail(item: RecommendedProductView): void {
-    const slugOrId = item.product.slug || item.product._id;
-    this.router.navigate(['/catalog', 'product', slugOrId]);
-  }
-
   goToSkinProfile(): void {
-    this.router.navigate(['/account/profile']);
+    this.router.navigate(['/account/skin-profile']);
   }
 
   retryPersonalized(): void {
@@ -252,13 +246,12 @@ export class Mainpage implements OnInit {
       );
       if (!this.hasSkinProfile) {
         this.personalizedLoading = false;
-        this.personalized = [];
+        this.personalizedProducts = [];
         return;
       }
-      this.recommendationService.getMyRecommendations('', 6, 'homepage').pipe(take(1)).subscribe({
-        next: (items) => {
-          this.personalized = items;
-          this.personalizedProducts = items.map((item) => this.toProductCardModel(item));
+      this.recommendationService.getMyHomepageRecommendations(20).pipe(take(1)).subscribe({
+        next: (products) => {
+          this.personalizedProducts = products;
           this.personalizedLoading = false;
         },
         error: () => {
@@ -267,24 +260,6 @@ export class Mainpage implements OnInit {
         },
       });
     });
-  }
-
-  private toProductCardModel(item: RecommendedProductView): Product {
-    return {
-      _id: item.product._id || item.productId,
-      productName: item.product.productName || item.product.name || 'Sản phẩm',
-      productCode: 'RECO',
-      slug: item.product.slug || item.product._id || item.productId,
-      price: Number(item.product.price || 0),
-      imageUrl: item.product.imageUrl || item.product.image || '',
-      averageRating: Number(item.product.averageRating || item.product.rating || 0),
-      bought: Number(item.product.bought || 0),
-      stock: 999,
-      brandId: item.product.brandName || item.product.brand
-        ? { _id: '', brandName: String(item.product.brandName || item.product.brand || '') }
-        : undefined,
-      shortDescription: item.reasons?.[0] || '',
-    };
   }
 
   saveCampaignCoupon(couponId: string): void {

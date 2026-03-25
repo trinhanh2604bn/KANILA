@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { Product } from '../models/product.model';
 
 export interface RecommendedProductView {
   productId: string;
@@ -56,6 +57,31 @@ export class RecommendationService {
       map((res) => (res?.data || []) as RecommendedProductView[]),
       catchError(() => of([]))
     );
+  }
+
+  /**
+   * Fast personalized products for homepage.
+   * Reads persisted customer recommendation snapshot (no full recompute on each load).
+   */
+  getMyHomepageRecommendations(limit = 20): Observable<Product[]> {
+    return this.http
+      .get<any>(`${this.api}/me/homepage?limit=${encodeURIComponent(String(limit))}`)
+      .pipe(
+        map((res) => (res?.data || []) as Product[]),
+        catchError(() => of([] as Product[]))
+      );
+  }
+
+  /**
+   * Full persisted personalized list (up to 20 items).
+   */
+  getMyAllRecommendations(limit = 20): Observable<Product[]> {
+    return this.http
+      .get<any>(`${this.api}/me/all?limit=${encodeURIComponent(String(limit))}`)
+      .pipe(
+        map((res) => (res?.data || []) as Product[]),
+        catchError(() => of([] as Product[]))
+      );
   }
 
   previewRecommendations(payload: {

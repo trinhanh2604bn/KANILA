@@ -1,14 +1,18 @@
 <header class="kanila-header shadow-sm sticky-top">
-  <div class="top-promo py-2 text-center" style="background-color: var(--kanila-pink); color: var(--kanila-white);">
-    <span class="fw-bold small">Khuyến mãi cực sốc dành cho thành viên mới - Giảm ngay 20% cho đơn hàng đầu tiên!</span>
+  <div
+    class="top-promo py-2 text-center"
+    style="background-color: var(--kanila-pink); color: var(--kanila-white)"
+  >
+    <span class="fw-bold small"
+      >Khuyến mãi cực sốc dành cho thành viên mới - Giảm ngay 20% cho đơn hàng đầu tiên!</span
+    >
   </div>
 
-  <div class="main-header py-2" style="background-color: var(--kanila-red);">
+  <div class="main-header py-2" style="background-color: var(--kanila-red)">
     <div class="container">
       <div class="d-flex align-items-center justify-content-between gap-3">
-
         <a routerLink="/" class="text-decoration-none flex-shrink-0">
-          <img src="assets/images/logobg.png" alt="Kanila logo" style="height: 45px;">
+          <img src="assets/images/logobg.png" alt="Kanila logo" style="height: 45px" />
         </a>
 
         <nav class="d-none d-xl-block">
@@ -24,14 +28,18 @@
                 <div class="container">
                   <div class="mega-grid-top">
                     <div class="mega-categories-grid">
-
                       <div class="mega-col" *ngFor="let col of megaColumns">
-                        <a class="text-decoration-none mega-title-link" (click)="onMegaColumnShortcutClick(col.shortcutSlug)">
+                        <a
+                          class="text-decoration-none mega-title-link"
+                          (click)="onMegaColumnShortcutClick(col.shortcutSlug)"
+                        >
                           <h6 class="mega-col-title">{{ col.title }}</h6>
                         </a>
                         <ul class="list-unstyled mb-0">
                           <li *ngFor="let item of col.items">
-                            <a class="mega-link" (click)="onMegaItemClick(col.parent, item)">{{ item.name }}</a>
+                            <a class="mega-link" (click)="onMegaItemClick(col.parent, item)">{{
+                              item.name
+                            }}</a>
                           </li>
                         </ul>
                       </div>
@@ -44,14 +52,24 @@
 
                     <aside class="mega-brand-panel">
                       <div class="mega-brand-head">
-                        <h6 class="mega-col-title mb-0" style="cursor: pointer;" routerLink="/brands">Thương hiệu</h6>
+                        <h6
+                          class="mega-col-title mb-0"
+                          style="cursor: pointer"
+                          routerLink="/brands"
+                        >
+                          Thương hiệu
+                        </h6>
                         <a class="mega-brand-viewall" routerLink="/brands">Xem tất cả</a>
                       </div>
                       <ul class="list-unstyled mb-0 mega-brand-list">
                         <li *ngFor="let brand of topBrands">
-                          <a class="mega-link mega-link-brand" (click)="onBrandClick(brand)">{{ brand.name }}</a>
+                          <a class="mega-link mega-link-brand" (click)="onBrandClick(brand)">{{
+                            brand.name
+                          }}</a>
                         </li>
-                        <li *ngIf="headerLoading"><span class="small text-muted">Đang tải...</span></li>
+                        <li *ngIf="headerLoading">
+                          <span class="small text-muted">Đang tải...</span>
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -59,15 +77,36 @@
                   <div class="mega-divider"></div>
 
                   <div class="mega-grid-bottom">
-
                     <div class="mega-col">
-                      <a routerLink="/catalog" [queryParams]="{ sort: 'popular' }" class="text-decoration-none mega-title-link">
+                      <a
+                        routerLink="/catalog"
+                        [queryParams]="{ sort: 'popular' }"
+                        class="text-decoration-none mega-title-link"
+                      >
                         <h6 class="mega-col-title">New & Trending</h6>
                       </a>
                       <ul class="list-unstyled mb-0">
-                        <li><a routerLink="/catalog" [queryParams]="{ sort: 'new' }" class="mega-link">Sản phẩm mới</a></li>
-                        <li><a routerLink="/catalog" [queryParams]="{ sort: 'popular' }" class="mega-link">Hot</a></li>
-                        <li><a routerLink="/catalog" [queryParams]="{ sort: 'popular' }" class="mega-link">Bán chạy</a></li>
+                        <li>
+                          <a routerLink="/catalog" [queryParams]="{ sort: 'new' }" class="mega-link"
+                            >Sản phẩm mới</a
+                          >
+                        </li>
+                        <li>
+                          <a
+                            routerLink="/catalog"
+                            [queryParams]="{ sort: 'popular' }"
+                            class="mega-link"
+                            >Hot</a
+                          >
+                        </li>
+                        <li>
+                          <a
+                            routerLink="/catalog"
+                            [queryParams]="{ sort: 'popular' }"
+                            class="mega-link"
+                            >Bán chạy</a
+                          >
+                        </li>
                       </ul>
                     </div>
 
@@ -79,11 +118,21 @@
                         class="mega-feature-card"
                         [ngClass]="card.tone"
                       >
-                        <span class="mega-feature-icon"><i class="bi" [ngClass]="card.icon"></i></span>
+                        <img
+                          *ngIf="card.imageUrl"
+                          [src]="card.imageUrl"
+                          [alt]="card.title"
+                          class="mega-feature-bg-img"
+                        />
+                        <span class="mega-feature-icon"
+                          ><i class="bi" [ngClass]="card.icon"></i
+                        ></span>
                         <div class="mega-feature-content">
                           <h6 class="mega-feature-title">{{ card.title }}</h6>
                           <p class="mega-feature-subtitle">{{ card.subtitle }}</p>
-                          <span class="mega-feature-cta">{{ card.cta }} <i class="bi bi-arrow-right-short"></i></span>
+                          <span class="mega-feature-cta"
+                            >{{ card.cta }} <i class="bi bi-arrow-right-short"></i
+                          ></span>
                         </div>
                       </a>
                     </div>
@@ -95,7 +144,7 @@
           </ul>
         </nav>
 
-        <div class="flex-grow-1 mx-5 d-none d-md-block" style="max-width: 400px;">
+        <div class="flex-grow-1 mx-5 d-none d-md-block" style="max-width: 400px">
           <app-search-bar></app-search-bar>
         </div>
 
@@ -104,12 +153,15 @@
             <i class="bi bi-people fs-5"></i>
             <span class="small-label">Cộng đồng</span>
           </a>
-          <a routerLink="/cart" class="action-link d-flex flex-column align-items-center position-relative">
+          <a
+            routerLink="/cart"
+            class="action-link d-flex flex-column align-items-center position-relative"
+          >
             <i class="bi bi-bag fs-5"></i>
             <span class="small-label">Giỏ hàng</span>
             <span
               class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-white text-dark"
-              style="font-size: 0.6rem; transform: translate(-50%, -20%) !important;"
+              style="font-size: 0.6rem; transform: translate(-50%, -20%) !important"
               *ngIf="cartBadgeCount > 0"
             >
               {{ cartBadgeCount }}
@@ -123,20 +175,33 @@
               (click)="toggleAccountMenu($event)"
               [attr.aria-expanded]="accountMenuOpen"
             >
-              <span class="account-avatar" *ngIf="isLoggedIn; else accountGuestIcon">{{ accountInitials }}</span>
+              <span class="account-avatar" *ngIf="isLoggedIn; else accountGuestIcon">{{
+                accountInitials
+              }}</span>
               <ng-template #accountGuestIcon>
                 <span class="account-icon"><i class="bi bi-person"></i></span>
               </ng-template>
               <span class="account-copy">
-                <span class="account-line-1">{{ isLoggedIn ? ('Xin chào, ' + accountFirstName) : 'Tài khoản' }}</span>
-                <span class="account-line-2">{{ isLoggedIn ? 'Hội viên Kanila' : 'Đăng nhập / Đăng ký' }}</span>
+                <span class="account-line-1">{{
+                  isLoggedIn ? 'Xin chào, ' + accountFirstName : 'Tài khoản'
+                }}</span>
+                <span class="account-line-2">{{
+                  isLoggedIn ? 'Hội viên Kanila' : 'Đăng nhập / Đăng ký'
+                }}</span>
               </span>
-              <i class="bi bi-chevron-down account-chevron" [class.account-chevron-open]="accountMenuOpen"></i>
+              <i
+                class="bi bi-chevron-down account-chevron"
+                [class.account-chevron-open]="accountMenuOpen"
+              ></i>
             </button>
 
             <div class="account-dropdown" *ngIf="accountMenuOpen" role="menu">
               <ng-container *ngIf="isLoggedIn; else loggedOutBlock">
-                <a routerLink="/account/profile" class="account-summary-card" (click)="closeAccountMenu()">
+                <a
+                  routerLink="/account/profile"
+                  class="account-summary-card"
+                  (click)="closeAccountMenu()"
+                >
                   <span class="account-summary-avatar">{{ accountInitials }}</span>
                   <div class="account-summary-copy">
                     <strong>Xin chào, {{ accountFirstName }}</strong>
@@ -146,16 +211,40 @@
 
                 <div class="account-group">
                   <p class="account-group-title">Cá nhân</p>
-                  <a routerLink="/account/profile" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-person-circle"></i><span>Hồ sơ cá nhân</span><i class="bi bi-chevron-right"></i></a>
-                  <a routerLink="/account/skin-profile" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-droplet"></i><span>Làn da của bạn</span><i class="bi bi-chevron-right"></i></a>
-                  <a routerLink="/account/addresses" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-geo-alt"></i><span>Địa chỉ giao hàng</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/account/profile" class="account-row" (click)="closeAccountMenu()"
+                    ><i class="bi bi-person-circle"></i><span>Hồ sơ cá nhân</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <a
+                    routerLink="/account/skin-profile"
+                    class="account-row"
+                    (click)="closeAccountMenu()"
+                    ><i class="bi bi-droplet"></i><span>Làn da của bạn</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <a
+                    routerLink="/account/addresses"
+                    class="account-row"
+                    (click)="closeAccountMenu()"
+                    ><i class="bi bi-geo-alt"></i><span>Địa chỉ giao hàng</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
                 </div>
 
                 <div class="account-group">
                   <p class="account-group-title">Mua sắm</p>
-                  <a routerLink="/account/orders" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-bag-check"></i><span>Đơn hàng của tôi</span><i class="bi bi-chevron-right"></i></a>
-                  <a routerLink="/account/wishlist" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-heart"></i><span>Danh mục yêu thích</span><i class="bi bi-chevron-right"></i></a>
-                  <a routerLink="/account/coupons" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá của tôi</span><i class="bi bi-chevron-right"></i></a>
+                  <a routerLink="/account/orders" class="account-row" (click)="closeAccountMenu()"
+                    ><i class="bi bi-bag-check"></i><span>Đơn hàng của tôi</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <a routerLink="/account/wishlist" class="account-row" (click)="closeAccountMenu()"
+                    ><i class="bi bi-heart"></i><span>Danh mục yêu thích</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <a routerLink="/account/coupons" class="account-row" (click)="closeAccountMenu()"
+                    ><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá của tôi</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
                 </div>
 
                 <div class="account-group">
@@ -170,9 +259,21 @@
                     <span>Recommendation Analytics <small class="admin-pill">Admin</small></span>
                     <i class="bi bi-chevron-right"></i>
                   </a>
-                  <a routerLink="/account/payment-methods" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-credit-card-2-front"></i><span>Phương thức thanh toán</span><i class="bi bi-chevron-right"></i></a>
-                  <a routerLink="/account/support" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-headset"></i><span>Hỗ trợ khách hàng</span><i class="bi bi-chevron-right"></i></a>
-                  <button type="button" class="account-row account-row-logout" (click)="logout()"><i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span><i class="bi bi-chevron-right"></i></button>
+                  <a
+                    routerLink="/account/payment-methods"
+                    class="account-row"
+                    (click)="closeAccountMenu()"
+                    ><i class="bi bi-credit-card-2-front"></i><span>Phương thức thanh toán</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <a routerLink="/account/support" class="account-row" (click)="closeAccountMenu()"
+                    ><i class="bi bi-headset"></i><span>Hỗ trợ khách hàng</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <button type="button" class="account-row account-row-logout" (click)="logout()">
+                    <i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span
+                    ><i class="bi bi-chevron-right"></i>
+                  </button>
                 </div>
               </ng-container>
 
@@ -184,19 +285,40 @@
                   </div>
                 </div>
                 <div class="account-auth-actions">
-                  <a routerLink="/auth/login" class="account-auth-btn account-auth-btn-primary" (click)="closeAccountMenu()">Đăng nhập</a>
-                  <a routerLink="/auth/register" class="account-auth-btn account-auth-btn-secondary" (click)="closeAccountMenu()">Đăng ký</a>
+                  <a
+                    routerLink="/auth/login"
+                    class="account-auth-btn account-auth-btn-primary"
+                    (click)="closeAccountMenu()"
+                    >Đăng nhập</a
+                  >
+                  <a
+                    routerLink="/auth/register"
+                    class="account-auth-btn account-auth-btn-secondary"
+                    (click)="closeAccountMenu()"
+                    >Đăng ký</a
+                  >
                 </div>
                 <div class="account-group account-group-compact">
-                  <a routerLink="/account/skin-profile" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-droplet"></i><span>Làn da của bạn</span><i class="bi bi-chevron-right"></i></a>
-                  <a routerLink="/account/wishlist" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-heart"></i><span>Danh mục yêu thích</span><i class="bi bi-chevron-right"></i></a>
-                  <a routerLink="/account/coupons" class="account-row" (click)="closeAccountMenu()"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span><i class="bi bi-chevron-right"></i></a>
+                  <a
+                    routerLink="/account/skin-profile"
+                    class="account-row"
+                    (click)="closeAccountMenu()"
+                    ><i class="bi bi-droplet"></i><span>Làn da của bạn</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <a routerLink="/account/wishlist" class="account-row" (click)="closeAccountMenu()"
+                    ><i class="bi bi-heart"></i><span>Danh mục yêu thích</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
+                  <a routerLink="/account/coupons" class="account-row" (click)="closeAccountMenu()"
+                    ><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span
+                    ><i class="bi bi-chevron-right"></i
+                  ></a>
                 </div>
               </ng-template>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   </div>

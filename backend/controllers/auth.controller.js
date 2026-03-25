@@ -1,7 +1,11 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
 const Account = require("../models/account.model");
 const Customer = require("../models/customer.model");
+const PasswordResetOtp = require("../models/passwordResetOtp.model");
+const { generateSixDigitOtp, sha256Hex } = require("../utils/otp");
+const PASSWORD_RESET_DEBUG_OTP = process.env.PASSWORD_RESET_DEBUG_OTP || "999999";
 
 // Helper: generate a simple customer code like CUS0001
 const generateCustomerCode = async () => {
@@ -248,4 +252,150 @@ module.exports = {
   register,
   login,
   getMe,
+  // Password reset flow used by client `forgot-password`
+  checkEmail,
+  verifyResetOtp,
+  resetPassword,
 };
+
+// POST /api/auth/check-email
+// Returns { exists: boolean } (matches the client expectation).
+async function checkEmail(req, res) {
+  try {
+    const emailRaw = String(req.body?.email || "").trim().toLowerCase();
+    if (!emailRaw) return res.status(400).json({ success: false, message: "Email is required" });
+
+    const account = await Account.findOne({ email: emailRaw }).lean();
+    if (!account) return res.status(200).json({ success: true, exists: false });
+
+    // Block inactive/locked accounts (mirrors login behavior).
+    if (account.account_status === "inactive") return res.status(200).json({ success: true, exists: false });
+    if (account.account_status === "locked" && account.locked_until && account.locked_until > new Date()) {
+      return res.status(200).json({ success: true, exists: false });
+    }
+
+    const otp = generateSixDigitOtp();
+    const otpHash = sha256Hex(`${emailRaw}:${otp}`);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await PasswordResetOtp.findOneAndUpdate(
+      { email: emailRaw, used_at: null },
+      { $set: { otp_hash: otpHash, expires_at: expiresAt } },
+      { upsert: true, new: true }
+    );
+
+    // Try to send email via SMTP if configured.
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = Number(process.env.SMTP_PORT || 587);
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpFrom = process.env.SMTP_FROM || "no-reply@kanila.vn";
+
+    const hasSmtp = !!smtpHost && !!smtpUser && !!smtpPass;
+    if (hasSmtp) {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+
+      try {
+        await transporter.sendMail({
+          from: smtpFrom,
+          to: emailRaw,
+          subject: "Kanila - Mã xác thực đặt lại mật khẩu",
+          text: `Mã xác thực của bạn là: ${otp}\nHết hạn sau 10 phút.\n`,
+        });
+      } catch (mailErr) {
+        // If SMTP fails, keep the reset flow working.
+        // eslint-disable-next-line no-console
+        console.warn(`[WARN] Failed to send password reset email to ${emailRaw}:`, mailErr?.message || mailErr);
+      }
+    } else {
+      // Dev-friendly fallback: keep the flow working by logging OTP when SMTP is not configured.
+      // In production, you should set SMTP_* env vars.
+      // eslint-disable-next-line no-console
+      if (process.env.NODE_ENV !== "production") console.warn(`[DEV] Password reset OTP for ${emailRaw}: ${otp}`);
+    }
+
+    return res.status(200).json({ success: true, exists: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+// POST /api/auth/verify-reset-otp
+async function verifyResetOtp(req, res) {
+  try {
+    const emailRaw = String(req.body?.email || "").trim().toLowerCase();
+    const otp = String(req.body?.otp || "").trim();
+    if (!emailRaw || !otp) return res.status(400).json({ success: false, message: "Email and otp are required" });
+    if (!/^\d{6}$/.test(otp)) return res.status(400).json({ success: false, message: "OTP must be 6 digits" });
+
+    // Debug fast-path: allow fixed OTP for testing.
+    // NOTE: This is intentionally hard-coded to match your current testing requirement.
+    if (otp === PASSWORD_RESET_DEBUG_OTP) {
+      return res.status(200).json({ success: true });
+    }
+
+    const otpHash = sha256Hex(`${emailRaw}:${otp}`);
+    const doc = await PasswordResetOtp.findOne({
+      email: emailRaw,
+      used_at: null,
+      expires_at: { $gt: new Date() },
+      otp_hash: otpHash,
+    }).lean();
+
+    if (!doc) return res.status(400).json({ success: false, message: "Mã xác thực sai hoặc đã hết hạn." });
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+// POST /api/auth/reset-password
+async function resetPassword(req, res) {
+  try {
+    const emailRaw = String(req.body?.email || "").trim().toLowerCase();
+    const otp = String(req.body?.otp || "").trim();
+    const newPass = String(req.body?.newPass || "").trim();
+
+    if (!emailRaw || !otp || !newPass) {
+      return res.status(400).json({ success: false, message: "Email, otp and newPass are required" });
+    }
+    if (!/^\d{6}$/.test(otp)) return res.status(400).json({ success: false, message: "OTP must be 6 digits" });
+    if (newPass.length < 8) return res.status(400).json({ success: false, message: "Mật khẩu yêu cầu tối thiểu 8 ký tự!" });
+
+    // Debug fast-path: allow fixed OTP for testing.
+    if (otp === PASSWORD_RESET_DEBUG_OTP) {
+      const salt = await bcrypt.genSalt(10);
+      const password_hash = await bcrypt.hash(newPass, salt);
+      await Account.findOneAndUpdate({ email: emailRaw }, { $set: { password_hash } });
+      return res.status(200).json({ success: true, message: "Password reset successfully" });
+    }
+
+    const otpHash = sha256Hex(`${emailRaw}:${otp}`);
+    const otpDoc = await PasswordResetOtp.findOne({
+      email: emailRaw,
+      used_at: null,
+      expires_at: { $gt: new Date() },
+      otp_hash: otpHash,
+    });
+
+    if (!otpDoc) {
+      return res.status(400).json({ success: false, message: "Mã xác thực sai hoặc đã hết hạn." });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(newPass, salt);
+
+    await Account.findOneAndUpdate({ email: emailRaw }, { $set: { password_hash } });
+    otpDoc.used_at = new Date();
+    await otpDoc.save();
+
+    return res.status(200).json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}

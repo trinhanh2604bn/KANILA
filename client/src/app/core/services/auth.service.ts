@@ -20,9 +20,12 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/check-email`, { email });
   }
 
-  // Placeholder endpoint is currently not exposed by backend auth.route.js.
-  resetPassword(email: string, newPass: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/reset-password`, { email, newPass });
+  verifyResetOtp(email: string, otp: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/verify-reset-otp`, { email, otp });
+  }
+
+  resetPassword(email: string, otp: string, newPass: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reset-password`, { email, otp, newPass: newPass });
   }
 
   login(data: LoginRequest): Observable<AuthResponse> {

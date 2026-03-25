@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'community', loadChildren: () => import('./features/community/community.routes').then((m) => m.COMMUNITY_ROUTES) },
       { path: 'content', loadChildren: () => import('./features/content/content.routes').then((m) => m.CONTENT_ROUTES) },
       { path: 'help-center', loadChildren: () => import('./features/help-center/help-center.routes').then((m) => m.HELP_CENTER_ROUTES) },
+      { path: 'recommendations', loadChildren: () => import('./features/recommendations/recommendations.routes').then((m) => m.RECOMMENDATIONS_ROUTES) },
       { path: 'account', loadChildren: () => import('./features/account/account.routes').then((m) => m.ACCOUNT_ROUTES) },
       { path: 'orders', loadChildren: () => import('./features/orders/orders.routes').then((m) => m.ORDERS_ROUTES) },
       { path: 'wishlist', loadChildren: () => import('./features/wishlist/wishlist.routes').then((m) => m.WISHLIST_ROUTES) },
