@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostListener, OnInit, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { NavigationEnd, Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { HeaderBrandItem, HeaderCategoryItem } from '../../../core/models/header.model';
 import { Product } from '../../../core/models/product.model';
 import { BrandService } from '../../../core/services/brand.service';
@@ -66,9 +66,6 @@ export class SearchBarComponent implements OnInit {
   activeIndex = -1;
 
   ngOnInit(): void {
-    this.productService.getProducts().subscribe((rows) => {
-      this.products = rows.filter((p) => p.productStatus !== 'inactive' && p.isActive !== false);
-    });
     this.categoryService.getHeaderCategories().subscribe((rows) => {
       this.categories = rows;
     });
@@ -77,11 +74,45 @@ export class SearchBarComponent implements OnInit {
     });
 
     this.keywordControl.valueChanges
-      .pipe(debounceTime(300), distinctUntilChanged())
-      .subscribe((value) => {
-        const keyword = value.trim();
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((value) => {
+          const keyword = value.trim();
+          this.activeIndex = -1;
+          if (!keyword) {
+            return of({ keyword: '', products: [] as Product[], rejected: false });
+          }
+          if (!this.isDomainRelevant(keyword)) {
+            return of({ keyword, products: [] as Product[], rejected: true });
+          }
+          return this.productService.searchProductsPreview(keyword, 6).pipe(
+            map((products) => ({ keyword, products, rejected: false })),
+            catchError(() => of({ keyword, products: [] as Product[], rejected: false }))
+          );
+        })
+      )
+      .subscribe((state) => {
+        const keyword = state.keyword;
         this.isOpen = !!keyword;
-        this.applySuggestions(keyword);
+        this.domainRejected = state.rejected;
+        if (!keyword) {
+          this.productSuggestions = [];
+          this.categorySuggestions = [];
+          this.brandSuggestions = [];
+          this.keywordSuggestions = [];
+          this.historySuggestions = this.readHistory().map((x) => ({ type: 'history', label: x, value: x }));
+          return;
+        }
+        if (state.rejected) {
+          this.productSuggestions = [];
+          this.categorySuggestions = [];
+          this.brandSuggestions = [];
+          this.keywordSuggestions = [];
+          this.historySuggestions = [];
+          return;
+        }
+        this.applySuggestionsFromState(keyword, state.products);
       });
 
     this.hydrateKeywordFromUrl();
@@ -95,7 +126,29 @@ export class SearchBarComponent implements OnInit {
   onFocus(): void {
     const keyword = this.keywordControl.value.trim();
     this.isOpen = true;
-    this.applySuggestions(keyword);
+    if (!keyword) {
+      this.activeIndex = -1;
+      this.productSuggestions = [];
+      this.categorySuggestions = [];
+      this.brandSuggestions = [];
+      this.keywordSuggestions = [];
+      this.historySuggestions = this.readHistory().map((x) => ({ type: 'history', label: x, value: x }));
+      return;
+    }
+    if (!this.isDomainRelevant(keyword)) {
+      this.domainRejected = true;
+      this.productSuggestions = [];
+      this.categorySuggestions = [];
+      this.brandSuggestions = [];
+      this.keywordSuggestions = [];
+      this.historySuggestions = [];
+      return;
+    }
+    this.domainRejected = false;
+    this.productService.searchProductsPreview(keyword, 6).subscribe({
+      next: (products) => this.applySuggestionsFromState(keyword, products),
+      error: () => this.applySuggestionsFromState(keyword, []),
+    });
   }
 
   onSubmit(event?: Event): void {
@@ -157,41 +210,19 @@ export class SearchBarComponent implements OnInit {
     return this.flatSuggestions[this.activeIndex] === item;
   }
 
-  private applySuggestions(keyword: string): void {
-    this.activeIndex = -1;
-    this.domainRejected = false;
-    if (!keyword) {
-      this.productSuggestions = [];
-      this.categorySuggestions = [];
-      this.brandSuggestions = [];
-      this.keywordSuggestions = [];
-      this.historySuggestions = this.readHistory().map((x) => ({ type: 'history', label: x, value: x }));
-      return;
-    }
-
+  /** Builds suggestions from server-matched products + local categories/brands (no full product list). */
+  private applySuggestionsFromState(keyword: string, products: Product[]): void {
     const normalizedKeyword = this.normalize(keyword);
-    if (!this.isDomainRelevant(normalizedKeyword)) {
-      this.domainRejected = true;
-      this.productSuggestions = [];
-      this.categorySuggestions = [];
-      this.brandSuggestions = [];
-      this.keywordSuggestions = [];
-      this.historySuggestions = [];
-      return;
-    }
     const looseKeyword = this.toLooseText(normalizedKeyword);
 
-    this.productSuggestions = this.products
-      .filter((p) => this.isMatch(this.normalize(p.productName), normalizedKeyword, looseKeyword))
-      .slice(0, 6)
-      .map((p) => ({
-        type: 'product',
-        label: p.productName,
-        value: p._id,
-        slug: p.slug || p._id,
-        imageUrl: this.resolveImage(p),
-        price: p.price,
-      }));
+    this.productSuggestions = products.slice(0, 6).map((p) => ({
+      type: 'product' as const,
+      label: p.productName,
+      value: p._id,
+      slug: p.slug || p._id,
+      imageUrl: this.resolveImage(p),
+      price: p.price,
+    }));
 
     const flattenedCategories = this.flattenCategories(this.categories);
     this.categorySuggestions = flattenedCategories
@@ -272,16 +303,16 @@ export class SearchBarComponent implements OnInit {
   }
 
   private isDomainRelevant(keyword: string): boolean {
-    if (!keyword) return true;
-    if (keyword.length <= 2) return true;
-    if (this.domainKeywords.some((k) => k.includes(keyword) || keyword.includes(k))) return true;
-    // Query can still be relevant if it matches known entities
+    const normalizedKeyword = this.normalize(keyword);
+    if (!normalizedKeyword) return true;
+    if (normalizedKeyword.length <= 2) return true;
+    if (this.domainKeywords.some((k) => k.includes(normalizedKeyword) || normalizedKeyword.includes(k))) return true;
     const entitySource = [
-      ...this.products.map((p) => this.normalize(p.productName)),
       ...this.categories.flatMap((c) => [this.normalize(c.name), ...c.children.map((s) => this.normalize(s.name))]),
       ...this.brands.map((b) => this.normalize(b.name)),
     ];
-    return entitySource.some((x) => this.isMatch(x, keyword, this.toLooseText(keyword)));
+    const looseKeyword = this.toLooseText(normalizedKeyword);
+    return entitySource.some((x) => this.isMatch(x, normalizedKeyword, looseKeyword));
   }
 
   private resolveImage(p: Product): string {

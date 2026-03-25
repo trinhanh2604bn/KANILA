@@ -32,4 +32,7 @@ const productMediaSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+/** Speeds “first image per product” aggregation used by product listing. */
+productMediaSchema.index({ productId: 1, isPrimary: -1, sortOrder: 1, createdAt: 1 });
+
 module.exports = mongoose.model("ProductMedia", productMediaSchema);

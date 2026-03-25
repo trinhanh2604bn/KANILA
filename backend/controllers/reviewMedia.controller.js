@@ -1,4 +1,5 @@
 const ReviewMedia = require("../models/reviewMedia.model");
+const Review = require("../models/review.model");
 const validateObjectId = require("../utils/validateObjectId");
 
 const getAllReviewMedia = async (req, res) => {
@@ -27,6 +28,26 @@ const getMediaByReviewId = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
+// GET /api/review-media/product/:productId — media rows for all reviews on this product (PDP; avoids loading global review-media)
+const getMediaByProductId = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    if (!validateObjectId(productId)) return res.status(400).json({ success: false, message: "Invalid product ID" });
+    const reviewDocs = await Review.find({ productId }).select("_id").lean();
+    const reviewIds = reviewDocs.map((r) => r._id);
+    if (!reviewIds.length) {
+      return res.status(200).json({ success: true, message: "Get review media by product successfully", count: 0, data: [] });
+    }
+    const media = await ReviewMedia.find({ reviewId: { $in: reviewIds } })
+      .select("reviewId mediaUrl sortOrder")
+      .sort({ sortOrder: 1 })
+      .lean();
+    res.status(200).json({ success: true, message: "Get review media by product successfully", count: media.length, data: media });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const createReviewMedia = async (req, res) => {
   try {
     const { reviewId, mediaUrl } = req.body;
@@ -46,4 +67,11 @@ const deleteReviewMedia = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
-module.exports = { getAllReviewMedia, getReviewMediaById, getMediaByReviewId, createReviewMedia, deleteReviewMedia };
+module.exports = {
+  getAllReviewMedia,
+  getReviewMediaById,
+  getMediaByReviewId,
+  getMediaByProductId,
+  createReviewMedia,
+  deleteReviewMedia,
+};

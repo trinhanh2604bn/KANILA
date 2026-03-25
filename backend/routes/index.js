@@ -5,6 +5,7 @@ const router = express.Router();
 const brandRoutes = require("./brand.route");
 const categoryRoutes = require("./category.route");
 const productRoutes = require("./product.route");
+const catalogRoutes = require("./catalog.route");
 const productCategoryRoutes = require("./productCategory.route");
 
 // Phase 2 routes
@@ -80,6 +81,7 @@ const recommendationRoutes = require("./recommendation.route");
 router.use("/brands", brandRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/products", productRoutes);
+router.use("/catalog", catalogRoutes);
 router.use("/product-categories", productCategoryRoutes);
 
 router.use("/auth", authRoutes);

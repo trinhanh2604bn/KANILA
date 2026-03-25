@@ -11,7 +11,7 @@ import { Product } from '../../../../../core/models/product.model';
   styleUrl: './product-slider.css',
 })
 export class ProductSlider implements OnInit {
-  /** Full list from API */
+  /** Bounded pool from paginated API (popular); client slices 5 per view. */
   products: Product[] = [];
   /** Cached slice for *ngFor — updated only when page or data changes (avoids getter + new array every CD) */
   paginatedProducts: Product[] = [];
@@ -33,7 +33,7 @@ export class ProductSlider implements OnInit {
     this.loading = true;
     this.errorMessage = null;
 
-    this.productService.getProducts().subscribe({
+    this.productService.getHomeSliderProducts(50).subscribe({
       next: (list) => {
         this.products = list;
         this.currentPage = 1;

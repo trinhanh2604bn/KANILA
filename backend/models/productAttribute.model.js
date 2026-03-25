@@ -24,4 +24,6 @@ const productAttributeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+productAttributeSchema.index({ productId: 1, displayOrder: 1 });
+
 module.exports = mongoose.model("ProductAttribute", productAttributeSchema);

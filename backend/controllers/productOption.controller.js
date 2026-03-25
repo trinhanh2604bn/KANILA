@@ -1,13 +1,22 @@
 const ProductOption = require("../models/productOption.model");
 const Product = require("../models/product.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parseStorefrontFacetFlag } = require("../utils/storefrontFacetScope");
+const { loadProductOptionsStorefront } = require("../services/catalogStorefrontFacets.service");
 
-// GET /api/product-options
+// GET /api/product-options (catalog facet map: option name + product link)
+// Optional `storefrontOnly=1`: only options for storefront-visible products.
 const getAllProductOptions = async (req, res) => {
   try {
-    const options = await ProductOption.find()
-      .populate("productId", "productName productCode")
-      .sort({ displayOrder: 1, createdAt: -1 });
+    let options;
+    if (parseStorefrontFacetFlag(req.query)) {
+      options = await loadProductOptionsStorefront();
+    } else {
+      options = await ProductOption.find()
+        .select("productId optionName displayOrder")
+        .sort({ displayOrder: 1, createdAt: -1 })
+        .lean();
+    }
 
     res.status(200).json({
       success: true,

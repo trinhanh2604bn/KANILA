@@ -1,10 +1,13 @@
 const Brand = require("../models/brand.model");
 const validateObjectId = require("../utils/validateObjectId");
 
-// GET /api/brands
+// GET /api/brands (listing / filters: skip long description when scanning full collection)
 const getAllBrands = async (req, res) => {
   try {
-    const brands = await Brand.find().sort({ createdAt: -1 });
+    const brands = await Brand.find()
+      .select("brandName brandCode logoUrl brandStatus isActive")
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,

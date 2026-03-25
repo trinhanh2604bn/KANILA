@@ -1,12 +1,13 @@
 const Category = require("../models/category.model");
 const validateObjectId = require("../utils/validateObjectId");
 
-// GET /api/categories
+// GET /api/categories (tree + header: ids, names, parent ref — no heavy description join)
 const getAllCategories = async (req, res) => {
   try {
     const categories = await Category.find()
-      .populate("parentCategoryId", "categoryName categoryCode")
-      .sort({ displayOrder: 1, createdAt: -1 });
+      .select("categoryName categoryCode parentCategoryId displayOrder categoryStatus isActive")
+      .sort({ displayOrder: 1, createdAt: -1 })
+      .lean();
 
     res.status(200).json({
       success: true,

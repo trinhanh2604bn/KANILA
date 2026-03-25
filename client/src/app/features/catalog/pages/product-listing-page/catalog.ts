@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { EMPTY, Observable, Subscription, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { HeaderCategoryItem } from '../../../../core/models/header.model';
 import { Product } from '../../../../core/models/product.model';
 import { BrandService } from '../../../../core/services/brand.service';
@@ -15,8 +15,9 @@ import {
   ProductVariantRow,
   ReviewSummaryRow,
 } from '../../../../core/services/catalog-facet.service';
-import { ProductAttributeRow, ProductAttributeService } from '../../../../core/services/product-attribute.service';
-import { ProductService } from '../../../../core/services/product.service';
+import { CatalogFacetBundleService, CatalogFacetData } from '../../../../core/services/catalog-facet-bundle.service';
+import { ProductAttributeRow } from '../../../../core/services/product-attribute.service';
+import { PaginatedProductsResponse, ProductService } from '../../../../core/services/product.service';
 import { RecommendationService } from '../../../../core/services/recommendation.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import {
@@ -51,17 +52,54 @@ interface CatalogProductRow {
   imageUrl?: string;
 }
 
+/** Precomputed facet indexes for the current cached facet payload — rebuilt only when facet data loads, not on every page change. */
+interface CatalogFacetLookupMaps {
+  skinTypeMap: Map<string, string[]>;
+  finishBenefitMap: Map<string, { finishes: string[]; benefits: string[] }>;
+  optionMap: Map<string, { shades: string[] }>;
+  variantFacetMap: Map<string, { inStock: boolean; sizes: string[] }>;
+  ratingMap: Map<string, number>;
+  hasActiveSystemPromotion: boolean;
+}
+
 @Component({
   selector: 'app-catalog',
   imports: [FormsModule, RouterModule, CommonModule],
   templateUrl: './catalog.html',
   styleUrl: './catalog.css',
 })
-export class Catalog implements OnInit {
+export class Catalog implements OnInit, OnDestroy {
+  private static readonly PAGE_SIZE = 24;
+
   isSalePage: boolean = false;
   isScrolled: boolean = false;
+  /** Cleared after the first paginated product response (facets may still be loading in the background). */
   loading = true;
+  /** True while secondary facet HTTP calls run in parallel with the first product page only. */
+  facetsLoading = false;
+  /** True while a paginated product request is in flight (page change or filter reload). */
+  productsLoading = false;
+  /** Prevents personalized rerank until facet-enriched rows exist. */
+  private facetsReady = false;
   hasError = false;
+
+  /** Server total matching current server-side filters (pagination). */
+  totalProducts = 0;
+  totalPages = 1;
+  currentPage = 1;
+
+  /** Cached facet payloads — shared with {@link CatalogFacetBundleService} after first load. */
+  private cachedFacetData: CatalogFacetData | null = null;
+
+  private loadRequestSeq = 0;
+
+  /**
+   * Built once when facet tables are cached; reused for every paginated remap (avoids re-scanning large facet arrays per page).
+   */
+  private facetLookupMaps: CatalogFacetLookupMaps | null = null;
+
+  /** categoryId → breadcrumb context — O(1) per product vs nested loops over categories. */
+  private categoryContextById: Map<string, { parentSlug: string; parentName: string; subSlug?: string }> | null = null;
 
   categories: CatalogCategoryItem[] = [];
 
@@ -105,6 +143,10 @@ export class Catalog implements OnInit {
   suggestedSkinType: string | null = null;
   personalizedRerankApplied = false;
 
+  /** Raw product list from API — kept for second-phase mapProducts when facet payloads arrive. */
+  private rawProducts: Product[] = [];
+  private queryParamsSub?: Subscription;
+
   private readonly filterState: CatalogFilterState = {
     categorySlug: null,
     subCategorySlug: null,
@@ -129,8 +171,7 @@ export class Catalog implements OnInit {
     private readonly categoryService: CategoryService,
     private readonly brandService: BrandService,
     private readonly productService: ProductService,
-    private readonly productAttributeService: ProductAttributeService,
-    private readonly facetService: CatalogFacetService,
+    private readonly facetBundleService: CatalogFacetBundleService,
     private readonly recommendationService: RecommendationService,
     private readonly authService: AuthService
   ) {}
@@ -141,21 +182,18 @@ export class Catalog implements OnInit {
     });
 
     this.loading = true;
+    this.facetsLoading = false;
     this.hasError = false;
+    this.facetsReady = false;
+    this.cachedFacetData = null;
+    this.facetLookupMaps = null;
+    this.categoryContextById = null;
 
     forkJoin({
       categoryTree: this.categoryService.getHeaderCategories(),
       brandItems: this.brandService.getHeaderBrands(),
-      products: this.productService.getProducts(),
-      attributes: this.productAttributeService.getAll().pipe(catchError(() => of([]))),
-      options: this.facetService.getProductOptions().pipe(catchError(() => of([]))),
-      optionValues: this.facetService.getProductOptionValues().pipe(catchError(() => of([]))),
-      variants: this.facetService.getProductVariants().pipe(catchError(() => of([]))),
-      reviewSummaries: this.facetService.getReviewSummaries().pipe(catchError(() => of([]))),
-      inventoryBalances: this.facetService.getInventoryBalances().pipe(catchError(() => of([]))),
-      activePromotions: this.facetService.getActivePromotions().pipe(catchError(() => of([]))),
     }).subscribe({
-      next: ({ categoryTree, brandItems, products, attributes, options, optionValues, variants, reviewSummaries, inventoryBalances, activePromotions }) => {
+      next: ({ categoryTree, brandItems }) => {
         this.categories = categoryTree.map((c) => ({
           id: c.id,
           slug: c.slug,
@@ -166,36 +204,359 @@ export class Catalog implements OnInit {
         this.brandItems = brandItems.map((b) => ({ id: b.id, name: b.name, slug: b.slug }));
         this.brands = this.brandItems.map((b) => b.name);
         this.brandSlugMap = new Map(this.brandItems.map((b) => [b.slug, b.name]));
+        this.categoryContextById = null;
 
-        this.allProducts = this.mapProducts(
-          products,
-          attributes,
-          options,
-          optionValues,
-          variants,
-          reviewSummaries,
-          inventoryBalances,
-          activePromotions.length > 0
-        );
-        this.productTypes = this.extractProductTypes(this.allProducts);
-        this.skinTypes = this.extractSkinTypes(this.allProducts);
-        this.shadeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.shades));
-        this.finishOptions = this.extractUnique(this.allProducts.flatMap((p) => p.finishes));
-        this.benefitOptions = this.extractUnique(this.allProducts.flatMap((p) => p.benefits));
-        this.sizeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.sizes));
-        this.suggestedSkinType = this.resolveSuggestedSkinType(this.skinTypes);
-        this.maxLimit = this.computeMaxPrice(this.allProducts);
-        this.route.queryParams.subscribe((params) => {
-          this.applyRouteState(params);
-          this.applyPersonalizedRerank();
-          this.applyLocalFilters();
-        });
-        this.loading = false;
+        this.wireQueryParamsSubscription();
       },
       error: () => {
         this.loading = false;
         this.hasError = true;
       },
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.queryParamsSub?.unsubscribe();
+  }
+
+  /** Stable row identity for *ngFor to reduce DOM churn when lists refresh. */
+  trackByProductId(_index: number, row: CatalogProductRow): string {
+    return row.id;
+  }
+
+  private applyMappedProducts(
+    products: Product[],
+    attributes: ProductAttributeRow[],
+    options: ProductOptionRow[],
+    optionValues: ProductOptionValueRow[],
+    variants: ProductVariantRow[],
+    reviewSummaries: ReviewSummaryRow[],
+    inventoryBalances: InventoryBalanceRow[],
+    hasActiveSystemPromotion: boolean
+  ): void {
+    this.allProducts = this.mapProducts(
+      products,
+      attributes,
+      options,
+      optionValues,
+      variants,
+      reviewSummaries,
+      inventoryBalances,
+      hasActiveSystemPromotion
+    );
+  }
+
+  private refreshFacetOptionLists(): void {
+    this.productTypes = this.extractProductTypes(this.allProducts);
+    this.skinTypes = this.extractSkinTypes(this.allProducts);
+    this.shadeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.shades));
+    this.finishOptions = this.extractUnique(this.allProducts.flatMap((p) => p.finishes));
+    this.benefitOptions = this.extractUnique(this.allProducts.flatMap((p) => p.benefits));
+    this.sizeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.sizes));
+    this.suggestedSkinType = this.resolveSuggestedSkinType(this.skinTypes);
+  }
+
+  private wireQueryParamsSubscription(): void {
+    if (this.queryParamsSub) return;
+    this.queryParamsSub = this.route.queryParams
+      .pipe(
+        switchMap((params) => {
+          this.applyRouteState(params);
+          return this.runCatalogLoad();
+        })
+      )
+      .subscribe();
+  }
+
+  /**
+   * Paginated products first; facet bundle from {@link CatalogFacetBundleService} (session-cached).
+   * `switchMap` on query params cancels overlapping loads so stale responses do not win.
+   */
+  private runCatalogLoad(): Observable<void> {
+    if (!this.categories.length) return EMPTY;
+
+    const seq = ++this.loadRequestSeq;
+    const page = Math.max(1, parseInt(String(this.route.snapshot.queryParams['page'] ?? '1'), 10) || 1);
+    const apiParams = this.buildListingHttpParams();
+
+    this.productsLoading = true;
+    this.hasError = false;
+
+    const products$ = this.productService.getPaginatedProducts(page, Catalog.PAGE_SIZE, apiParams);
+
+    const onErr = (): void => {
+      if (seq !== this.loadRequestSeq) return;
+      this.hasError = true;
+      this.productsLoading = false;
+      this.loading = false;
+      this.facetsLoading = false;
+    };
+
+    if (this.cachedFacetData && this.facetLookupMaps) {
+      return products$.pipe(
+        tap({
+          next: (pageRes) => {
+            if (seq !== this.loadRequestSeq) return;
+            this.finishPaginatedEnvelope(pageRes);
+            this.ensureCategoryContextLookup();
+            this.allProducts = this.mapProductsWithLookups(pageRes.data, this.facetLookupMaps!);
+            this.applyFacetDerivedMaxPrice();
+            this.facetsReady = true;
+            this.applyPersonalizedRerank();
+            this.applyLocalFilters();
+            this.productsLoading = false;
+            this.loading = false;
+          },
+          error: onErr,
+        }),
+        map(() => void 0)
+      );
+    }
+
+    return products$.pipe(
+      switchMap((pageRes) => {
+        if (seq !== this.loadRequestSeq) return EMPTY;
+        this.finishPaginatedEnvelope(pageRes);
+        this.applyMappedProductsFromCache(pageRes.data);
+        this.refreshFacetOptionListsFromFacets();
+        this.applyFacetDerivedMaxPrice();
+        this.facetsReady = false;
+        this.applyLocalFilters();
+        this.productsLoading = false;
+        this.loading = false;
+
+        this.facetsLoading = true;
+        return this.facetBundleService.getFacetBundle().pipe(
+          tap({
+            next: (bundle) => {
+              if (seq !== this.loadRequestSeq) return;
+              this.cachedFacetData = bundle;
+              this.buildFacetLookupMapsFromCachedFacetData();
+              this.ensureCategoryContextLookup();
+              this.allProducts = this.mapProductsWithLookups(pageRes.data, this.facetLookupMaps!);
+              this.refreshFacetOptionListsFromFacets();
+              this.applyFacetDerivedMaxPrice();
+              this.facetsReady = true;
+              this.applyPersonalizedRerank();
+              this.applyLocalFilters();
+              this.facetsLoading = false;
+            },
+            error: () => {
+              if (seq !== this.loadRequestSeq) return;
+              this.facetsLoading = false;
+            },
+          }),
+          map(() => void 0)
+        );
+      })
+    );
+  }
+
+  private finishPaginatedEnvelope(res: PaginatedProductsResponse): void {
+    this.rawProducts = res.data;
+    this.totalProducts = res.total;
+    this.totalPages = res.totalPages;
+    this.currentPage = res.page;
+  }
+
+  private buildListingHttpParams(): Record<string, string> {
+    const out: Record<string, string> = {};
+    const search =
+      (this.route.snapshot.queryParams['search'] ?? '').trim() ||
+      (this.route.snapshot.queryParams['q'] ?? '').trim();
+    if (search) out['search'] = search;
+
+    const categoryId = this.resolveCategoryIdsForApi();
+    if (categoryId) out['categoryId'] = categoryId;
+
+    const brandIds = this.selectedBrands
+      .map((name) => this.brandItems.find((b) => b.name.toLowerCase() === name.toLowerCase())?.id)
+      .filter((id): id is string => !!id);
+    if (brandIds.length) out['brandId'] = brandIds.join(',');
+
+    if (this.minPriceInput > 0) out['minPrice'] = String(this.minPriceInput);
+    if (this.maxPriceInput < this.maxLimit) out['maxPrice'] = String(this.maxPriceInput);
+
+    if (this.selectedRatings.length) {
+      out['minRating'] = String(Math.min(...this.selectedRatings));
+    }
+
+    out['sort'] = this.mapSortForApi(this.activeSort);
+
+    if (this.isSalePage) out['saleOnly'] = '1';
+
+    out['fields'] = 'card';
+
+    return out;
+  }
+
+  private mapSortForApi(sort: CatalogSortOption): string {
+    switch (sort) {
+      case 'popular':
+        return 'popular';
+      case 'hot_deal':
+        return 'hot_deal';
+      case 'price_desc':
+        return 'price_desc';
+      case 'price_asc':
+        return 'price_asc';
+      default:
+        return 'popular';
+    }
+  }
+
+  /** Comma-separated Mongo category ids: sub only, or parent + all children for “parent category” filter. */
+  private resolveCategoryIdsForApi(): string | null {
+    if (!this.selectedParentCategory) return null;
+    if (this.selectedSubCategory) {
+      const sub = this.selectedParentCategory.subCategories.find((s) => s.slug === this.selectedSubCategory);
+      return sub ? sub.id : null;
+    }
+    const ids = [this.selectedParentCategory.id, ...this.selectedParentCategory.subCategories.map((s) => s.id)];
+    return ids.join(',');
+  }
+
+  private applyMappedProductsFromCache(products: Product[]): void {
+    if (this.facetLookupMaps) {
+      this.ensureCategoryContextLookup();
+      this.allProducts = this.mapProductsWithLookups(products, this.facetLookupMaps);
+      return;
+    }
+    const c = this.cachedFacetData;
+    if (!c) {
+      this.applyMappedProducts(products, [], [], [], [], [], [], false);
+      return;
+    }
+    this.applyMappedProducts(
+      products,
+      c.attributes,
+      c.options,
+      c.optionValues,
+      c.variants,
+      c.reviewSummaries,
+      c.inventoryBalances,
+      c.hasActiveSystemPromotion
+    );
+  }
+
+  private buildFacetLookupMapsFromCachedFacetData(): void {
+    const c = this.cachedFacetData;
+    if (!c) {
+      this.facetLookupMaps = null;
+      return;
+    }
+    this.facetLookupMaps = {
+      skinTypeMap: this.buildSkinTypeMap(c.attributes),
+      finishBenefitMap: this.buildFinishBenefitMap(c.attributes),
+      optionMap: this.buildOptionValueMap(c.options, c.optionValues),
+      variantFacetMap: this.buildVariantFacetMap(c.variants, c.inventoryBalances),
+      ratingMap: new Map(c.reviewSummaries.map((r) => [this.refId(r.productId), r.averageRating ?? 0])),
+      hasActiveSystemPromotion: c.hasActiveSystemPromotion,
+    };
+  }
+
+  private ensureCategoryContextLookup(): void {
+    if (this.categoryContextById) return;
+    const m = new Map<string, { parentSlug: string; parentName: string; subSlug?: string }>();
+    for (const top of this.categories) {
+      m.set(top.id, { parentSlug: top.slug, parentName: top.name });
+      for (const sub of top.subCategories) {
+        m.set(sub.id, { parentSlug: top.slug, parentName: top.name, subSlug: sub.slug });
+      }
+    }
+    this.categoryContextById = m;
+  }
+
+  private getCategoryContext(categoryId: string): { parentSlug: string; parentName: string; subSlug?: string } {
+    if (!this.categoryContextById) return { parentSlug: '', parentName: '' };
+    return this.categoryContextById.get(categoryId) ?? { parentSlug: '', parentName: '' };
+  }
+
+  /**
+   * Facet dropdown options are derived from global facet tables (not the current page),
+   * so filters stay usable under pagination.
+   */
+  private refreshFacetOptionListsFromFacets(): void {
+    const c = this.cachedFacetData;
+    if (!c) {
+      this.refreshFacetOptionLists();
+      return;
+    }
+    const attrs = c.attributes;
+    const skinSet = new Set<string>();
+    for (const row of attrs) {
+      const name = (row.attributeName ?? '').toLowerCase();
+      if (!name.includes('skin') && !name.includes('da')) continue;
+      const v = (row.attributeValue ?? '').trim();
+      if (v) skinSet.add(v);
+    }
+    this.skinTypes = Array.from(skinSet).sort((a, b) => a.localeCompare(b));
+
+    const fbMap = this.buildFinishBenefitMap(attrs);
+    const finishes = new Set<string>();
+    const benefits = new Set<string>();
+    for (const row of fbMap.values()) {
+      row.finishes.forEach((x) => finishes.add(x));
+      row.benefits.forEach((x) => benefits.add(x));
+    }
+    this.finishOptions = Array.from(finishes).sort((a, b) => a.localeCompare(b));
+    this.benefitOptions = Array.from(benefits).sort((a, b) => a.localeCompare(b));
+
+    const shadeSet = new Set<string>();
+    const optionById = new Map(c.options.map((o) => [o._id, o]));
+    for (const v of c.optionValues) {
+      const optionId = this.refId(v.productOptionId);
+      const option = optionById.get(optionId);
+      if (!option) continue;
+      const optionName = (option.optionName ?? '').toLowerCase();
+      const val = (v.optionValue ?? '').trim();
+      if (!val) continue;
+      if (/(shade|color|mau|màu)/i.test(optionName)) shadeSet.add(val);
+    }
+    this.shadeOptions = Array.from(shadeSet).sort((a, b) => a.localeCompare(b));
+
+    const sizeSet = new Set<string>();
+    for (const v of c.variants) {
+      const s = this.formatVariantSize(v);
+      if (s) sizeSet.add(s);
+    }
+    this.sizeOptions = Array.from(sizeSet).sort((a, b) => a.localeCompare(b));
+
+    this.productTypes = this.categories.map((cat) => cat.name);
+    this.suggestedSkinType = this.resolveSuggestedSkinType(this.skinTypes);
+  }
+
+  /** Price slider max stays a stable storefront ceiling (not derived from one page of rows). */
+  private applyFacetDerivedMaxPrice(): void {
+    this.maxLimit = 5000000;
+  }
+
+  /** Total count for header: server total unless client-only facet filters narrow the current page. */
+  get displayTotalCount(): number {
+    if (this.hasClientOnlyFacetFilters()) return this.filteredProducts.length;
+    return this.totalProducts;
+  }
+
+  private hasClientOnlyFacetFilters(): boolean {
+    return (
+      this.selectedSkinTypes.length > 0 ||
+      this.selectedProductTypes.length > 0 ||
+      this.selectedShades.length > 0 ||
+      this.selectedFinishes.length > 0 ||
+      this.selectedBenefits.length > 0 ||
+      this.selectedPromotions.length > 0 ||
+      this.selectedStockStatuses.length > 0 ||
+      this.selectedSizes.length > 0
+    );
+  }
+
+  goToPage(page: number): void {
+    const max = Math.max(1, this.totalPages);
+    const p = Math.max(1, Math.min(Math.floor(page), max));
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: p },
+      queryParamsHandling: 'merge',
     });
   }
 
@@ -530,12 +891,15 @@ export class Catalog implements OnInit {
     this.activeSort = this.filterState.sort;
     this.updatePriceLabel();
     if (this.minPriceInput === 0 && this.maxPriceInput === this.maxLimit) this.selectedPrice = null;
+
+    const pageRaw = Number(params['page']);
+    this.currentPage = Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
   }
 
   private updateRouteState(next: CatalogQueryParams) {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: next,
+      queryParams: { ...next, page: 1 },
       queryParamsHandling: 'merge',
     });
   }
@@ -574,6 +938,7 @@ export class Catalog implements OnInit {
     return byName?.name ?? value;
   }
 
+  /** Builds lookup maps once from raw facet rows, then maps products (used only when facet lookups are not yet cached). */
   private mapProducts(
     products: Product[],
     attributes: ProductAttributeRow[],
@@ -584,18 +949,33 @@ export class Catalog implements OnInit {
     inventoryBalances: InventoryBalanceRow[],
     hasActiveSystemPromotion: boolean
   ): CatalogProductRow[] {
-    const skinTypeMap = this.buildSkinTypeMap(attributes);
-    const finishBenefitMap = this.buildFinishBenefitMap(attributes);
-    const optionMap = this.buildOptionValueMap(options, optionValues);
-    const variantFacetMap = this.buildVariantFacetMap(variants, inventoryBalances);
-    const ratingMap = new Map<string, number>(
-      reviewSummaries.map((r) => [this.refId(r.productId), r.averageRating ?? 0])
-    );
+    const lookups: CatalogFacetLookupMaps = {
+      skinTypeMap: this.buildSkinTypeMap(attributes),
+      finishBenefitMap: this.buildFinishBenefitMap(attributes),
+      optionMap: this.buildOptionValueMap(options, optionValues),
+      variantFacetMap: this.buildVariantFacetMap(variants, inventoryBalances),
+      ratingMap: new Map(reviewSummaries.map((r) => [this.refId(r.productId), r.averageRating ?? 0])),
+      hasActiveSystemPromotion,
+    };
+    this.ensureCategoryContextLookup();
+    return this.mapProductsWithLookups(products, lookups);
+  }
+
+  /** Maps only the current page using pre-built facet maps (no repeated scans of full attribute/variant arrays). */
+  private mapProductsWithLookups(products: Product[], lookups: CatalogFacetLookupMaps): CatalogProductRow[] {
+    const {
+      skinTypeMap,
+      finishBenefitMap,
+      optionMap,
+      variantFacetMap,
+      ratingMap,
+      hasActiveSystemPromotion,
+    } = lookups;
     return products
       .filter((p) => p.productStatus !== 'inactive' && p.isActive !== false)
       .map((p) => {
         const categoryRef = p.categoryId?._id ?? '';
-        const categoryCtx = this.findCategoryContext(categoryRef);
+        const categoryCtx = this.getCategoryContext(categoryRef);
         const optionFacet = optionMap.get(p._id) ?? { shades: [] };
         const variantFacet = variantFacetMap.get(p._id) ?? { inStock: (p.stock ?? 0) > 0, sizes: [] };
         const finishBenefit = finishBenefitMap.get(p._id) ?? { finishes: [], benefits: [] };
@@ -627,15 +1007,6 @@ export class Catalog implements OnInit {
       });
   }
 
-  private findCategoryContext(categoryId: string): { parentSlug: string; parentName: string; subSlug?: string } {
-    for (const top of this.categories) {
-      if (top.id === categoryId) return { parentSlug: top.slug, parentName: top.name };
-      const sub = top.subCategories.find((s) => s.id === categoryId);
-      if (sub) return { parentSlug: top.slug, parentName: top.name, subSlug: sub.slug };
-    }
-    return { parentSlug: '', parentName: '' };
-  }
-
   private buildSkinTypeMap(attributes: ProductAttributeRow[]): Map<string, string[]> {
     const map = new Map<string, string[]>();
     for (const row of attributes) {
@@ -661,12 +1032,6 @@ export class Catalog implements OnInit {
 
   private extractUnique(values: string[]): string[] {
     return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
-  }
-
-  private computeMaxPrice(products: CatalogProductRow[]): number {
-    if (!products.length) return 5000000;
-    const max = Math.max(...products.map((p) => p.price || 0));
-    return Math.max(5000000, Math.ceil(max / 100000) * 100000);
   }
 
   private resolveImage(p: Product): string {

@@ -1,13 +1,22 @@
 const ProductAttribute = require("../models/productAttribute.model");
 const Product = require("../models/product.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parseStorefrontFacetFlag } = require("../utils/storefrontFacetScope");
+const { loadProductAttributesStorefront } = require("../services/catalogStorefrontFacets.service");
 
-// GET /api/product-attributes
+// GET /api/product-attributes (catalog facets: productId + name/value only)
+// Optional `storefrontOnly=1`: only rows for active, non-inactive products (smaller payload for catalog).
 const getAllProductAttributes = async (req, res) => {
   try {
-    const attributes = await ProductAttribute.find()
-      .populate("productId", "productName productCode")
-      .sort({ displayOrder: 1, createdAt: -1 });
+    let attributes;
+    if (parseStorefrontFacetFlag(req.query)) {
+      attributes = await loadProductAttributesStorefront();
+    } else {
+      attributes = await ProductAttribute.find()
+        .select("productId attributeName attributeValue displayOrder")
+        .sort({ displayOrder: 1, createdAt: -1 })
+        .lean();
+    }
 
     res.status(200).json({
       success: true,

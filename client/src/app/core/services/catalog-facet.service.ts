@@ -45,43 +45,45 @@ export interface PromotionRow {
   endAt?: string | null;
 }
 
+const storefrontFacetParams = { storefrontOnly: '1' } as const;
+
 @Injectable({ providedIn: 'root' })
 export class CatalogFacetService {
   constructor(private readonly http: HttpClient) {}
 
   getProductOptions(): Observable<ProductOptionRow[]> {
     return this.http
-      .get<ApiResponse<ProductOptionRow[]>>('http://localhost:5000/api/product-options')
+      .get<ApiResponse<ProductOptionRow[]>>('http://localhost:5000/api/product-options', { params: storefrontFacetParams })
       .pipe(map((res) => res.data ?? []));
   }
 
   getProductOptionValues(): Observable<ProductOptionValueRow[]> {
     return this.http
-      .get<ApiResponse<ProductOptionValueRow[]>>('http://localhost:5000/api/product-option-values')
+      .get<ApiResponse<ProductOptionValueRow[]>>('http://localhost:5000/api/product-option-values', { params: storefrontFacetParams })
       .pipe(map((res) => res.data ?? []));
   }
 
   getProductVariants(): Observable<ProductVariantRow[]> {
     return this.http
-      .get<ApiResponse<ProductVariantRow[]>>('http://localhost:5000/api/product-variants')
+      .get<ApiResponse<ProductVariantRow[]>>('http://localhost:5000/api/product-variants', { params: storefrontFacetParams })
       .pipe(map((res) => res.data ?? []));
   }
 
   getReviewSummaries(): Observable<ReviewSummaryRow[]> {
     return this.http
-      .get<ApiResponse<ReviewSummaryRow[]>>('http://localhost:5000/api/review-summary')
+      .get<ApiResponse<ReviewSummaryRow[]>>('http://localhost:5000/api/review-summary', { params: storefrontFacetParams })
       .pipe(map((res) => res.data ?? []));
   }
 
   getInventoryBalances(): Observable<InventoryBalanceRow[]> {
     return this.http
-      .get<ApiResponse<InventoryBalanceRow[]>>('http://localhost:5000/api/inventory-balances')
+      .get<ApiResponse<InventoryBalanceRow[]>>('http://localhost:5000/api/inventory-balances', { params: storefrontFacetParams })
       .pipe(map((res) => res.data ?? []));
   }
 
   getActivePromotions(): Observable<PromotionRow[]> {
     return this.http
-      .get<ApiResponse<PromotionRow[]>>('http://localhost:5000/api/promotions')
+      .get<ApiResponse<PromotionRow[]>>('http://localhost:5000/api/promotions', { params: storefrontFacetParams })
       .pipe(
         map((res) => res.data ?? []),
         map((rows) => {

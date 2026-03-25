@@ -24,8 +24,7 @@ export class ProductList implements OnInit {
   constructor(private productService: ProductService) {}
 
   ngOnInit(): void {
-    // Gọi API để lấy tất cả sản phẩm
-    this.productService.getProducts().subscribe((data) => {
+    this.productService.getHomeDiscoverPool(100).subscribe((data) => {
       this.allProducts = data;
       this.products = this.randomizeProducts(this.allProducts);
     });
@@ -33,7 +32,7 @@ export class ProductList implements OnInit {
 
   randomizeProducts(products: Product[]): Product[] {
     const shuffled = [...products].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 60);  // Chỉ lấy 30 sản phẩm ngẫu nhiên
+    return shuffled.slice(0, 60);
   }
 
   // Hàm gọi khi người dùng chọn checkbox

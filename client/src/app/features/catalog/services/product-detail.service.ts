@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, concat, forkJoin, map, of, switchMap } from 'rxjs';
 import { Product, ProductMediaItem } from '../../../core/models/product.model';
 import { HeaderCategoryItem } from '../../../core/models/header.model';
 import { CategoryService } from '../../../core/services/category.service';
+import { ProductService } from '../../../core/services/product.service';
 import {
   ProductDetailContentSections,
   ProductDetailData,
@@ -75,38 +76,68 @@ interface WishlistItemRow {
   productId: string | { _id?: string };
 }
 
+interface PdpBuildOptions {
+  /** First paint: omit demo reviews when the list is still loading. */
+  skipReviewFallback?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductDetailService {
   private readonly apiBase = 'http://localhost:5000/api';
 
   constructor(
     private readonly http: HttpClient,
-    private readonly categoryService: CategoryService
+    private readonly categoryService: CategoryService,
+    private readonly productService: ProductService
   ) {}
 
+  /**
+   * Emits twice when successful: (1) core PDP data for fast first paint, (2) full data with recommendations + reviews + wishlist.
+   */
   getProductDetail(slugOrId: string): Observable<ProductDetailData | null> {
     return this.loadProduct(slugOrId).pipe(
-      catchError(() => of(null)),
       switchMap((product) => {
         if (!product) return of(null);
-        return this.loadBackendBundle(product).pipe(
-          map((bundle) =>
-            this.buildFrom(
+        return this.loadCoreBundle(product).pipe(
+          switchMap((core) => {
+            if (!core) return of(null);
+            const first = this.buildFrom(
               product,
-              bundle.relatedProducts,
-              bundle.categories,
-              bundle.medias,
-              bundle.variants,
-              bundle.inventory,
-              bundle.reviewSummary,
-              bundle.reviews,
-              bundle.reviewMedia,
-              bundle.wishlistItems
-            )
-          ),
+              [],
+              core.categories,
+              core.medias,
+              core.variants,
+              core.inventory,
+              core.reviewSummary,
+              [],
+              [],
+              [],
+              { skipReviewFallback: true }
+            );
+            if (!first) return of(null);
+            const second$ = this.loadSecondaryBundle(product).pipe(
+              map((sec) =>
+                this.buildFrom(
+                  product,
+                  sec.relatedProducts,
+                  core.categories,
+                  core.medias,
+                  core.variants,
+                  core.inventory,
+                  core.reviewSummary,
+                  sec.reviews,
+                  sec.reviewMedia,
+                  sec.wishlistItems
+                )
+              ),
+              catchError(() => of(first))
+            );
+            return concat(of(first), second$);
+          }),
           catchError(() => of(null))
         );
-      })
+      }),
+      catchError(() => of(null))
     );
   }
 
@@ -120,7 +151,8 @@ export class ProductDetailService {
     reviewSummary: ReviewSummaryRow | null,
     reviews: ReviewRow[],
     reviewMedia: ReviewMediaRow[],
-    wishlistItems: WishlistItemRow[]
+    wishlistItems: WishlistItemRow[],
+    opts?: PdpBuildOptions
   ): ProductDetailData | null {
     if (!product) return null;
 
@@ -128,6 +160,8 @@ export class ProductDetailService {
     const variantList = this.mapVariants(variants, inventory);
     const ratingDist = this.mapRatingDistribution(reviewSummary, reviews);
     const reviewList = this.mapReviews(reviews, reviewMedia);
+    const useDemoReviews = !opts?.skipReviewFallback && reviewList.length === 0;
+    const reviewsOut = useDemoReviews ? this.buildFallbackReviews() : reviewList;
     const breadcrumb = this.findCategoryPath(product.categoryId?._id ?? '', categories);
     const currentPrice = Number(product.price ?? 0);
     const oldPrice =
@@ -153,7 +187,7 @@ export class ProductDetailService {
       oldPrice,
       discountPercent,
       averageRating: reviewSummary?.averageRating ?? product.averageRating ?? 0,
-      reviewCount: reviewSummary?.reviewCount ?? reviewList.length,
+      reviewCount: reviewSummary?.reviewCount ?? reviewsOut.length,
       soldCount: product.bought ?? 0,
       wishlistCount,
       inStock: (product.stock ?? 0) > 0 || variantList.some((v) => v.inStock),
@@ -164,7 +198,7 @@ export class ProductDetailService {
       variants: variantList.length ? variantList : this.buildFallbackVariants(),
       highlights: this.buildHighlightsFallback(),
       content: this.buildContent(product),
-      reviews: reviewList.length ? reviewList : this.buildFallbackReviews(),
+      reviews: reviewsOut,
       ratingDistribution: ratingDist,
       recommendations: {
         frequentlyBoughtTogether: this.toReco(frequentlyBoughtTogether),
@@ -176,21 +210,15 @@ export class ProductDetailService {
     };
   }
 
-  loadBackendBundle(product: Product): Observable<{
-    relatedProducts: Product[];
+  /** Gallery, variants, stock, breadcrumbs, summary — kept small for first paint. */
+  private loadCoreBundle(product: Product): Observable<{
     categories: HeaderCategoryItem[];
     medias: ProductMediaRow[];
     variants: ProductVariantRow[];
     inventory: InventoryBalanceRow[];
     reviewSummary: ReviewSummaryRow | null;
-    reviews: ReviewRow[];
-    reviewMedia: ReviewMediaRow[];
-    wishlistItems: WishlistItemRow[];
-  }> {
+  } | null> {
     return forkJoin({
-      relatedProducts: this.http
-        .get<ApiResponse<Product[]>>(`${this.apiBase}/products`)
-        .pipe(map((r) => r.data ?? []), catchError(() => of([]))),
       categories: this.categoryService.getHeaderCategories().pipe(catchError(() => of([]))),
       medias: this.http
         .get<ApiResponse<ProductMediaRow[]>>(`${this.apiBase}/product-media/product/${product._id}`)
@@ -199,21 +227,50 @@ export class ProductDetailService {
         .get<ApiResponse<ProductVariantRow[]>>(`${this.apiBase}/product-variants/product/${product._id}`)
         .pipe(map((r) => r.data ?? []), catchError(() => of([]))),
       inventory: this.http
-        .get<ApiResponse<InventoryBalanceRow[]>>(`${this.apiBase}/inventory-balances`)
+        .get<ApiResponse<InventoryBalanceRow[]>>(`${this.apiBase}/inventory-balances/product/${product._id}`)
         .pipe(map((r) => r.data ?? []), catchError(() => of([]))),
       reviewSummary: this.http
         .get<ApiResponse<ReviewSummaryRow>>(`${this.apiBase}/review-summary/product/${product._id}`)
         .pipe(map((r) => r.data ?? null), catchError(() => of(null))),
+    }).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  /** Recommendations, reviews, wishlist — loaded after core PDP. */
+  private loadSecondaryBundle(product: Product): Observable<{
+    relatedProducts: Product[];
+    reviews: ReviewRow[];
+    reviewMedia: ReviewMediaRow[];
+    wishlistItems: WishlistItemRow[];
+  }> {
+    const categoryId = this.resolveCategoryId(product);
+    const related$ = this.productService
+      .getPaginatedProducts(1, 72, {
+        sort: 'popular',
+        fields: 'card',
+        ...(categoryId ? { categoryId } : {}),
+      })
+      .pipe(map((r) => r.data ?? []), catchError(() => of([] as Product[])));
+
+    return forkJoin({
+      relatedProducts: related$,
       reviews: this.http
         .get<ApiResponse<ReviewRow[]>>(`${this.apiBase}/reviews/product/${product._id}`)
         .pipe(map((r) => r.data ?? []), catchError(() => of([]))),
       reviewMedia: this.http
-        .get<ApiResponse<ReviewMediaRow[]>>(`${this.apiBase}/review-media`)
+        .get<ApiResponse<ReviewMediaRow[]>>(`${this.apiBase}/review-media/product/${product._id}`)
         .pipe(map((r) => r.data ?? []), catchError(() => of([]))),
       wishlistItems: this.http
         .get<ApiResponse<WishlistItemRow[]>>(`${this.apiBase}/wishlist-items`)
         .pipe(map((r) => r.data ?? []), catchError(() => of([]))),
     });
+  }
+
+  private resolveCategoryId(product: Product): string {
+    const c = product.categoryId;
+    if (!c) return '';
+    return typeof c === 'string' ? c : c._id ?? '';
   }
 
   private loadProduct(slugOrId: string): Observable<Product | null> {

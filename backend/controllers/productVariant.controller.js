@@ -1,13 +1,22 @@
 const ProductVariant = require("../models/productVariant.model");
 const Product = require("../models/product.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parseStorefrontFacetFlag } = require("../utils/storefrontFacetScope");
+const { loadProductVariantsStorefront } = require("../services/catalogStorefrontFacets.service");
 
-// GET /api/product-variants
+// GET /api/product-variants (catalog stock/size facets — variant refs only)
+// Optional `storefrontOnly=1`: active variants for storefront-visible products only.
 const getAllProductVariants = async (req, res) => {
   try {
-    const variants = await ProductVariant.find()
-      .populate("productId", "productName productCode")
-      .sort({ createdAt: -1 });
+    let variants;
+    if (parseStorefrontFacetFlag(req.query)) {
+      variants = await loadProductVariantsStorefront();
+    } else {
+      variants = await ProductVariant.find()
+        .select("productId sku variantName volumeMl weightGrams")
+        .sort({ createdAt: -1 })
+        .lean();
+    }
 
     res.status(200).json({
       success: true,

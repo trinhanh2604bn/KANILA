@@ -44,7 +44,12 @@ const getReviewsByProductId = async (req, res) => {
   try {
     const { productId } = req.params;
     if (!validateObjectId(productId)) return res.status(400).json({ success: false, message: "Invalid product ID" });
-    const reviews = await Review.find({ productId }).populate("customer_id", CUST).sort({ createdAt: -1 });
+    const reviews = await Review.find({ productId, reviewStatus: "approved" })
+      .populate("customer_id", CUST)
+      .populate("variantId", "variantName")
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
     res.status(200).json({ success: true, message: "Get reviews by product successfully", count: reviews.length, data: reviews });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };

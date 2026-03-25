@@ -5,6 +5,7 @@ const Brand = require("../models/brand.model");
 const Category = require("../models/category.model");
 const Account = require("../models/account.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parsePaginationParams, buildMongoFilterFromQuery, queryListingProducts } = require("../utils/productListingHelpers");
 
 /** Attach `{ email }` from Account without `.populate()` (avoids strictPopulate when paths/cache disagree). */
 async function attachAuditAccountEmails(data, productDoc) {
@@ -25,38 +26,45 @@ async function attachAuditAccountEmails(data, productDoc) {
 }
 
 // GET /api/products
+// - Without `page` query: legacy full list (same shape as Phase 1; no server-side filters).
+// - With `page`: paginated + optional filters categoryId, brandId (comma-sep), minPrice, maxPrice, minRating, sort.
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find()
-      .populate("brandId", "brandName brandCode")
-      .populate("categoryId", "categoryName categoryCode")
-      .sort({ createdAt: -1 });
+    const pag = parsePaginationParams(req.query);
+    const listingProfile = String(req.query.fields || "").toLowerCase().trim() === "card" ? "card" : "full";
 
-    const ids = products.map((p) => p._id);
-    let firstMediaByProduct = new Map();
-    if (ids.length) {
-      const mediaRows = await ProductMedia.find({ productId: { $in: ids } })
-        .sort({ isPrimary: -1, sortOrder: 1, createdAt: 1 })
-        .lean();
-      for (const m of mediaRows) {
-        const key = String(m.productId);
-        if (!firstMediaByProduct.has(key)) firstMediaByProduct.set(key, m.mediaUrl);
-      }
+    if (!pag.enabled) {
+      const data = await queryListingProducts({
+        filter: {},
+        sort: { createdAt: -1 },
+        skip: 0,
+        limit: null,
+        listingProfile: "full",
+      });
+      return res.status(200).json({
+        success: true,
+        message: "Get all products successfully",
+        count: data.length,
+        data,
+      });
     }
 
-    const data = products.map((p) => {
-      const o = p.toObject ? p.toObject() : { ...p };
-      const id = String(p._id);
-      if (!o.imageUrl && firstMediaByProduct.has(id)) {
-        o.imageUrl = firstMediaByProduct.get(id);
-      }
-      return o;
-    });
+    const { filter, sort } = buildMongoFilterFromQuery(req.query, { storefrontOnly: false });
+    const skip = (pag.page - 1) * pag.limit;
+    const [total, data] = await Promise.all([
+      Product.countDocuments(filter),
+      queryListingProducts({ filter, sort, skip, limit: pag.limit, listingProfile }),
+    ]);
+    const totalPages = Math.max(1, Math.ceil(total / pag.limit));
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Get all products successfully",
+      message: "Get products successfully",
       count: data.length,
+      total,
+      page: pag.page,
+      limit: pag.limit,
+      totalPages,
       data,
     });
   } catch (error) {

@@ -39,6 +39,11 @@ const productSchema = new mongoose.Schema(
       required: [true, "Price is required"],
       min: [0, "Price must not be negative"],
     },
+    /** List / compare-at price (e.g. strikethrough on cards) — optional */
+    compareAtPrice: {
+      type: Number,
+      default: null,
+    },
     imageUrl: {
       type: String,
       default: "",
@@ -139,6 +144,14 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+productSchema.index({ createdAt: -1 });
+productSchema.index({ brandId: 1, createdAt: -1 });
+productSchema.index({ categoryId: 1, createdAt: -1 });
+/** Popular / home listing (`sort=popular`) */
+productSchema.index({ bought: -1, createdAt: -1 });
+/** Product code lookup (search fast path + admin) */
+productSchema.index({ productCode: 1 });
 
 productSchema.pre("save", function syncProductStatus(next) {
   if (this.isModified("productStatus") && !this.isModified("isActive")) {

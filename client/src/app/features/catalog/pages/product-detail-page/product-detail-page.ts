@@ -264,18 +264,24 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
       this.loading = true;
       this.hasError = false;
+      let firstPaint = true;
       this.detailService
         .getProductDetail(slugOrId)
         .pipe(catchError(() => of(null)))
         .subscribe((detail) => {
           if (!detail) {
-            this.loading = false;
-            this.hasError = true;
+            if (firstPaint) {
+              this.loading = false;
+              this.hasError = true;
+            }
             return;
           }
           this.applyDetail(detail);
-          this.loading = false;
-          this.hasError = false;
+          if (firstPaint) {
+            this.loading = false;
+            this.hasError = false;
+            firstPaint = false;
+          }
         });
     });
   }
@@ -515,19 +521,21 @@ export class CatalogProductDetailPageComponent implements OnInit {
     this.sameBrandProducts = this.toMiniProducts(detail.recommendations.sameBrandProducts);
     this.recentProducts = this.toMiniProducts(detail.recommendations.recentlyViewed);
 
-    this.reviews = detail.reviews.length ? detail.reviews.map((r) => ({
-      id: r.id,
-      userName: r.userName,
-      avatar: r.avatar,
-      verified: r.verified,
-      shade: r.shade,
-      rating: r.rating,
-      title: r.title,
-      body: r.body,
-      images: r.images,
-      date: r.date,
-      helpful: r.helpful,
-    })) : this.reviews;
+    this.reviews = detail.reviews.length
+      ? detail.reviews.map((r) => ({
+          id: r.id,
+          userName: r.userName,
+          avatar: r.avatar,
+          verified: r.verified,
+          shade: r.shade,
+          rating: r.rating,
+          title: r.title,
+          body: r.body,
+          images: r.images,
+          date: r.date,
+          helpful: r.helpful,
+        }))
+      : [];
   }
 
   private toMiniProducts(items: ProductDetailData['recommendations']['similarProducts']): PdpMiniProduct[] {

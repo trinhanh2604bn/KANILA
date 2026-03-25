@@ -22,7 +22,7 @@ export class ProductAttributeService {
 
   getAll(): Observable<ProductAttributeRow[]> {
     return this.http
-      .get<ApiResponse<ProductAttributeRow[]>>(this.apiUrl)
+      .get<ApiResponse<ProductAttributeRow[]>>(this.apiUrl, { params: { storefrontOnly: '1' } })
       .pipe(map((res) => res.data ?? []));
   }
 }

@@ -295,7 +295,8 @@
 
                   <button class="btn-sort transition-all" [class.active]="activeSort === 'price_desc'" (click)="selectSort('price_desc')"><i class="bi bi-sort-down me-1"></i>Giá Cao - Thấp</button>
                   <button class="btn-sort transition-all" [class.active]="activeSort === 'price_asc'" (click)="selectSort('price_asc')"><i class="bi bi-sort-up me-1"></i>Giá Thấp - Cao</button>
-                  <span class="product-count-pill ms-auto">Tổng: {{ filteredProducts.length }} sản phẩm</span>
+                  <span class="product-count-pill ms-auto">Tổng: {{ displayTotalCount }} sản phẩm</span>
+                  <span *ngIf="facetsLoading" class="small ms-1" style="color: var(--kanila-text); opacity: 0.75;">Đang tải chi tiết bộ lọc…</span>
               </div>
               </section>
 
@@ -310,7 +311,7 @@
           </span>
       </div>
 
-      <div class="col-6 col-md-4 col-lg-3" *ngFor="let p of filteredProducts">
+      <div class="col-6 col-md-4 col-lg-3" *ngFor="let p of filteredProducts; trackBy: trackByProductId">
           <div class="product-card p-3 rounded-4 shadow-sm h-100 d-flex flex-column transition-all position-relative" style="background-color: var(--kanila-white); border: 1px solid rgba(107,30,46,0.05); cursor: pointer;" [routerLink]="['/catalog', 'product', p.slug || p.id]">
               <span *ngIf="p.isSale" class="badge rounded-pill position-absolute" style="top: 10px; right: 10px; z-index: 10; background-color: var(--kanila-red); font-size: 0.75rem;">SALE</span>
               <div class="img-placeholder rounded-3 mb-3 d-flex align-items-center justify-content-center" style="background-color: var(--kanila-bg); height: 180px;">
@@ -335,6 +336,12 @@
           <button class="btn px-4 py-2 rounded-pill mt-3" style="background-color: var(--kanila-red); color: white;" (click)="clearAllFilters()">
               Xóa tất cả bộ lọc
           </button>
+      </div>
+
+      <div class="col-12 d-flex flex-wrap justify-content-center align-items-center gap-2 py-3" *ngIf="totalPages > 1">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" [disabled]="currentPage <= 1 || productsLoading" (click)="goToPage(currentPage - 1)">Trước</button>
+        <span class="px-2" style="color: var(--kanila-text);">Trang {{ currentPage }} / {{ totalPages }}</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" [disabled]="currentPage >= totalPages || productsLoading" (click)="goToPage(currentPage + 1)">Sau</button>
       </div>
   </div>
   </ng-container>

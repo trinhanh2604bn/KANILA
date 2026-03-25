@@ -1,13 +1,24 @@
 const ProductOptionValue = require("../models/productOptionValue.model");
 const ProductOption = require("../models/productOption.model");
+const Product = require("../models/product.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parseStorefrontFacetFlag } = require("../utils/storefrontFacetScope");
+const { loadProductOptionValuesStorefront } = require("../services/catalogStorefrontFacets.service");
 
-// GET /api/product-option-values
+// GET /api/product-option-values (catalog: shade labels via option + productId)
+// Optional `storefrontOnly=1`: same shape as populate(), scoped to storefront products.
 const getAllProductOptionValues = async (req, res) => {
   try {
-    const values = await ProductOptionValue.find()
-      .populate("productOptionId", "optionName")
-      .sort({ displayOrder: 1, createdAt: -1 });
+    let values;
+    if (parseStorefrontFacetFlag(req.query)) {
+      values = await loadProductOptionValuesStorefront();
+    } else {
+      values = await ProductOptionValue.find()
+        .select("productOptionId optionValue displayOrder")
+        .populate("productOptionId", "optionName productId")
+        .sort({ displayOrder: 1, createdAt: -1 })
+        .lean();
+    }
 
     res.status(200).json({
       success: true,

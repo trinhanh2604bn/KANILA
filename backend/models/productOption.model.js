@@ -20,4 +20,6 @@ const productOptionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+productOptionSchema.index({ productId: 1, displayOrder: 1 });
+
 module.exports = mongoose.model("ProductOption", productOptionSchema);

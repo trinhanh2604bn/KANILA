@@ -67,12 +67,9 @@ export class Mainpage implements OnInit {
     this.featuredLoading = true;
     this.featuredError = null;
 
-    this.productService.getProducts().subscribe({
+    this.productService.getHomeFeaturedProducts(3).subscribe({
       next: (list) => {
-        // “Bán chạy” / trending feel: prioritize most sold items.
-        this.featuredProducts = [...list]
-          .sort((a, b) => (b.bought ?? 0) - (a.bought ?? 0))
-          .slice(0, 3);
+        this.featuredProducts = list.slice(0, 3);
         this.featuredLoading = false;
       },
       error: (err) => {

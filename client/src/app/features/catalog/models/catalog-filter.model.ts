@@ -58,4 +58,6 @@ export interface CatalogQueryParams {
   minPrice?: number | null;
   maxPrice?: number | null;
   sort?: CatalogSortOption | null;
+  /** 1-based page index for paginated GET /api/products */
+  page?: number | null;
 }

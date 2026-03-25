@@ -4,6 +4,7 @@ const {
   getAllInventoryBalances,
   getInventoryBalanceById,
   getBalancesByWarehouseId,
+  getBalancesByProductId,
   getBalancesByVariantId,
   createInventoryBalance,
   updateInventoryBalance,
@@ -12,6 +13,7 @@ const {
 
 router.get("/", getAllInventoryBalances);
 router.get("/warehouse/:warehouseId", getBalancesByWarehouseId);
+router.get("/product/:productId", getBalancesByProductId);
 router.get("/variant/:variantId", getBalancesByVariantId);
 router.get("/:id", getInventoryBalanceById);
 router.post("/", createInventoryBalance);

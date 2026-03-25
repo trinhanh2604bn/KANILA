@@ -1,11 +1,28 @@
 const ReviewSummary = require("../models/reviewSummary.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parseStorefrontFacetFlag } = require("../utils/storefrontFacetScope");
+const { loadReviewSummariesStorefront } = require("../services/catalogStorefrontFacets.service");
 
 const getAllReviewSummaries = async (req, res) => {
   try {
-    const summaries = await ReviewSummary.find().populate("productId", "productName").sort({ createdAt: -1 });
-    res.status(200).json({ success: true, message: "Get all review summaries successfully", count: summaries.length, data: summaries });
-  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+    let summaries;
+    if (parseStorefrontFacetFlag(req.query)) {
+      summaries = await loadReviewSummariesStorefront();
+    } else {
+      summaries = await ReviewSummary.find()
+        .select("productId averageRating reviewCount")
+        .sort({ createdAt: -1 })
+        .lean();
+    }
+    res.status(200).json({
+      success: true,
+      message: "Get all review summaries successfully",
+      count: summaries.length,
+      data: summaries,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 const getReviewSummaryById = async (req, res) => {

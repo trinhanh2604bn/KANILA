@@ -1,7 +1,10 @@
 const InventoryBalance = require("../models/inventoryBalance.model");
 const Warehouse = require("../models/warehouse.model");
 const ProductVariant = require("../models/productVariant.model");
+const Product = require("../models/product.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parseStorefrontFacetFlag } = require("../utils/storefrontFacetScope");
+const { loadInventoryBalancesStorefront } = require("../services/catalogStorefrontFacets.service");
 
 // Helper: calculate availableQty
 const calcAvailable = (onHandQty, reservedQty, blockedQty) => {
@@ -9,13 +12,19 @@ const calcAvailable = (onHandQty, reservedQty, blockedQty) => {
   return Math.max(available, 0);
 };
 
-// GET /api/inventory-balances
+// GET /api/inventory-balances (catalog only needs variant + available qty; omit warehouse joins for list-all)
+// Optional `storefrontOnly=1`: balances for variants of storefront-visible products only.
 const getAllInventoryBalances = async (req, res) => {
   try {
-    const balances = await InventoryBalance.find()
-      .populate("warehouseId", "warehouseCode warehouseName")
-      .populate("variantId", "sku variantName productId")
-      .sort({ createdAt: -1 });
+    let balances;
+    if (parseStorefrontFacetFlag(req.query)) {
+      balances = await loadInventoryBalancesStorefront();
+    } else {
+      balances = await InventoryBalance.find()
+        .select("variantId availableQty onHandQty reservedQty blockedQty")
+        .sort({ createdAt: -1 })
+        .lean();
+    }
 
     res.status(200).json({
       success: true,
@@ -71,6 +80,39 @@ const getBalancesByWarehouseId = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Get balances by warehouse successfully",
+      count: balances.length,
+      data: balances,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/inventory-balances/product/:productId (PDP: balances only for this product’s variants)
+const getBalancesByProductId = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    if (!validateObjectId(productId)) {
+      return res.status(400).json({ success: false, message: "Invalid product ID" });
+    }
+    const variants = await ProductVariant.find({ productId }).select("_id").lean();
+    const variantIds = variants.map((v) => v._id);
+    if (!variantIds.length) {
+      return res.status(200).json({
+        success: true,
+        message: "Get balances by product successfully",
+        count: 0,
+        data: [],
+      });
+    }
+    const balances = await InventoryBalance.find({ variantId: { $in: variantIds } })
+      .select("variantId availableQty onHandQty reservedQty blockedQty")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      message: "Get balances by product successfully",
       count: balances.length,
       data: balances,
     });
@@ -217,6 +259,7 @@ module.exports = {
   getAllInventoryBalances,
   getInventoryBalanceById,
   getBalancesByWarehouseId,
+  getBalancesByProductId,
   getBalancesByVariantId,
   createInventoryBalance,
   updateInventoryBalance,

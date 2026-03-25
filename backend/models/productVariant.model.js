@@ -44,4 +44,6 @@ const productVariantSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+productVariantSchema.index({ productId: 1, variantStatus: 1 });
+
 module.exports = mongoose.model("ProductVariant", productVariantSchema);

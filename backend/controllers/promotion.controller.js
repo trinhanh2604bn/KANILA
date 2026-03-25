@@ -1,12 +1,21 @@
 const Promotion = require("../models/promotion.model");
 const validateObjectId = require("../utils/validateObjectId");
+const { parseStorefrontFacetFlag } = require("../utils/storefrontFacetScope");
+const { loadPromotionsStorefrontActiveWindow } = require("../services/catalogStorefrontFacets.service");
 
-// GET /api/promotions
+// GET /api/promotions (storefront “active window” checks: status + dates + priority)
+// Optional `storefrontOnly=1`: only promotions active as of “now” (smaller payload for catalog).
 const getAllPromotions = async (req, res) => {
   try {
-    const promotions = await Promotion.find()
-      .populate("createdByAccountId", "email")
-      .sort({ priority: -1, createdAt: -1 });
+    let promotions;
+    if (parseStorefrontFacetFlag(req.query)) {
+      promotions = await loadPromotionsStorefrontActiveWindow();
+    } else {
+      promotions = await Promotion.find()
+        .select("promotionStatus startAt endAt priority")
+        .sort({ priority: -1, createdAt: -1 })
+        .lean();
+    }
 
     res.status(200).json({
       success: true,
