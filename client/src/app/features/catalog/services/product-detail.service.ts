@@ -115,10 +115,13 @@ export class ProductDetailService {
               { skipReviewFallback: true }
             );
             if (!first) return of(null);
-            const second$ = this.loadSecondaryBundle(product).pipe(
-              map((sec) =>
+            const second$ = forkJoin({
+              sec: this.loadSecondaryBundle(product),
+              full: this.loadProductFullById(product._id),
+            }).pipe(
+              map(({ sec, full }) =>
                 this.buildFrom(
-                  product,
+                  full ?? product,
                   sec.relatedProducts,
                   core.categories,
                   core.medias,
@@ -273,6 +276,9 @@ export class ProductDetailService {
     return typeof c === 'string' ? c : c._id ?? '';
   }
 
+  /** PDP first paint: lean server projection (`fields=core`). */
+  private readonly pdpCoreQuery = { fields: 'core' } as const;
+
   private loadProduct(slugOrId: string): Observable<Product | null> {
     const key = (slugOrId ?? '').trim();
     if (!key) return of(null);
@@ -280,12 +286,14 @@ export class ProductDetailService {
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(key);
     if (isObjectId) {
       return this.http
-        .get<ApiResponse<Product>>(`${this.apiBase}/products/${key}`)
+        .get<ApiResponse<Product>>(`${this.apiBase}/products/${key}`, { params: this.pdpCoreQuery })
         .pipe(map((r) => r.data ?? null), catchError(() => of(null)));
     }
 
     return this.http
-      .get<ApiResponse<Product>>(`${this.apiBase}/products/slug/${encodeURIComponent(key)}`)
+      .get<ApiResponse<Product>>(`${this.apiBase}/products/slug/${encodeURIComponent(key)}`, {
+        params: this.pdpCoreQuery,
+      })
       .pipe(
         map((r) => r.data ?? null),
         catchError(() =>
@@ -295,6 +303,13 @@ export class ProductDetailService {
           )
         )
       );
+  }
+
+  /** Full product document for second PDP paint (tabs, ingredients, audit fields). */
+  private loadProductFullById(id: string): Observable<Product | null> {
+    return this.http
+      .get<ApiResponse<Product>>(`${this.apiBase}/products/${id}`)
+      .pipe(map((r) => r.data ?? null), catchError(() => of(null)));
   }
 
   private mapImages(product: Product, medias: ProductMediaRow[]): ProductDetailImage[] {

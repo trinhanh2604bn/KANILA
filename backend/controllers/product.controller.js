@@ -6,6 +6,11 @@ const Category = require("../models/category.model");
 const Account = require("../models/account.model");
 const validateObjectId = require("../utils/validateObjectId");
 const { parsePaginationParams, buildMongoFilterFromQuery, queryListingProducts } = require("../utils/productListingHelpers");
+const {
+  PRODUCT_DETAIL_CORE_SELECT,
+  isProductDetailCoreQuery,
+  attachProductDetailCoreMedia,
+} = require("../utils/productDetailCoreFields");
 
 /** Attach `{ email }` from Account without `.populate()` (avoids strictPopulate when paths/cache disagree). */
 async function attachAuditAccountEmails(data, productDoc) {
@@ -73,12 +78,34 @@ const getAllProducts = async (req, res) => {
 };
 
 // GET /api/products/:id
+// Optional `?fields=core` — lean PDP shell: no long copy / ingredients / audit Account lookups; adds thumbnailUrls from ProductMedia.
 const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
     if (!validateObjectId(id)) {
       return res.status(400).json({ success: false, message: "Invalid product ID" });
+    }
+
+    if (isProductDetailCoreQuery(req.query.fields)) {
+      const doc = await Product.findById(id)
+        .select(PRODUCT_DETAIL_CORE_SELECT)
+        .populate("brandId", "brandName brandCode")
+        .populate("categoryId", "categoryName categoryCode")
+        .lean();
+
+      if (!doc) {
+        return res.status(404).json({ success: false, message: "Product not found" });
+      }
+
+      const data = { ...doc };
+      await attachProductDetailCoreMedia(doc._id, data);
+
+      return res.status(200).json({
+        success: true,
+        message: "Get product successfully",
+        data,
+      });
     }
 
     const product = await Product.findById(id)
@@ -109,6 +136,7 @@ const getProductById = async (req, res) => {
 };
 
 // GET /api/products/slug/:slug
+// Optional `?fields=core` — same lightweight profile as GET /api/products/:id?fields=core
 const getProductBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
@@ -116,7 +144,30 @@ const getProductBySlug = async (req, res) => {
       return res.status(400).json({ success: false, message: "Slug is required" });
     }
 
-    const product = await Product.findOne({ slug: String(slug).trim().toLowerCase() })
+    const slugNorm = String(slug).trim().toLowerCase();
+
+    if (isProductDetailCoreQuery(req.query.fields)) {
+      const doc = await Product.findOne({ slug: slugNorm })
+        .select(PRODUCT_DETAIL_CORE_SELECT)
+        .populate("brandId", "brandName brandCode")
+        .populate("categoryId", "categoryName categoryCode")
+        .lean();
+
+      if (!doc) {
+        return res.status(404).json({ success: false, message: "Product not found" });
+      }
+
+      const data = { ...doc };
+      await attachProductDetailCoreMedia(doc._id, data);
+
+      return res.status(200).json({
+        success: true,
+        message: "Get product by slug successfully",
+        data,
+      });
+    }
+
+    const product = await Product.findOne({ slug: slugNorm })
       .populate("brandId", "brandName brandCode")
       .populate("categoryId", "categoryName categoryCode");
 

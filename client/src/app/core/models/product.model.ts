@@ -16,6 +16,10 @@ export interface Product {
   price: number;
   /** Legacy single image; used when no productMedia */
   imageUrl?: string;
+  /** From API `?fields=core` — same as primary gallery image when media rows exist */
+  primaryImageUrl?: string;
+  /** From API `?fields=core` — bounded list of gallery URLs (server ProductMedia) */
+  thumbnailUrls?: string[];
   /** Optional original/list price — must be greater than `price` to show discount */
   compareAtPrice?: number | null;
   shortDescription?: string;
