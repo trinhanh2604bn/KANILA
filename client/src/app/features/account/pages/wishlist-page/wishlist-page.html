@@ -1,0 +1,36 @@
+<section class="card-soft section-card">
+  <h2>Danh mục yêu thích</h2>
+  <p>Những sản phẩm bạn đã lưu để mua sau</p>
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <div class="skeleton-list" *ngIf="loading">
+    <div class="skeleton-card" *ngFor="let _ of [1,2,3,4]"></div>
+  </div>
+
+  <div class="empty" *ngIf="!loading && !items.length">
+    <div class="empty-icon"><i class="bi bi-heart"></i></div>
+    <strong>Bạn chưa có sản phẩm yêu thích</strong>
+    <p>Nhấn vào biểu tượng ❤️ để lưu sản phẩm</p>
+    <a routerLink="/catalog" class="btn-ghost sm">Khám phá sản phẩm</a>
+  </div>
+
+  <div class="wishlist-grid" *ngIf="!loading && items.length">
+    <article class="wish-item" *ngFor="let item of items">
+      <button type="button" class="heart-btn" [disabled]="busyId === item._id" (click)="remove(item)" aria-label="Bỏ yêu thích">
+        <i class="bi bi-heart-fill"></i>
+      </button>
+      <a class="thumb-link" *ngIf="item.productId?._id" [routerLink]="['/catalog', 'product', item.productId?._id]">
+        <img *ngIf="item.productId?.imageUrl" [src]="item.productId?.imageUrl" [alt]="item.productId?.productName || 'Product'" />
+      </a>
+      <strong>{{ item.productId?.productName || 'Sản phẩm' }}</strong>
+      <span class="brand">Kanila</span>
+      <small *ngIf="item.variantId?.variantName">{{ item.variantId?.variantName }}</small>
+      <div class="price">{{ (item.productId?.price || 0) | number:'1.0-0' }}đ</div>
+      <div class="rating"><i class="bi bi-star-fill"></i> 4.8</div>
+      <div class="row-actions">
+        <a class="btn-ghost sm" *ngIf="item.productId?._id" [routerLink]="['/catalog', 'product', item.productId?._id]">Xem chi tiết</a>
+        <button type="button" class="btn-primary sm" [disabled]="busyId === item._id" (click)="addToCart(item)">Thêm giỏ</button>
+      </div>
+    </article>
+  </div>
+</section>

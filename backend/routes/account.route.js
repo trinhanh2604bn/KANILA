@@ -15,6 +15,8 @@ const {
   patchMyDefaultAddress,
   changeMyPassword,
   getMyProviders,
+  getMySecurityStatus,
+  unlinkMyProvider,
   createAccount,
   updateAccount,
   patchAccount,
@@ -32,6 +34,8 @@ router.patch("/addresses/:id", authMiddleware, patchMyAddress);
 router.delete("/addresses/:id", authMiddleware, deleteMyAddress);
 router.post("/change-password", authMiddleware, changeMyPassword);
 router.get("/providers", authMiddleware, getMyProviders);
+router.get("/security-status", authMiddleware, getMySecurityStatus);
+router.delete("/providers/:provider", authMiddleware, unlinkMyProvider);
 
 router.get("/", getAllAccounts);
 router.post("/", createAccount);

@@ -5,6 +5,12 @@ import { catchError, map } from 'rxjs/operators';
 
 export interface CouponMeView {
   count: number;
+  items?: Array<{
+    _id: string;
+    redemptionStatus: string;
+    redeemedAt?: string;
+    couponId?: { couponCode?: string; couponStatus?: string } | null;
+  }>;
 }
 
 @Injectable({ providedIn: 'root' })

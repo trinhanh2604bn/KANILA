@@ -9,6 +9,11 @@ const Shipment = require("../models/shipment.model");
 const ShipmentEvent = require("../models/shipmentEvent.model");
 const PaymentIntent = require("../models/paymentIntent.model");
 const PaymentMethod = require("../models/paymentMethod.model");
+const Cart = require("../models/cart.model");
+const CartItem = require("../models/cartItem.model");
+const Product = require("../models/product.model");
+const ProductVariant = require("../models/productVariant.model");
+const ReturnRequest = require("../models/return.model");
 const validateObjectId = require("../utils/validateObjectId");
 const { pickCustomerId } = require("../utils/pickCustomerRef");
 const { normalizeOrderBody } = require("../utils/orderNormalize");
@@ -46,6 +51,49 @@ const resolveAuthCustomer = async (req) => {
     customer_status: "active",
   });
   return customer;
+};
+
+const ensureActiveCartForCustomer = async (customerId) => {
+  let cart = await Cart.findOne({ customer_id: customerId, cart_status: "active" }).sort({ updated_at: -1 });
+  if (!cart) {
+    cart = await Cart.create({
+      customer_id: customerId,
+      cart_status: "active",
+      currency_code: "VND",
+      item_count: 0,
+      subtotal_amount: 0,
+      discount_amount: 0,
+      total_amount: 0,
+    });
+  }
+  return cart;
+};
+
+const recalcCartTotals = async (cartId) => {
+  const items = await CartItem.find({ cart_id: cartId }).lean();
+  const itemCount = items.length;
+  const subtotal = items.reduce((s, x) => s + Number(x.unit_price_amount || 0) * Number(x.quantity || 0), 0);
+  const discount = items.reduce((s, x) => s + Number(x.discount_amount || 0), 0);
+  const total = items.reduce((s, x) => s + Number(x.line_total_amount || 0), 0);
+  await Cart.findByIdAndUpdate(cartId, {
+    item_count: itemCount,
+    subtotal_amount: subtotal,
+    discount_amount: discount,
+    total_amount: total,
+  });
+};
+
+const formatMoneyInt = (v) => Math.max(0, Math.round(Number(v || 0)));
+
+const generateReturnNumber = async () => {
+  const base = await ReturnRequest.countDocuments();
+  for (let i = 1; i < 9999; i += 1) {
+    const code = `RET${String(base + i).padStart(6, "0")}`;
+    // eslint-disable-next-line no-await-in-loop
+    const exists = await ReturnRequest.findOne({ returnNumber: code }).select("_id").lean();
+    if (!exists) return code;
+  }
+  return `RET${Date.now()}`;
 };
 
 function applyStatusGuards(existing, body) {
@@ -240,7 +288,7 @@ const getMyOrders = async (req, res) => {
     ]);
 
     const orderIds = orders.map((o) => o._id);
-    const [totals, shipments, itemAgg] = await Promise.all([
+    const [totals, shipments, itemAgg, orderItems] = await Promise.all([
       OrderTotal.find({ order_id: { $in: orderIds } }).lean(),
       Shipment.find({ order_id: { $in: orderIds } }).sort({ createdAt: -1 }).lean(),
       OrderItem.aggregate([
@@ -255,11 +303,28 @@ const getMyOrders = async (req, res) => {
           },
         },
       ]),
+      OrderItem.find({ order_id: { $in: orderIds } })
+        .select("order_id product_name_snapshot variant_name_snapshot quantity")
+        .sort({ created_at: -1 })
+        .lean(),
     ]);
 
     const totalMap = new Map(totals.map((t) => [String(t.order_id), t]));
     const shipmentMap = new Map(shipments.map((s) => [String(s.order_id), s]));
     const itemMap = new Map(itemAgg.map((a) => [String(a._id), a]));
+    const previewMap = new Map();
+    for (const it of orderItems) {
+      const key = String(it.order_id);
+      if (!previewMap.has(key)) previewMap.set(key, []);
+      const bucket = previewMap.get(key);
+      if (bucket.length < 3) {
+        bucket.push({
+          product_name: it.product_name_snapshot || "",
+          variant_name: it.variant_name_snapshot || "",
+          quantity: Number(it.quantity || 0),
+        });
+      }
+    }
 
     const data = orders.map((o) => {
       const t = totalMap.get(String(o._id));
@@ -279,6 +344,7 @@ const getMyOrders = async (req, res) => {
         total_quantity: Number(i?.totalQuantity || 0),
         first_item_name: i?.firstItemName || "",
         first_item_variant: i?.firstItemVariant || "",
+        item_previews: previewMap.get(String(o._id)) || [],
         shipment_status: s?.shipmentStatus || null,
         tracking_number: s?.trackingNumber || null,
       };
@@ -293,6 +359,214 @@ const getMyOrders = async (req, res) => {
         limit,
         total,
         totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/orders/:id/reorder
+const reorderMyOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid order ID" });
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required" });
+
+    const order = await Order.findOne({ _id: id, customer_id: customer._id }).lean();
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+    const orderItems = await OrderItem.find({ order_id: id }).lean();
+    if (!orderItems.length) {
+      return res.status(400).json({ success: false, message: "Đơn hàng không có sản phẩm để mua lại." });
+    }
+
+    const cart = await ensureActiveCartForCustomer(customer._id);
+    let added = 0;
+    const skipped = [];
+
+    for (const oi of orderItems) {
+      const product = await Product.findById(oi.product_id).populate("brandId", "brandName");
+      const variant = await ProductVariant.findById(oi.variant_id);
+      if (!product || product.isActive === false || product.productStatus === "inactive") {
+        skipped.push({ productId: String(oi.product_id || ""), reason: "PRODUCT_UNAVAILABLE" });
+        continue;
+      }
+      if (!variant || variant.variantStatus === "inactive") {
+        skipped.push({ variantId: String(oi.variant_id || ""), reason: "VARIANT_UNAVAILABLE" });
+        continue;
+      }
+      const availableStock = Math.max(0, Number(product.stock || 0));
+      if (availableStock <= 0) {
+        skipped.push({ productId: String(oi.product_id || ""), reason: "OUT_OF_STOCK" });
+        continue;
+      }
+
+      const desiredQty = Math.max(1, Number(oi.quantity || 1));
+      const lineKey = `${String(product._id)}::${String(variant._id)}`;
+      const existing = await CartItem.findOne({
+        cart_id: cart._id,
+        $or: [{ line_key: lineKey }, { product_id: product._id, variant_id: variant._id }],
+      });
+      const unitPrice = formatMoneyInt(product.price || 0);
+      const finalQty = existing
+        ? Math.min(availableStock, Math.max(1, Number(existing.quantity || 1) + desiredQty))
+        : Math.min(availableStock, desiredQty);
+
+      if (existing) {
+        existing.quantity = finalQty;
+        existing.unit_price_amount = unitPrice;
+        existing.final_unit_price_amount = unitPrice;
+        existing.line_total_amount = unitPrice * finalQty;
+        existing.product_name_snapshot = product.productName || oi.product_name_snapshot || "Product";
+        existing.variant_name_snapshot = variant.variantName || oi.variant_name_snapshot || "Default";
+        existing.brand_name_snapshot = product.brandId?.brandName || "";
+        existing.image_url_snapshot = product.imageUrl || "";
+        existing.stock_status = availableStock > 0 ? "in_stock" : "out_of_stock";
+        existing.selected = true;
+        existing.line_key = lineKey;
+        await existing.save();
+      } else {
+        await CartItem.create({
+          line_key: lineKey,
+          product_id: product._id,
+          cart_id: cart._id,
+          variant_id: variant._id,
+          sku_snapshot: variant.sku || oi.sku_snapshot || String(variant._id),
+          product_name_snapshot: product.productName || oi.product_name_snapshot || "Product",
+          variant_name_snapshot: variant.variantName || oi.variant_name_snapshot || "Default",
+          brand_name_snapshot: product.brandId?.brandName || "",
+          image_url_snapshot: product.imageUrl || "",
+          compare_at_price_amount: 0,
+          stock_status: availableStock > 0 ? "in_stock" : "out_of_stock",
+          quantity: finalQty,
+          selected: true,
+          unit_price_amount: unitPrice,
+          discount_amount: 0,
+          final_unit_price_amount: unitPrice,
+          line_total_amount: unitPrice * finalQty,
+        });
+      }
+      added += 1;
+    }
+
+    await recalcCartTotals(cart._id);
+    return res.status(200).json({
+      success: true,
+      message: added > 0 ? "Reorder completed" : "No eligible items for reorder",
+      data: { added, skipped, cartId: String(cart._id) },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// PATCH /api/orders/:id/cancel
+const cancelMyOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const reason = String(req.body?.reason || "customer_cancel").trim();
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid order ID" });
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required" });
+
+    const order = await Order.findOne({ _id: id, customer_id: customer._id });
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    if (order.order_status === "cancelled") {
+      return res.status(400).json({ success: false, message: "Đơn hàng đã được hủy trước đó." });
+    }
+    if (["completed"].includes(String(order.order_status || "").toLowerCase())) {
+      return res.status(400).json({ success: false, message: "Không thể hủy đơn hàng đã hoàn tất." });
+    }
+
+    const oldOrderStatus = order.order_status;
+    const oldPaymentStatus = order.payment_status;
+    const oldFulfillmentStatus = order.fulfillment_status;
+
+    order.order_status = "cancelled";
+    order.cancelled_at = new Date();
+    order.cancellation_reason = reason;
+    await order.save();
+
+    await OrderStatusHistory.create({
+      order_id: order._id,
+      old_order_status: oldOrderStatus,
+      new_order_status: "cancelled",
+      old_payment_status: oldPaymentStatus,
+      new_payment_status: oldPaymentStatus,
+      old_fulfillment_status: oldFulfillmentStatus,
+      new_fulfillment_status: oldFulfillmentStatus,
+      changed_by_account_id: req.user?.account_id || req.user?.accountId || null,
+      change_reason: reason || "customer_cancel",
+      changed_at: new Date(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Order cancelled successfully",
+      data: { _id: String(order._id), order_status: order.order_status, cancelled_at: order.cancelled_at },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// POST /api/orders/:id/return
+const requestReturnMyOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid order ID" });
+    const customer = await resolveAuthCustomer(req);
+    if (!customer) return res.status(403).json({ success: false, message: "Authenticated account required" });
+    const order = await Order.findOne({ _id: id, customer_id: customer._id });
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+    const status = String(order.order_status || "").toLowerCase();
+    const ff = String(order.fulfillment_status || "").toLowerCase();
+    if (!(status === "completed" || ff === "fulfilled")) {
+      return res.status(400).json({ success: false, message: "Đơn hàng chưa đủ điều kiện để yêu cầu trả hàng." });
+    }
+
+    const existing = await ReturnRequest.findOne({ order_id: order._id }).lean();
+    if (existing) {
+      return res.status(400).json({ success: false, message: "Yêu cầu trả hàng đã tồn tại cho đơn này." });
+    }
+
+    const ret = await ReturnRequest.create({
+      order_id: order._id,
+      returnNumber: await generateReturnNumber(),
+      returnReason: String(req.body?.reason || "customer_request").trim(),
+      returnStatus: "requested",
+      requested_by_customer_id: customer._id,
+      note: String(req.body?.note || "").trim(),
+      requestedAt: new Date(),
+    });
+
+    order.fulfillment_status = "returned";
+    await order.save();
+
+    await OrderStatusHistory.create({
+      order_id: order._id,
+      old_order_status: order.order_status,
+      new_order_status: order.order_status,
+      old_payment_status: order.payment_status,
+      new_payment_status: order.payment_status,
+      old_fulfillment_status: ff || "fulfilled",
+      new_fulfillment_status: "returned",
+      changed_by_account_id: req.user?.account_id || req.user?.accountId || null,
+      change_reason: "return_requested",
+      changed_at: new Date(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Return requested successfully",
+      data: {
+        returnId: String(ret._id),
+        returnNumber: ret.returnNumber,
+        returnStatus: ret.returnStatus,
+        requestedAt: ret.requestedAt,
       },
     });
   } catch (error) {
@@ -676,6 +950,9 @@ module.exports = {
   getMyOrderSummary,
   getMyOrderById,
   getMyOrderTracking,
+  reorderMyOrder,
+  cancelMyOrder,
+  requestReturnMyOrder,
   lookupGuestOrder,
   getGuestOrderSummary,
   getGuestOrderTracking,

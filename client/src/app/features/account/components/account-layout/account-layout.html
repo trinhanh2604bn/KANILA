@@ -1,0 +1,33 @@
+<section class="account-page">
+  <div class="account-layout">
+    <aside class="account-sidebar card-soft">
+      <div class="sidebar-head">
+        <div class="avatar-wrap">
+          <img *ngIf="avatarUrl; else noAvatar" [src]="avatarUrl" [alt]="fullName" class="avatar-img" />
+          <ng-template #noAvatar><span class="avatar">{{ initials }}</span></ng-template>
+          <button type="button" class="avatar-edit">Đổi ảnh</button>
+        </div>
+        <h3>Xin chào, {{ firstName }}</h3>
+        <p class="tier-badge">{{ loyaltyTier }}</p>
+        <p class="points">{{ loyaltyPoints | number }} điểm</p>
+        <p class="points" *ngIf="nextTierName && pointsToNextTier > 0">
+          Còn {{ pointsToNextTier | number }} điểm để lên {{ nextTierName }}
+        </p>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a routerLink="/account/profile" routerLinkActive="active"><i class="bi bi-person-circle"></i><span>Hồ sơ cá nhân</span></a>
+        <a routerLink="/account/addresses" routerLinkActive="active"><i class="bi bi-geo-alt"></i><span>Địa chỉ giao hàng</span></a>
+        <a routerLink="/account/orders" routerLinkActive="active"><i class="bi bi-bag-check"></i><span>Đơn hàng</span></a>
+        <a routerLink="/account/wishlist" routerLinkActive="active"><i class="bi bi-heart"></i><span>Danh mục yêu thích</span></a>
+        <a routerLink="/account/coupons" routerLinkActive="active"><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span></a>
+        <a routerLink="/account/security" routerLinkActive="active"><i class="bi bi-shield-lock"></i><span>Bảo mật tài khoản</span></a>
+        <a routerLink="/account/skin-profile" routerLinkActive="active"><i class="bi bi-stars"></i><span>Làn da của bạn</span></a>
+      </nav>
+    </aside>
+
+    <main class="account-main">
+      <router-outlet />
+    </main>
+  </div>
+</section>

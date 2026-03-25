@@ -314,8 +314,18 @@
       <div class="col-6 col-md-4 col-lg-3" *ngFor="let p of filteredProducts; trackBy: trackByProductId">
           <div class="product-card p-3 rounded-4 shadow-sm h-100 d-flex flex-column transition-all position-relative" style="background-color: var(--kanila-white); border: 1px solid rgba(107,30,46,0.05); cursor: pointer;" [routerLink]="['/catalog', 'product', p.slug || p.id]">
               <span *ngIf="p.isSale" class="badge rounded-pill position-absolute" style="top: 10px; right: 10px; z-index: 10; background-color: var(--kanila-red); font-size: 0.75rem;">SALE</span>
+              <button
+                type="button"
+                class="position-absolute"
+                style="top:10px; left:10px; z-index:11; width:32px; height:32px; border:0; border-radius:999px; background:rgba(255,255,255,.92); color:#bf3a67; box-shadow:0 6px 14px rgba(83,23,44,.18);"
+                (click)="toggleWishlist(p.id, $event)"
+                [attr.aria-label]="isWishlisted(p.id) ? 'Bỏ yêu thích' : 'Thêm yêu thích'"
+              >
+                <i class="bi" [class.bi-heart-fill]="isWishlisted(p.id)" [class.bi-heart]="!isWishlisted(p.id)"></i>
+              </button>
               <div class="img-placeholder rounded-3 mb-3 d-flex align-items-center justify-content-center" style="background-color: var(--kanila-bg); height: 180px;">
-                  <i class="bi bi-box-seam" style="font-size: 40px; color: var(--kanila-pink);"></i>
+                  <img *ngIf="p.imageUrl; else noImg" [src]="p.imageUrl" [alt]="p.name" style="width:100%; height:100%; object-fit:cover; border-radius:inherit;" />
+                  <ng-template #noImg><i class="bi bi-box-seam" style="font-size: 40px; color: var(--kanila-pink);"></i></ng-template>
               </div>
               <span class="mb-1 text-uppercase" style="color: var(--kanila-text); opacity: 0.6; font-size: 0.8rem;">{{ p.brand }}<ng-container *ngIf="p.skinTypes?.length"> - {{ p.skinTypes.join(', ') }}</ng-container></span>
               <p class="mb-2" style="color: var(--kanila-red); font-weight: 700; flex-grow: 1;">{{ p.name }}</p>

@@ -1,0 +1,28 @@
+<section class="card-soft security-card">
+  <header class="card-head">
+    <div>
+      <h2>Bảo mật tài khoản</h2>
+      <p>Tăng cường bảo vệ tài khoản để mua sắm an toàn hơn.</p>
+    </div>
+  </header>
+  <div class="security-actions">
+    <button type="button" class="security-item" (click)="openChangePasswordModal()"><i class="bi bi-key"></i><span>Đổi mật khẩu</span></button>
+    <div class="loading" *ngIf="loading">Đang tải trạng thái bảo mật...</div>
+    <div class="error" *ngIf="error">{{ error }}</div>
+    <div class="security-meta">
+      <span class="security-pill" [class.ok]="hasPassword">{{ hasPassword ? 'Mật khẩu: Đã thiết lập' : 'Mật khẩu: Chưa thiết lập' }}</span>
+      <span class="security-pill provider-pill" *ngFor="let p of linkedProviders">
+        {{ p.provider | uppercase }}
+        <button type="button" class="unlink-btn" [disabled]="busyProvider === p.provider" (click)="unlinkProvider(p.provider)">Gỡ</button>
+      </span>
+      <span class="security-pill" *ngIf="!linkedProviders.length">Chưa liên kết social</span>
+    </div>
+  </div>
+</section>
+
+<app-change-password-modal
+  [open]="passwordModalOpen"
+  [hasPassword]="hasPassword"
+  (openChange)="onPasswordModalOpen($event)"
+  (passwordChanged)="onPasswordChanged()"
+/>

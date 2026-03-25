@@ -1,0 +1,83 @@
+<section class="card-soft section-card">
+  <h2>Đơn hàng của bạn</h2>
+  <p>Theo dõi trạng thái đơn hàng và lịch sử mua sắm của bạn</p>
+
+  <div class="tabs">
+    <button
+      type="button"
+      class="tab"
+      [class.active]="activeTab === t.key"
+      *ngFor="let t of tabs"
+      (click)="selectTab(t.key)"
+    >
+      {{ t.label }}
+    </button>
+  </div>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <div class="skeleton-list" *ngIf="loading">
+    <div class="skeleton-card" *ngFor="let _ of [1,2,3]"></div>
+  </div>
+
+  <div class="empty" *ngIf="!loading && !filteredOrders.length">
+    <div class="empty-icon"><i class="bi bi-bag-heart"></i></div>
+    <strong>Bạn chưa có đơn hàng nào</strong>
+    <p>Hãy bắt đầu mua sắm ngay</p>
+    <a routerLink="/catalog" class="btn-ghost">Khám phá sản phẩm</a>
+  </div>
+
+  <div class="order-list" *ngIf="!loading && filteredOrders.length">
+    <article class="order-item" *ngFor="let order of filteredOrders">
+      <div class="order-head">
+        <strong>#{{ order.order_number }}</strong>
+        <span class="status" [ngClass]="statusClass(order)">{{ statusLabel(order) }}</span>
+      </div>
+      <div class="preview-list" *ngIf="order.item_previews?.length; else fallbackPreview">
+        <p *ngFor="let pv of order.item_previews">{{ pv.product_name }} <span *ngIf="pv.quantity">x{{ pv.quantity }}</span></p>
+        <p class="muted" *ngIf="order.item_count > 3">+{{ order.item_count - 3 }} sản phẩm khác</p>
+      </div>
+      <ng-template #fallbackPreview>
+        <p>{{ order.first_item_name || 'Sản phẩm Kanila' }}</p>
+      </ng-template>
+      <div class="order-meta">
+        <small>{{ order.placed_at | date:'dd/MM/yyyy HH:mm' }}</small>
+        <strong>{{ order.grand_total_amount | number }} đ</strong>
+      </div>
+      <div class="row-actions">
+        <a class="btn-ghost" [routerLink]="['/account/orders', order._id]">Xem chi tiết</a>
+        <button type="button" class="btn-ghost" (click)="toggleTracking(order._id)">Theo dõi đơn</button>
+        <button type="button" class="btn-ghost" [disabled]="busyOrderId === order._id" (click)="reorder(order)">Mua lại</button>
+        <button
+          type="button"
+          class="btn-ghost danger"
+          *ngIf="canCancel(order)"
+          [disabled]="busyOrderId === order._id"
+          (click)="requestCancel(order)"
+        >
+          Hủy đơn
+        </button>
+        <button
+          type="button"
+          class="btn-ghost"
+          *ngIf="canReturn(order)"
+          [disabled]="busyOrderId === order._id"
+          (click)="requestReturn(order)"
+        >
+          Trả hàng
+        </button>
+      </div>
+      <div class="tracking-box" *ngIf="expandedOrderId === order._id">
+        <div *ngIf="loadingTrackingId === order._id">Đang tải tracking...</div>
+        <ng-container *ngIf="loadingTrackingId !== order._id">
+          <p *ngIf="!trackingByOrderId[order._id]">Không có dữ liệu tracking.</p>
+          <ul *ngIf="trackingByOrderId[order._id]?.events?.length">
+            <li *ngFor="let e of trackingByOrderId[order._id]!.events">
+              <strong>{{ e.status }}</strong> - {{ e.description }} ({{ e.timestamp | date:'dd/MM HH:mm' }})
+            </li>
+          </ul>
+        </ng-container>
+      </div>
+    </article>
+  </div>
+</section>

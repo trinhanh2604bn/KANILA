@@ -1,5 +1,5 @@
-import { take } from 'rxjs';
-import { Component, Input } from '@angular/core';
+import { Subscription, take } from 'rxjs';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Product } from '../../../../../core/models/product.model';
@@ -7,6 +7,7 @@ import { CartService } from '../../../../cart/services/cart.service';
 import { ToastService } from '../../../../../core/services/toast.service';
 import { CheckoutService } from '../../../../checkout/services/checkout.service';
 import { AuthService } from '../../../../../core/services/auth.service';
+import { WishlistService } from '../../../../account/services/wishlist.service';
 
 @Component({
   selector: 'app-product-card',
@@ -15,18 +16,29 @@ import { AuthService } from '../../../../../core/services/auth.service';
   templateUrl: './product-card.html',
   styleUrls: ['./product-card.css'],
 })
-export class ProductCardComponent {
+export class ProductCardComponent implements OnChanges, OnDestroy {
   @Input() product?: Product | null;
 
   showPreview = false;
+  wished = false;
+  private wishedSub?: Subscription;
 
   constructor(
     private readonly router: Router,
     private readonly cartService: CartService,
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly wishlistService: WishlistService
   ) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['product']) this.bindWishlistState();
+  }
+
+  ngOnDestroy(): void {
+    this.wishedSub?.unsubscribe();
+  }
 
   /** Primary image: ProductMedia (isPrimary / sortOrder) then legacy imageUrl */
   get primaryImageUrl(): string {
@@ -140,6 +152,19 @@ export class ProductCardComponent {
       });
   }
 
+  toggleWishlist(e: Event): void {
+    e.stopPropagation();
+    const productId = this.product?._id;
+    if (!productId) return;
+    this.wishlistService.toggleProduct(productId, null).pipe(take(1)).subscribe((ok) => {
+      if (!ok) {
+        this.toast.error('Không thể cập nhật danh mục yêu thích.');
+        return;
+      }
+      this.toast.success(this.wishlistService.isWishlisted(productId) ? 'Đã thêm vào yêu thích.' : 'Đã xóa khỏi yêu thích.');
+    });
+  }
+
   goToDetail(e: Event): void {
     e.stopPropagation();
     const slugOrId = this.product?.slug || this.product?._id;
@@ -157,5 +182,15 @@ export class ProductCardComponent {
 
   private isAuthenticated(): boolean {
     return this.authService.isAuthenticated();
+  }
+
+  private bindWishlistState(): void {
+    const productId = this.product?._id;
+    this.wishedSub?.unsubscribe();
+    if (!productId) {
+      this.wished = false;
+      return;
+    }
+    this.wishedSub = this.wishlistService.isWishlisted$(productId).subscribe((v) => (this.wished = v));
   }
 }

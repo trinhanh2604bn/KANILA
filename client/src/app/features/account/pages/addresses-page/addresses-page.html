@@ -1,0 +1,77 @@
+<section class="card-soft address-card">
+  <header class="hero-head">
+    <div>
+      <h2>Địa chỉ giao hàng</h2>
+      <p>Quản lý địa chỉ để thanh toán nhanh hơn và nhận hàng chính xác</p>
+    </div>
+    <button type="button" class="btn-primary add-btn" (click)="openAddressModal('add')">+ Thêm địa chỉ mới</button>
+  </header>
+
+  <header class="card-head">
+    <div>
+      <h2>Địa chỉ mặc định</h2>
+      <ng-container *ngIf="hasSavedAddress; else noAddr">
+        <p class="addr-line-name">
+          <span *ngIf="defaultAddressName">{{ defaultAddressName }}</span>
+          <span *ngIf="defaultAddressPhone" class="addr-phone-inline">{{ defaultAddressPhone }}</span>
+          <span class="default-badge">Mặc định</span>
+        </p>
+        <p class="addr-line-full">{{ defaultAddressText }}</p>
+      </ng-container>
+      <ng-template #noAddr>
+        <p class="addr-empty-copy">Bạn chưa có địa chỉ giao hàng. Thêm ngay để thanh toán nhanh hơn.</p>
+      </ng-template>
+    </div>
+    <button type="button" class="btn-ghost" *ngIf="hasSavedAddress" (click)="openAddressModal('list')">Quản lý</button>
+    <button type="button" class="btn-primary" *ngIf="!hasSavedAddress" (click)="openAddressModal('add')">Thêm địa chỉ đầu tiên</button>
+  </header>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <div class="skeleton-list" *ngIf="loading">
+    <div class="skeleton-card" *ngFor="let _ of [1,2,3]"></div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !addresses.length">
+    <div class="empty-icon"><i class="bi bi-geo-alt"></i></div>
+    <p class="empty-title">Bạn chưa có địa chỉ giao hàng</p>
+    <p class="empty-sub">Thêm địa chỉ để thanh toán nhanh hơn</p>
+    <button type="button" class="btn-primary" (click)="openAddressModal('add')">Thêm địa chỉ đầu tiên</button>
+  </div>
+
+  <div class="address-list" *ngIf="!loading && addresses.length">
+    <article class="address-item" [class.default]="a.is_default_shipping" *ngFor="let a of addresses">
+      <div class="row-top">
+        <strong>{{ a.recipient_name }}</strong>
+        <span class="default-badge" *ngIf="a.is_default_shipping">Mặc định</span>
+      </div>
+      <div class="phone">{{ a.phone }}</div>
+      <div class="line">{{ displayAddress(a) }}</div>
+      <div class="actions">
+        <button type="button" class="btn-ghost sm" *ngIf="!a.is_default_shipping" [disabled]="savingDefaultId === a._id" (click)="setDefaultOptimistic(a._id)">
+          {{ savingDefaultId === a._id ? 'Đang cập nhật...' : 'Đặt mặc định' }}
+        </button>
+        <button type="button" class="btn-ghost sm" (click)="openAddressModal('edit', a._id)">Sửa</button>
+        <button type="button" class="btn-ghost sm danger" [disabled]="deletingId === a._id" (click)="askDelete(a._id)">Xóa</button>
+        <button type="button" class="btn-primary sm" *ngIf="fromCheckout" (click)="chooseForCheckout(a)">Chọn địa chỉ này</button>
+      </div>
+      <div class="delete-confirm" *ngIf="confirmDeleteId === a._id">
+        <p>Bạn có chắc muốn xóa địa chỉ này?</p>
+        <div class="actions">
+          <button type="button" class="btn-ghost sm" (click)="cancelDelete()">Hủy</button>
+          <button type="button" class="btn-primary sm danger" [disabled]="deletingId === a._id" (click)="deleteAddress(a._id)">
+            {{ deletingId === a._id ? 'Đang xóa...' : 'Xác nhận xóa' }}
+          </button>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<app-address-manage-modal
+  [open]="addressModalOpen"
+  [initialAction]="modalAction"
+  [targetAddressId]="modalTargetAddressId"
+  (openChange)="onAddressModalOpen($event)"
+  (addressesChanged)="onAddressesChanged()"
+/>

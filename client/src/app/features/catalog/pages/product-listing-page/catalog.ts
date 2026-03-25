@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { EMPTY, Observable, Subscription, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { EMPTY, Observable, Subscription, catchError, forkJoin, map, of, switchMap, take, tap } from 'rxjs';
 import { HeaderCategoryItem } from '../../../../core/models/header.model';
 import { Product } from '../../../../core/models/product.model';
 import { BrandService } from '../../../../core/services/brand.service';
@@ -20,6 +20,8 @@ import { ProductAttributeRow } from '../../../../core/services/product-attribute
 import { PaginatedProductsResponse, ProductService } from '../../../../core/services/product.service';
 import { RecommendationService } from '../../../../core/services/recommendation.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { WishlistService } from '../../../account/services/wishlist.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import {
   CatalogBrandFilterItem,
   CatalogCategoryItem,
@@ -146,6 +148,8 @@ export class Catalog implements OnInit, OnDestroy {
   /** Raw product list from API — kept for second-phase mapProducts when facet payloads arrive. */
   private rawProducts: Product[] = [];
   private queryParamsSub?: Subscription;
+  private wishlistStateSub?: Subscription;
+  private wishedIds = new Set<string>();
 
   private readonly filterState: CatalogFilterState = {
     categorySlug: null,
@@ -173,7 +177,9 @@ export class Catalog implements OnInit, OnDestroy {
     private readonly productService: ProductService,
     private readonly facetBundleService: CatalogFacetBundleService,
     private readonly recommendationService: RecommendationService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly wishlistService: WishlistService,
+    private readonly toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -188,6 +194,10 @@ export class Catalog implements OnInit, OnDestroy {
     this.cachedFacetData = null;
     this.facetLookupMaps = null;
     this.categoryContextById = null;
+    this.wishlistService.syncWishlistState().pipe(take(1), catchError(() => of(new Set<string>()))).subscribe();
+    this.wishlistStateSub = this.wishlistService.wishedProductIdsState$.subscribe((s) => {
+      this.wishedIds = s;
+    });
 
     forkJoin({
       categoryTree: this.categoryService.getHeaderCategories(),
@@ -217,11 +227,29 @@ export class Catalog implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.queryParamsSub?.unsubscribe();
+    this.wishlistStateSub?.unsubscribe();
   }
 
   /** Stable row identity for *ngFor to reduce DOM churn when lists refresh. */
   trackByProductId(_index: number, row: CatalogProductRow): string {
     return row.id;
+  }
+
+  isWishlisted(productId: string): boolean {
+    return this.wishedIds.has(productId);
+  }
+
+  toggleWishlist(productId: string, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!productId) return;
+    this.wishlistService.toggleProduct(productId, null).pipe(catchError(() => of(false))).subscribe((ok) => {
+      if (!ok) {
+        this.toast.error('Không thể cập nhật danh mục yêu thích.');
+        return;
+      }
+      this.toast.success(this.wishlistService.isWishlisted(productId) ? 'Đã thêm vào yêu thích.' : 'Đã xóa khỏi yêu thích.');
+    });
   }
 
   private applyMappedProducts(

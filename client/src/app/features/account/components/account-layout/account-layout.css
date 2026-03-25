@@ -1,0 +1,133 @@
+.account-page {
+  padding: 28px 16px 42px;
+  background: linear-gradient(180deg, #fff9fb 0%, #fff 60%);
+}
+
+.account-layout {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 22px;
+}
+
+.card-soft {
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid rgba(195, 136, 162, 0.18);
+  box-shadow: 0 14px 30px rgba(83, 23, 44, 0.08);
+}
+
+.account-sidebar {
+  padding: 18px;
+  height: fit-content;
+  position: sticky;
+  top: 86px;
+}
+
+.sidebar-head {
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 10px;
+}
+
+.avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #ffe6f0, #ffd0e1);
+  color: #782545;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.avatar-img {
+  width: 88px;
+  height: 88px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid #ffe1ed;
+}
+
+.avatar-edit {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 999px;
+  background: rgba(109, 29, 54, 0.9);
+  color: #fff;
+  padding: 4px 9px;
+  font-size: 0.65rem;
+}
+
+.sidebar-head h3 {
+  margin: 0;
+  color: #5e1935;
+  font-size: 1.06rem;
+  font-weight: 800;
+}
+
+.tier-badge {
+  margin: 8px auto 4px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #7a2547;
+  background: #ffeaf3;
+}
+
+.points {
+  margin: 0;
+  color: #8f5871;
+  font-size: 0.79rem;
+}
+
+.sidebar-menu {
+  display: grid;
+  gap: 6px;
+}
+
+.sidebar-menu a {
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: #522136;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: center;
+  border-left: 3px solid transparent;
+  transition: all .18s ease;
+}
+
+.sidebar-menu a:hover {
+  background: #fff2f8;
+}
+
+.sidebar-menu a.active {
+  background: #ffeef6;
+  border-left-color: #c84274;
+  color: #751f43;
+  font-weight: 700;
+}
+
+@media (max-width: 1024px) {
+  .account-layout {
+    grid-template-columns: 1fr;
+  }
+  .account-sidebar {
+    position: static;
+  }
+}

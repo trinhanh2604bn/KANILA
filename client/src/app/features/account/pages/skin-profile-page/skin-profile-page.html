@@ -1,0 +1,80 @@
+<section class="card-soft section-card">
+  <header><h2>Hồ sơ làn da của bạn</h2><p>Hoàn thiện Beauty DNA để nhận gợi ý cá nhân hóa.</p></header>
+  <div class="save-msg" *ngIf="saveMessage">{{ saveMessage }}</div>
+  <div class="skin-stepper">
+    <button type="button" [class.active]="skinStep === 1" (click)="skinStep = 1">1. Làn da</button>
+    <button type="button" [class.active]="skinStep === 2" (click)="skinStep = 2">2. Đặc điểm</button>
+    <button type="button" [class.active]="skinStep === 3" (click)="skinStep = 3">3. Sở thích</button>
+  </div>
+
+  <div class="skin-stage" *ngIf="skinStep === 1">
+    <div class="group">
+      <h4>Loại da</h4>
+      <div class="pill-wrap">
+        <button type="button" class="pill" *ngFor="let item of skinTypeOptions" [class.active]="skinTypeSelections.includes(item)" (click)="toggleSkinType(item)">{{ item }}</button>
+      </div>
+    </div>
+    <div class="group">
+      <h4>Tông da</h4>
+      <div class="pill-wrap">
+        <button type="button" class="pill" *ngFor="let t of toneOptions" [class.active]="skinTone === t" (click)="skinTone = t">{{ t }}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="skin-stage" *ngIf="skinStep === 2">
+    <div class="group">
+      <h4>Màu mắt</h4>
+      <div class="pill-wrap">
+        <button type="button" class="pill" *ngFor="let item of eyeColorOptions" [class.active]="eyeColor === item" (click)="eyeColor = item">{{ item }}</button>
+      </div>
+    </div>
+    <div class="group">
+      <h4>Đặc điểm da quan tâm</h4>
+      <div class="pill-wrap">
+        <button type="button" class="pill" *ngFor="let item of concernOptions" [class.active]="skinConcerns.includes(item)" (click)="toggleConcern(item)">{{ item }}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="skin-stage" *ngIf="skinStep === 3">
+    <div class="group">
+      <h4>Ưu tiên thành phần</h4>
+      <div class="pill-wrap">
+        <button type="button" class="pill" *ngFor="let item of ingredientOptions" [class.active]="ingredientPreferences.includes(item)" (click)="toggleIngredient(item)">{{ item }}</button>
+      </div>
+    </div>
+    <div class="group">
+      <h4>Thương hiệu yêu thích</h4>
+      <div class="brand-search">
+        <input [(ngModel)]="brandSearch" name="brandSearch" placeholder="Tìm thương hiệu..." />
+        <div class="brand-suggest" *ngIf="brandSearch.trim() && filteredBrandOptions.length">
+          <button type="button" *ngFor="let item of filteredBrandOptions" (click)="addBrand(item)">{{ item }}</button>
+        </div>
+      </div>
+      <div class="tag-wrap" *ngIf="favoriteBrands.length">
+        <button type="button" class="tag" *ngFor="let tag of favoriteBrands" (click)="removeBrand(tag)">{{ tag }} <i class="bi bi-x"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn-ghost" (click)="prevSkinStep()" [disabled]="skinStep === 1">Quay lại</button>
+    <button type="button" class="btn-ghost" (click)="nextSkinStep()" [disabled]="skinStep === 3">Tiếp tục</button>
+  </div>
+  <div class="form-actions">
+    <button type="button" class="btn-primary" (click)="updateSkinProfile()">Cập nhật</button>
+    <button type="button" class="btn-ghost" (click)="viewRecommendedProducts()">Xem sản phẩm phù hợp</button>
+  </div>
+</section>
+<section class="card-soft section-card">
+  <app-recommendation-product-block
+    title="Dành riêng cho làn da của bạn"
+    subtitle="Dựa trên hồ sơ làn da và sở thích chăm sóc da của bạn"
+    [items]="recommendedProducts"
+    [loading]="recommendationLoading"
+    [error]="recommendationError"
+    emptyText="Cập nhật hồ sơ làn da để xem gợi ý cá nhân hóa."
+    (retry)="updateSkinProfile()"
+  />
+</section>

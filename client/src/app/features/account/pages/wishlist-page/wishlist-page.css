@@ -1,0 +1,27 @@
+.card-soft { border-radius: 20px; background: #fff; border: 1px solid rgba(195, 136, 162, 0.18); box-shadow: 0 14px 30px rgba(83, 23, 44, 0.08); }
+.section-card { padding: 20px 22px; }
+h2 { margin: 0; color: #5a1a35; } p { margin: 6px 0 0; color: #8d5a71; }
+.wishlist-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.wish-item { position: relative; border: 1px solid #f2d6e3; border-radius: 14px; background: #fffcfd; padding: 10px; display: grid; gap: 6px; transition: transform .2s ease, box-shadow .2s ease; }
+.wish-item:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(92,29,49,0.1); }
+.thumb-link { display: block; }
+.wish-item img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; background: #f6f6f6; }
+.wish-item strong { font-size: 0.84rem; color: #4f2334; }
+.brand { font-size: 0.74rem; color: #9a6d80; text-transform: uppercase; letter-spacing: .02em; }
+.wish-item small { color: #8d5a71; }
+.price { color: #7a1f45; font-weight: 800; }
+.rating { color: #7f5a6b; font-size: 0.78rem; }
+.rating i { color: #f3b743; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn-primary, .btn-ghost { border-radius: 10px; min-height: 32px; padding: 0 10px; font-size: 0.75rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; border: 0; }
+.btn-primary { background: linear-gradient(145deg, #a12f57, #7d1e42); color: #fff; }
+.btn-ghost { border: 1px solid #efc5da; background: #fff7fb; color: #7f2448; }
+.heart-btn { position: absolute; right: 10px; top: 10px; width: 32px; height: 32px; border-radius: 999px; border: 0; background: rgba(255,255,255,.92); color: #c7386e; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(83,23,44,.16); }
+.error { margin-top: 8px; color: #a4294d; font-size: 0.82rem; }
+.skeleton-list { margin-top: 12px; display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.skeleton-card { height: 220px; border-radius: 12px; border: 1px solid #f2d6e3; background: linear-gradient(90deg, #fff6fb 25%, #ffeef6 50%, #fff6fb 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+.empty { margin-top: 10px; border: 1px dashed #efc9db; border-radius: 14px; background: #fffafd; padding: 22px; text-align: center; display: grid; gap: 8px; justify-items: center; color: #8d5a71; }
+.empty-icon { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; background: #fff1f7; color: #a23f66; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (max-width: 1100px) { .wishlist-grid, .skeleton-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .wishlist-grid, .skeleton-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

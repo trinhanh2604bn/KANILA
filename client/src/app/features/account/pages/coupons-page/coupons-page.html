@@ -1,0 +1,18 @@
+<section class="card-soft section-card">
+  <h2>Mã giảm giá</h2>
+  <p>Ưu đãi còn hiệu lực trong tài khoản của bạn.</p>
+  <div class="stats">
+    <div><small>Tổng mã</small><strong>{{ couponCount }}</strong></div>
+    <div><small>Sắp hết hạn</small><strong>{{ expiringCouponCount }}</strong></div>
+  </div>
+  <div class="error" *ngIf="error">{{ error }}</div>
+  <div class="loading" *ngIf="loading">Đang tải coupon...</div>
+  <div class="empty" *ngIf="!loading && !items.length">Bạn chưa có mã giảm giá.</div>
+  <ul class="coupon-list" *ngIf="!loading && items.length">
+    <li *ngFor="let c of items">
+      <strong>{{ c.couponId?.couponCode || 'COUPON' }}</strong>
+      <span>{{ c.redemptionStatus }}</span>
+      <small *ngIf="c.redeemedAt">{{ c.redeemedAt | date:'dd/MM/yyyy' }}</small>
+    </li>
+  </ul>
+</section>

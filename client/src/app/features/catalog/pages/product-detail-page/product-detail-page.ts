@@ -10,6 +10,7 @@ import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { WishlistService } from '../../../account/services/wishlist.service';
 
 interface PdpShade {
   id: string;
@@ -242,6 +243,7 @@ export class CatalogProductDetailPageComponent implements OnInit {
   reviewFilter: 'all' | '5' | '4' | '3' | '2' | '1' | 'withImage' | 'verified' = 'all';
   stickyVisible = false;
   isAddingToCart = false;
+  wished = false;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -250,7 +252,8 @@ export class CatalogProductDetailPageComponent implements OnInit {
     private readonly cartService: CartService,
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly wishlistService: WishlistService
   ) {}
 
   ngOnInit(): void {
@@ -277,6 +280,8 @@ export class CatalogProductDetailPageComponent implements OnInit {
             return;
           }
           this.applyDetail(detail);
+          this.wishlistService.syncWishlistState().pipe(take(1)).subscribe();
+          this.wished = this.wishlistService.isWishlisted(this.productId);
           if (firstPaint) {
             this.loading = false;
             this.hasError = false;
@@ -435,6 +440,18 @@ export class CatalogProductDetailPageComponent implements OnInit {
         const issues = this.checkoutService.mapIssues(err);
         this.toast.error(issues[0]?.message || 'Không thể mua ngay. Vui lòng thử lại.');
       }
+    });
+  }
+
+  toggleWishlist(): void {
+    if (!this.productId) return;
+    this.wishlistService.toggleProduct(this.productId, this.resolveVariantIdForApi(this.selectedShadeId)).pipe(take(1)).subscribe((ok) => {
+      if (!ok) {
+        this.toast.error('Không thể cập nhật danh mục yêu thích.');
+        return;
+      }
+      this.wished = this.wishlistService.isWishlisted(this.productId);
+      this.toast.success(this.wished ? 'Đã thêm vào yêu thích.' : 'Đã xóa khỏi yêu thích.');
     });
   }
 

@@ -27,6 +27,8 @@ type FormModel = {
 })
 export class AddressManageModalComponent implements OnChanges {
   @Input() open = false;
+  @Input() initialAction: 'list' | 'add' | 'edit' = 'list';
+  @Input() targetAddressId: string | null = null;
   @Output() openChange = new EventEmitter<boolean>();
   @Output() addressesChanged = new EventEmitter<void>();
 
@@ -55,7 +57,16 @@ export class AddressManageModalComponent implements OnChanges {
     if (changes['open']?.currentValue === true) {
       this.mode = 'list';
       this.editingId = null;
-      this.loadList();
+      this.loadList(() => {
+        if (this.initialAction === 'add') {
+          this.startAdd();
+          return;
+        }
+        if (this.initialAction === 'edit' && this.targetAddressId) {
+          const matched = this.addresses.find((x) => x._id === this.targetAddressId);
+          if (matched) this.startEdit(matched);
+        }
+      });
     }
   }
 
@@ -65,7 +76,7 @@ export class AddressManageModalComponent implements OnChanges {
     this.resetUi();
   }
 
-  loadList(): void {
+  loadList(onLoaded?: () => void): void {
     this.loadingList = true;
     this.listError = '';
     this.addressService
@@ -75,6 +86,7 @@ export class AddressManageModalComponent implements OnChanges {
         next: (rows) => {
           this.addresses = rows;
           this.loadingList = false;
+          onLoaded?.();
         },
         error: () => {
           this.loadingList = false;

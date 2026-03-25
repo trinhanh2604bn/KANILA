@@ -671,6 +671,56 @@ const getMyProviders = async (req, res) => {
   }
 };
 
+// GET /api/account/security-status
+const getMySecurityStatus = async (req, res) => {
+  try {
+    const { account } = await resolveAuthAccountAndCustomer(req);
+    if (!account) return res.status(404).json({ success: false, message: "Account not found" });
+    const providers = await AccountAuthProvider.find({ account_id: account._id }).lean();
+    return res.status(200).json({
+      success: true,
+      message: "Get security status successfully",
+      data: {
+        hasPassword: !!account.password_hash,
+        linkedProviders: providers.map((p) => ({
+          provider: p.provider_code,
+          email: p.provider_email || "",
+          linkedAt: p.linked_at || p.created_at || null,
+        })),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// DELETE /api/account/providers/:provider
+const unlinkMyProvider = async (req, res) => {
+  try {
+    const provider = String(req.params.provider || "").trim().toLowerCase();
+    if (!provider) return res.status(400).json({ success: false, message: "Provider is required" });
+    const { account } = await resolveAuthAccountAndCustomer(req);
+    if (!account) return res.status(404).json({ success: false, message: "Account not found" });
+
+    const existing = await AccountAuthProvider.findOne({ account_id: account._id, provider_code: provider });
+    if (!existing) return res.status(404).json({ success: false, message: "Linked provider not found" });
+
+    const remainingCount = await AccountAuthProvider.countDocuments({ account_id: account._id, _id: { $ne: existing._id } });
+    const hasPassword = !!account.password_hash;
+    if (!hasPassword && remainingCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Không thể gỡ phương thức đăng nhập cuối cùng của tài khoản.",
+      });
+    }
+
+    await AccountAuthProvider.deleteOne({ _id: existing._id });
+    return res.status(200).json({ success: true, message: "Provider unlinked successfully" });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // GET /api/accounts
 const getAllAccounts = async (req, res) => {
   try {
@@ -1016,6 +1066,8 @@ module.exports = {
   patchMyDefaultAddress,
   changeMyPassword,
   getMyProviders,
+  getMySecurityStatus,
+  unlinkMyProvider,
   createAccount,
   updateAccount,
   patchAccount,

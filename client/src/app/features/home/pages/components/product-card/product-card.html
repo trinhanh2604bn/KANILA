@@ -8,6 +8,15 @@
   [attr.aria-label]="'Sản phẩm: ' + product.productName"
 >
   <div class="product-card__media">
+    <button
+      type="button"
+      class="product-card__wishlist-btn"
+      [class.active]="wished"
+      (click)="toggleWishlist($event)"
+      [attr.aria-label]="wished ? 'Bỏ yêu thích' : 'Thêm yêu thích'"
+    >
+      <i class="bi" [class.bi-heart-fill]="wished" [class.bi-heart]="!wished"></i>
+    </button>
     <div class="product-card__image-row">
       <div class="product-card__image-wrap">
         <img

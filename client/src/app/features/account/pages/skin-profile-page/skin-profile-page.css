@@ -1,0 +1,21 @@
+.card-soft { border-radius: 20px; background: #fff; border: 1px solid rgba(195, 136, 162, 0.18); box-shadow: 0 14px 30px rgba(83, 23, 44, 0.08); }
+.section-card { padding: 20px 22px; margin-bottom: 12px; }
+h2 { margin: 0; color: #5a1a35; }
+p { margin: 6px 0 0; font-size: 0.84rem; color: #8d5a71; }
+.skin-stepper { margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.skin-stepper button { border: 1px solid #f2cfdf; border-radius: 999px; min-height: 36px; background: #fff; color: #7d3d58; font-size: 0.75rem; font-weight: 700; }
+.skin-stepper button.active { background: #ffeef6; border-color: #d87098; color: #7d2146; }
+.skin-stage { margin-top: 12px; display: grid; gap: 12px; }
+.group h4 { margin: 0 0 8px; font-size: 0.83rem; color: #5f2240; }
+.pill-wrap, .tag-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill, .tag { border: 1px solid #f0cadd; background: #fff; color: #6f2f49; border-radius: 999px; padding: 7px 12px; font-size: 0.75rem; font-weight: 700; }
+.pill.active { background: #ffe7f2; border-color: #d66996; color: #7a1f43; }
+.brand-search { position: relative; }
+.brand-search input { width: 100%; border: 1px solid #efcde0; border-radius: 12px; min-height: 40px; padding: 0 12px; }
+.brand-suggest { position: absolute; top: calc(100% + 4px); left: 0; right: 0; border: 1px solid #efd0df; border-radius: 12px; background: #fff; box-shadow: 0 10px 20px rgba(87, 30, 49, 0.08); z-index: 5; padding: 6px; display: grid; gap: 4px; }
+.brand-suggest button { border: 0; background: transparent; text-align: left; border-radius: 8px; min-height: 30px; padding: 0 8px; color: #6b3149; font-size: 0.76rem; }
+.form-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-primary, .btn-ghost { border-radius: 12px; min-height: 40px; padding: 0 14px; font-size: 0.82rem; font-weight: 700; }
+.btn-primary { border: 0; background: linear-gradient(145deg, #a12f57, #7d1e42); color: #fff; }
+.btn-ghost { border: 1px solid #efc5da; background: #fff7fb; color: #7f2448; }
+.save-msg { margin-top: 10px; border-radius: 10px; background: #f4fff8; border: 1px solid #b7e6c8; color: #1b7a46; padding: 8px 10px; font-size: 0.78rem; }

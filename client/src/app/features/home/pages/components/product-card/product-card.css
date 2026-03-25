@@ -45,6 +45,27 @@
   position: relative;
 }
 
+.product-card__wishlist-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #bf3a67;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 14px rgba(83, 23, 44, 0.18);
+}
+
+.product-card__wishlist-btn.active {
+  color: #fff;
+  background: linear-gradient(145deg, #bf3a67, #8f2950);
+}
+
 .product-card__image-row {
   display: flex;
   flex-direction: row;

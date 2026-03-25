@@ -8,16 +8,128 @@ export interface OrderSummaryView {
   pending_orders: number;
 }
 
+export interface MyOrderItemView {
+  _id: string;
+  order_number: string;
+  order_status: string;
+  payment_status: string;
+  fulfillment_status: string;
+  placed_at: string;
+  grand_total_amount: number;
+  item_count: number;
+  total_quantity: number;
+  first_item_name: string;
+  item_previews?: Array<{ product_name: string; variant_name: string; quantity: number }>;
+  tracking_number?: string | null;
+  shipment_status?: string | null;
+}
+
+export interface MyOrderTrackingView {
+  orderNumber: string;
+  orderStatus: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  latestUpdateAt: string;
+  shipment?: { trackingNumber?: string | null; shipmentStatus?: string | null } | null;
+  events: Array<{ status: string; description: string; timestamp: string; location?: string }>;
+}
+
+export interface MyOrderDetailView {
+  _id: string;
+  order_number: string;
+  order_status: string;
+  payment_status: string;
+  fulfillment_status: string;
+  placed_at: string;
+  cancelled_at?: string | null;
+  cancellation_reason?: string;
+  order_total?: {
+    subtotal_amount?: number;
+    shipping_fee_amount?: number;
+    tax_amount?: number;
+    order_discount_amount?: number;
+    grand_total_amount?: number;
+  } | null;
+  order_addresses?: Array<{
+    recipient_name?: string;
+    phone?: string;
+    address_line_1?: string;
+    address_line_2?: string;
+    ward?: string;
+    district?: string;
+    city?: string;
+    country_code?: string;
+  }>;
+  items?: Array<{
+    _id: string;
+    product_id?: { _id?: string; productName?: string } | string;
+    variant_id?: { _id?: string; variantName?: string } | string;
+    product_name_snapshot?: string;
+    variant_name_snapshot?: string;
+    quantity?: number;
+    unit_final_price_amount?: number;
+    line_total_amount?: number;
+  }>;
+  status_history?: Array<{
+    new_order_status?: string;
+    new_fulfillment_status?: string;
+    changed_at?: string;
+    change_reason?: string;
+  }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AccountOrderService {
-  private readonly api = 'http://localhost:5000/api/orders/me/summary';
+  private readonly api = 'http://localhost:5000/api/orders';
 
   constructor(private readonly http: HttpClient) {}
 
   getSummary(): Observable<OrderSummaryView | null> {
-    return this.http.get<any>(this.api).pipe(
+    return this.http.get<any>(`${this.api}/me/summary`).pipe(
       map((res) => (res?.data || null) as OrderSummaryView),
       catchError(() => of(null))
+    );
+  }
+
+  listMyOrders(page = 1, limit = 10): Observable<MyOrderItemView[]> {
+    return this.http.get<any>(`${this.api}/me?page=${page}&limit=${limit}`).pipe(
+      map((res) => (Array.isArray(res?.data) ? res.data : []) as MyOrderItemView[]),
+      catchError(() => of([]))
+    );
+  }
+
+  getMyOrderTracking(orderId: string): Observable<MyOrderTrackingView | null> {
+    return this.http.get<any>(`${this.api}/me/${orderId}/tracking`).pipe(
+      map((res) => (res?.data || null) as MyOrderTrackingView),
+      catchError(() => of(null))
+    );
+  }
+
+  getMyOrderDetail(orderId: string): Observable<MyOrderDetailView | null> {
+    return this.http.get<any>(`${this.api}/me/${orderId}`).pipe(
+      map((res) => (res?.data || null) as MyOrderDetailView),
+      catchError(() => of(null))
+    );
+  }
+
+  reorder(orderId: string): Observable<boolean> {
+    return this.http.post<any>(`${this.api}/${orderId}/reorder`, {}).pipe(
+      map((res) => !!res?.success),
+      catchError(() => of(false))
+    );
+  }
+
+  cancelOrder(orderId: string, reason = 'customer_cancel'): Observable<boolean> {
+    return this.http.patch<any>(`${this.api}/${orderId}/cancel`, { reason }).pipe(
+      map((res) => !!res?.success),
+      catchError(() => of(false))
+    );
+  }
+
+  requestReturn(orderId: string, reason = 'customer_request'): Observable<boolean> {
+    return this.http.post<any>(`${this.api}/${orderId}/return`, { reason }).pipe(
+      map((res) => !!res?.success),
+      catchError(() => of(false))
     );
   }
 }

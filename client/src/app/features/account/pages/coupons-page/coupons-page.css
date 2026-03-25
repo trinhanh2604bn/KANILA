@@ -1,0 +1,13 @@
+.card-soft { border-radius: 20px; background: #fff; border: 1px solid rgba(195, 136, 162, 0.18); box-shadow: 0 14px 30px rgba(83, 23, 44, 0.08); }
+.section-card { padding: 20px 22px; }
+h2 { margin: 0; color: #5a1a35; } p { margin: 6px 0 0; color: #8d5a71; }
+.stats { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.stats div { border: 1px solid #f2d6e3; border-radius: 12px; padding: 10px; background: #fffcfd; }
+.stats strong { display: block; color: #4f2334; font-size: 1.2rem; }
+.coupon-list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.coupon-list li { border: 1px solid #f2d6e3; border-radius: 12px; padding: 10px; background: #fffcfd; display: flex; gap: 10px; align-items: center; }
+.coupon-list strong { color: #7d1e42; }
+.coupon-list span { text-transform: capitalize; color: #5f2f45; }
+.coupon-list small { margin-left: auto; color: #8d5a71; }
+.error { margin-top: 8px; color: #a4294d; font-size: 0.82rem; }
+.loading, .empty { margin-top: 10px; color: #8d5a71; }

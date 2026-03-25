@@ -1,0 +1,65 @@
+<section class="card-soft section-card">
+  <div class="head">
+    <div>
+      <h2>Chi tiết đơn hàng</h2>
+      <p>Theo dõi trạng thái và thông tin giao nhận của đơn hàng</p>
+    </div>
+    <a routerLink="/account/orders" class="btn-ghost">Quay lại danh sách</a>
+  </div>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+  <div class="loading" *ngIf="loading">Đang tải dữ liệu đơn hàng...</div>
+
+  <ng-container *ngIf="!loading && detail">
+    <div class="meta">
+      <div><span>Mã đơn</span><strong>#{{ detail.order_number }}</strong></div>
+      <div><span>Ngày đặt</span><strong>{{ detail.placed_at | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+      <div><span>Trạng thái</span><strong>{{ detail.order_status }}</strong></div>
+    </div>
+
+    <div class="timeline">
+      <div class="step" *ngFor="let s of timeline" [class.done]="s.done" [class.active]="s.active">
+        <span class="dot"></span>
+        <span>{{ s.label }}</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <article class="box">
+        <h3>Địa chỉ giao hàng</h3>
+        <p>{{ detail.order_addresses?.[0]?.recipient_name || '-' }} - {{ detail.order_addresses?.[0]?.phone || '-' }}</p>
+        <p>{{ formatAddress() || '-' }}</p>
+      </article>
+      <article class="box">
+        <h3>Thanh toán</h3>
+        <p>Tạm tính: {{ detail.order_total?.subtotal_amount || 0 | number }} đ</p>
+        <p>Phí vận chuyển: {{ detail.order_total?.shipping_fee_amount || 0 | number }} đ</p>
+        <p>Giảm giá: {{ detail.order_total?.order_discount_amount || 0 | number }} đ</p>
+        <p class="grand">Tổng cộng: {{ detail.order_total?.grand_total_amount || 0 | number }} đ</p>
+      </article>
+    </div>
+
+    <article class="box">
+      <h3>Sản phẩm</h3>
+      <ul class="items">
+        <li *ngFor="let it of detail.items">
+          <div>
+            <strong>{{ it.product_name_snapshot || 'Sản phẩm' }}</strong>
+            <p>{{ it.variant_name_snapshot || '' }}</p>
+          </div>
+          <div>x{{ it.quantity || 0 }}</div>
+          <div>{{ it.line_total_amount || 0 | number }} đ</div>
+        </li>
+      </ul>
+    </article>
+
+    <article class="box" *ngIf="tracking?.events?.length">
+      <h3>Lịch sử cập nhật</h3>
+      <ul class="events">
+        <li *ngFor="let e of tracking?.events">
+          <strong>{{ e.status }}</strong> - {{ e.description }} ({{ e.timestamp | date:'dd/MM HH:mm' }})
+        </li>
+      </ul>
+    </article>
+  </ng-container>
+</section>

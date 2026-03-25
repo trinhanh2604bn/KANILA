@@ -4,6 +4,8 @@ import { ProductCardComponent } from '../product-card/product-card';
 import { ProductService } from '../../../../../core/services/product.service';
 import { CommonModule } from '@angular/common';
 import { Product } from '../../../../../core/models/product.model';
+import { WishlistService } from '../../../../account/services/wishlist.service';
+import { take } from 'rxjs';
 
 
 
@@ -21,9 +23,13 @@ export class ProductList implements OnInit {
 
 
 
-  constructor(private productService: ProductService) {}
+  constructor(
+    private productService: ProductService,
+    private wishlistService: WishlistService
+  ) {}
 
   ngOnInit(): void {
+    this.wishlistService.syncWishlistState().pipe(take(1)).subscribe();
     this.productService.getHomeDiscoverPool(100).subscribe((data) => {
       this.allProducts = data;
       this.products = this.randomizeProducts(this.allProducts);

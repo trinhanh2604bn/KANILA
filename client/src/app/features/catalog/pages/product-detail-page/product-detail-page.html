@@ -102,7 +102,9 @@
             {{ isAddingToCart ? 'Đang thêm...' : 'Thêm vào giỏ' }}
           </button>
           <button class="cta secondary" (click)="buyNow()">Mua ngay</button>
-          <button class="wishlist-btn" aria-label="Yêu thích">♡</button>
+          <button class="wishlist-btn" aria-label="Yêu thích" (click)="toggleWishlist()">
+            <i class="bi" [class.bi-heart-fill]="wished" [class.bi-heart]="!wished"></i>
+          </button>
         </div>
 
         <p class="shipping-note">Chỉ còn 12 sản phẩm • {{ stockText }} • {{ shippingText }}</p>

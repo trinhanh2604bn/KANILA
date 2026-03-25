@@ -105,4 +105,15 @@ export class ProfileHubService {
   }> {
     return this.http.get<any>(`${this.api}/skin-profile`).pipe(map((res) => res?.data || {}));
   }
+
+  getSecurityStatus(): Observable<{
+    hasPassword: boolean;
+    linkedProviders: Array<{ provider: string; email: string; linkedAt: string | null }>;
+  }> {
+    return this.http.get<any>(`${this.api}/security-status`).pipe(map((res) => res?.data || { hasPassword: false, linkedProviders: [] }));
+  }
+
+  unlinkProvider(provider: string): Observable<void> {
+    return this.http.delete<any>(`${this.api}/providers/${encodeURIComponent(provider)}`).pipe(map(() => void 0));
+  }
 }
