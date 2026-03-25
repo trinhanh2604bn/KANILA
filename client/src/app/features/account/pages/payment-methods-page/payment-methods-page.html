@@ -1,0 +1,53 @@
+<section class="card-soft payment-card">
+  <header class="card-head">
+    <div>
+      <h2><i class="bi bi-credit-card-2-front me-2"></i> Phương thức thanh toán</h2>
+      <p>{{ noteText }}</p>
+    </div>
+    <button type="button" class="btn-ghost" (click)="goToCheckout()">
+      <i class="bi bi-bag-check me-2"></i> Đi đến thanh toán
+    </button>
+  </header>
+
+  <div class="note-banner">
+    <i class="bi bi-shield-check"></i>
+    <span>Thông tin bạn chọn sẽ được áp dụng khi thanh toán đơn hàng trong quá trình checkout.</span>
+  </div>
+
+  <div class="skeleton-list" *ngIf="isLoading">
+    <div class="skeleton-card" *ngFor="let _ of [0, 1, 2, 3]"></div>
+  </div>
+
+  <div class="error-banner" *ngIf="!isLoading && error">
+    {{ error }}
+  </div>
+
+  <div class="payment-grid" *ngIf="!isLoading && !error && methods.length > 0">
+    <article
+      class="payment-method-item"
+      *ngFor="let m of methods; trackBy: trackById"
+    >
+      <div class="payment-method-icon">
+        <i [class]="'bi ' + getMethodIcon(m)"></i>
+      </div>
+      <div class="payment-method-copy">
+        <h3 class="pm-title">{{ getMethodPrimaryLabel(m) }}</h3>
+        <p class="pm-meta">
+          <span class="pm-code" *ngIf="m.payment_method_code">{{ m.payment_method_code }}</span>
+          <span class="pm-code-muted" *ngIf="!m.payment_method_code">{{ m.method_type }}</span>
+        </p>
+      </div>
+      <div class="payment-badge">
+        <span class="badge-pill">Có sẵn</span>
+      </div>
+    </article>
+  </div>
+
+  <div class="empty-state" *ngIf="!isLoading && !error && methods.length === 0">
+    <div class="empty-icon"><i class="bi bi-credit-card"></i></div>
+    <h4>Hiện chưa có phương thức thanh toán</h4>
+    <p>Bạn vẫn có thể hoàn tất đơn hàng bằng các tùy chọn trong trang thanh toán khi hệ thống cập nhật.</p>
+    <button type="button" class="btn-primary" (click)="goToCheckout()">Đến checkout</button>
+  </div>
+</section>
+

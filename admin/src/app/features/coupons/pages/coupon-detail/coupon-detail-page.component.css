@@ -57,6 +57,8 @@
 .badge-muted { background: var(--muted-surface); color: var(--text-muted); }
 .empty-icon { font-size: 48px; color: var(--text-muted); margin-bottom: var(--space-4); }
 .empty-title { font-weight: 600; color: var(--text-secondary); margin-bottom: var(--space-4); }
+.assign-box { width: 100%; border: 1px solid var(--border-light); border-radius: 10px; padding: 10px; }
+.usage-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--border-light); }
 
 @media (max-width: 768px) {
   .detail-grid { grid-template-columns: 1fr; }

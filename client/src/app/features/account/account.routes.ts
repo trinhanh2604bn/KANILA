@@ -43,6 +43,16 @@ export const ACCOUNT_ROUTES: Routes = [
           import('./pages/security-page/security-page').then((m) => m.SecurityPageComponent),
       },
       {
+        path: 'payment-methods',
+        loadComponent: () =>
+          import('./pages/payment-methods-page/payment-methods-page').then((m) => m.PaymentMethodsPageComponent),
+      },
+      {
+        path: 'support',
+        loadComponent: () =>
+          import('./pages/support-page/support-page').then((m) => m.SupportPageComponent),
+      },
+      {
         path: 'skin-profile',
         loadComponent: () =>
           import('./pages/skin-profile-page/skin-profile-page').then((m) => m.SkinProfilePageComponent),

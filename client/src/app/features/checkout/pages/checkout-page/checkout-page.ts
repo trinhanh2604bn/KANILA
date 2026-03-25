@@ -14,6 +14,7 @@ import {
 import { CheckoutService } from '../../services/checkout.service';
 import { AuthService } from '../../../../core/services/auth.service';
 import { AccountHubService, CustomerAddressRecord, ProfileHubView } from '../../../../core/services/account-hub.service';
+import { CouponAvailableItem, CouponService, CouponWalletItem } from '../../../account/services/coupon.service';
 
 interface CheckoutLineItem {
   id: string;
@@ -60,6 +61,10 @@ export class CheckoutPageComponent implements OnInit {
   voucherInput = '';
   appliedVoucher = '';
   voucherDiscount = 0;
+  savedCoupons: CouponWalletItem[] = [];
+  suggestedCoupons: CouponAvailableItem[] = [];
+  selectedSavedCouponCode = '';
+  couponCodeFromQuery: string | null = null;
   checkoutSessionId: string | null = null;
   placingOrder = false;
   isSyncingSession = false;
@@ -90,7 +95,8 @@ export class CheckoutPageComponent implements OnInit {
     private readonly toast: ToastService,
     private readonly router: Router,
     private readonly authService: AuthService,
-    private readonly accountHub: AccountHubService
+    private readonly accountHub: AccountHubService,
+    private readonly couponService: CouponService
   ) {}
 
   get isCustomerCheckout(): boolean {
@@ -103,6 +109,12 @@ export class CheckoutPageComponent implements OnInit {
 
   ngOnInit(): void {
     const sessionId = this.route.snapshot.queryParamMap.get('sessionId');
+    const couponCodeFromQuery = this.route.snapshot.queryParamMap.get('couponCode');
+    if (couponCodeFromQuery && couponCodeFromQuery.trim().length) {
+      this.couponCodeFromQuery = couponCodeFromQuery.trim().toUpperCase();
+      this.appliedVoucher = this.couponCodeFromQuery;
+      this.voucherInput = this.couponCodeFromQuery;
+    }
     forkJoin({
       shipping: this.checkoutService.getShippingMethods().pipe(catchError(() => of<ShippingMethodApiOption[]>([]))),
       payment: this.checkoutService.getPaymentMethods().pipe(catchError(() => of<PaymentMethodApiOption[]>([]))),
@@ -127,6 +139,7 @@ export class CheckoutPageComponent implements OnInit {
       }
       this.bootstrapCheckoutSession();
     });
+    this.loadCouponSources();
   }
 
   get selectedShipping(): ShippingMethodOption {
@@ -218,7 +231,20 @@ export class CheckoutPageComponent implements OnInit {
     const code = this.voucherInput.trim().toUpperCase();
     if (!code) return;
     this.uiHint = 'Đang kiểm tra mã ưu đãi...';
-    this.syncCheckoutSession({ couponCode: code });
+    this.couponService.applyCoupon(code, this.subtotal).pipe(take(1)).subscribe({
+      next: (res) => {
+        if (!res) {
+          this.toast.error('Mã ưu đãi không hợp lệ hoặc không áp dụng được.');
+          this.uiHint = '';
+          return;
+        }
+        this.syncCheckoutSession({ couponCode: code });
+      },
+      error: () => {
+        this.toast.error('Không thể kiểm tra mã ưu đãi.');
+        this.uiHint = '';
+      }
+    });
   }
 
   clearVoucher(): void {
@@ -226,6 +252,43 @@ export class CheckoutPageComponent implements OnInit {
     this.voucherInput = '';
     this.voucherDiscount = 0;
     this.syncCheckoutSession({ couponCode: null });
+  }
+
+  applySavedCouponCode(): void {
+    this.voucherInput = this.selectedSavedCouponCode || '';
+    this.applyVoucher();
+  }
+
+  applySuggestedCoupon(s: CouponAvailableItem): void {
+    if (!s?._id || !s.couponCode) return;
+
+    if (!this.isCustomerCheckout) {
+      this.voucherInput = s.couponCode;
+      this.applyVoucher();
+      return;
+    }
+
+    this.uiHint = 'Đang lưu mã ưu đãi...';
+    this.couponService
+      .saveCoupon(s._id)
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          if (!res?.success) {
+            this.toast.error('Không thể lưu mã ưu đãi.');
+            this.uiHint = '';
+            return;
+          }
+
+          this.suggestedCoupons = this.suggestedCoupons.filter((x) => x._id !== s._id);
+          this.voucherInput = s.couponCode;
+          this.applyVoucher();
+        },
+        error: () => {
+          this.toast.error('Không thể lưu mã ưu đãi.');
+          this.uiHint = '';
+        },
+      });
   }
 
   placeOrder(): void {
@@ -285,6 +348,16 @@ export class CheckoutPageComponent implements OnInit {
     }
   }
 
+  private loadCouponSources(): void {
+    this.couponService.getAvailable().pipe(take(1)).subscribe((items) => {
+      this.suggestedCoupons = items.filter((x) => !x.isSaved).slice(0, 4);
+    });
+    if (!this.isCustomerCheckout) return;
+    this.couponService.getMe().pipe(take(1)).subscribe((res) => {
+      this.savedCoupons = (res?.items || []).filter((x) => !x.isUsed && !x.isExpired && x.couponStatus === 'active');
+    });
+  }
+
   private preferCodIfPossible(): void {
     const cod = this.paymentMethods.find((m) => /cod|tiền mặt|cash/i.test(m.label + m.subtitle));
     if (cod) this.selectedPaymentId = cod.id;
@@ -327,6 +400,9 @@ export class CheckoutPageComponent implements OnInit {
           next: (session) => {
             this.isSyncingSession = false;
             this.applySession(session);
+            if (this.couponCodeFromQuery) {
+              this.syncCheckoutSession({ couponCode: this.couponCodeFromQuery });
+            }
           },
           error: (err) => {
             this.isSyncingSession = false;

@@ -26,4 +26,7 @@ const productAttributeSchema = new mongoose.Schema(
 
 productAttributeSchema.index({ productId: 1, displayOrder: 1 });
 
+// Common facet lookup paths (future-proof for storefront facet filtering)
+productAttributeSchema.index({ attributeName: 1, attributeValue: 1, productId: 1 });
+
 module.exports = mongoose.model("ProductAttribute", productAttributeSchema);

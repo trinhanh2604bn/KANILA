@@ -137,6 +137,17 @@
                 <input type="text" [(ngModel)]="voucherInput" placeholder="Nhập mã giảm giá" />
                 <button type="button" (click)="applyVoucher()" [disabled]="isSyncingSession">Áp dụng</button>
               </div>
+              <div class="voucher-saved" *ngIf="savedCoupons.length">
+                <select [(ngModel)]="selectedSavedCouponCode">
+                  <option value="">Chọn mã đã lưu</option>
+                  <option *ngFor="let c of savedCoupons" [value]="c.couponCode">{{ c.couponCode }} - {{ c.discountLabel }}</option>
+                </select>
+                <button type="button" (click)="applySavedCouponCode()" [disabled]="!selectedSavedCouponCode || isSyncingSession">Dùng mã đã lưu</button>
+              </div>
+              <div class="voucher-suggest" *ngIf="suggestedCoupons.length">
+                <span>Gợi ý:</span>
+                <button type="button" *ngFor="let s of suggestedCoupons" [disabled]="isSyncingSession" (click)="applySuggestedCoupon(s)">{{ s.couponCode }}</button>
+              </div>
               <div class="voucher-applied" *ngIf="appliedVoucher">
                 <span>Đã áp dụng: <strong>{{ appliedVoucher }}</strong></span>
                 <span class="discount">Đã tính vào tổng giảm giá</span>
@@ -263,6 +274,17 @@
               <div class="voucher-row">
                 <input type="text" [(ngModel)]="voucherInput" placeholder="Nhập mã" />
                 <button type="button" (click)="applyVoucher()" [disabled]="isSyncingSession">Áp dụng</button>
+              </div>
+              <div class="voucher-saved" *ngIf="savedCoupons.length">
+                <select [(ngModel)]="selectedSavedCouponCode">
+                  <option value="">Chọn mã đã lưu</option>
+                  <option *ngFor="let c of savedCoupons" [value]="c.couponCode">{{ c.couponCode }} - {{ c.discountLabel }}</option>
+                </select>
+                <button type="button" (click)="applySavedCouponCode()" [disabled]="!selectedSavedCouponCode || isSyncingSession">Dùng mã đã lưu</button>
+              </div>
+              <div class="voucher-suggest" *ngIf="suggestedCoupons.length">
+                <span>Gợi ý:</span>
+                <button type="button" *ngFor="let s of suggestedCoupons" [disabled]="isSyncingSession" (click)="applySuggestedCoupon(s)">{{ s.couponCode }}</button>
               </div>
               <div class="voucher-applied" *ngIf="appliedVoucher">
                 <span>Đã áp dụng: <strong>{{ appliedVoucher }}</strong></span>

@@ -6,6 +6,11 @@ const {
   getCouponById,
   getCouponByCode,
   getMyCoupons,
+  getAvailableCoupons,
+  saveCouponForMe,
+  applyCoupon,
+  getCouponUsage,
+  assignCouponToUsers,
   createCoupon,
   updateCoupon,
   patchCoupon,
@@ -13,6 +18,11 @@ const {
 } = require("../controllers/coupon.controller");
 
 router.get("/me", authMiddleware, getMyCoupons);
+router.get("/available", getAvailableCoupons);
+router.post("/save/:couponId", authMiddleware, saveCouponForMe);
+router.post("/apply", applyCoupon);
+router.get("/:id/usage", getCouponUsage);
+router.post("/:id/assign", assignCouponToUsers);
 router.get("/", getAllCoupons);
 router.get("/code/:couponCode", getCouponByCode);
 router.get("/:id", getCouponById);

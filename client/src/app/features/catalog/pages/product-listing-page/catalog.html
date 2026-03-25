@@ -1,6 +1,11 @@
 <div class="shop-page container py-4 fade-in-up">
     <div class="text-center py-4" *ngIf="loading">
         <span style="color: var(--kanila-text);">Đang tải dữ liệu danh mục...</span>
+        <div class="row g-4 mt-1">
+            <div class="col-6 col-md-4 catalog-col-5" *ngFor="let _ of skeletonItems">
+                <div class="product-skeleton-card"></div>
+            </div>
+        </div>
     </div>
     <div class="text-center py-4" *ngIf="!loading && hasError">
         <span style="color: var(--kanila-red);">Không thể tải dữ liệu sản phẩm. Vui lòng thử lại.</span>
@@ -234,7 +239,7 @@
     </div>
 
 
-    <div class="row g-4 mt-1">
+        <div class="row g-4 mt-1">
 
         <section class="catalog-section section-sort border-top">
             <div class="d-flex flex-wrap align-items-center justify-content-between pt-2 pb-2">
@@ -267,7 +272,7 @@
             </div>
         </section>
 
-        <div class="col-6 col-md-4 catalog-col-5" *ngFor="let item of displayProducts">
+        <div class="col-6 col-md-4 catalog-col-5" *ngFor="let item of displayProducts; trackBy: trackByProductId">
             <div class="h-100 position-relative faked-sale-wrapper" [class.is-faked]="item.isFakedSale">
                 <app-product-card [product]="item.product" class="h-100 d-block"></app-product-card>
             </div>

@@ -40,6 +40,26 @@
     <button type="button" (click)="goToSkinProfile()">Tạo hồ sơ làn da</button>
   </section>
 
+  <section class="coupon-campaign" *ngIf="campaignCoupons.length">
+    <app-divider title="ƯU ĐÃI ĐANG DIỄN RA" buttonText="Xem thêm"></app-divider>
+    <div class="campaign-grid">
+      <article *ngFor="let cp of campaignCoupons">
+        <strong>{{ cp.couponCode }}</strong>
+        <p>
+          {{
+            cp.discountType === 'percentage'
+              ? ('Giảm ' + cp.discountValue + '%')
+              : cp.discountType === 'free_shipping'
+                ? 'Miễn phí ship'
+                : ('Giảm ' + (cp.discountValue | number) + 'đ')
+          }}
+        </p>
+        <small>Đơn tối thiểu {{ cp.minOrderAmount | number }}đ</small>
+        <button type="button" [disabled]="cp.isSaved" (click)="saveCampaignCoupon(cp._id)">{{ cp.isSaved ? 'Đã lưu' : 'Lưu mã' }}</button>
+      </article>
+    </div>
+  </section>
+
   <div class="mt-3">
     <app-divider title="BEST SELLER" buttonText="Xem tất cả"></app-divider>
   </div>

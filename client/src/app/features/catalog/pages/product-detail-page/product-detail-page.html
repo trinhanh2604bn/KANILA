@@ -68,6 +68,25 @@
           <span>Trả góp 0% qua thẻ tín dụng</span>
         </div>
 
+        <div class="coupon-collect" *ngIf="availableCoupons.length">
+          <p>Ưu đãi hiện có</p>
+          <div class="coupon-chips">
+            <button type="button" *ngFor="let cp of availableCoupons" [disabled]="cp.isSaved" (click)="saveCoupon(cp._id)">
+              <strong>{{ cp.couponCode }}</strong>
+              <span>
+                {{
+                  cp.discountType === 'percentage'
+                    ? ('Giảm ' + cp.discountValue + '%')
+                    : cp.discountType === 'free_shipping'
+                      ? 'Miễn phí ship'
+                      : ('Giảm ' + (cp.discountValue | number) + 'đ')
+                }}
+              </span>
+              <em>{{ cp.isSaved ? 'Đã lưu' : 'Lưu mã' }}</em>
+            </button>
+          </div>
+        </div>
+
         <div class="selector-block">
           <div class="selector-head">
             <span>Tone / Shade</span>

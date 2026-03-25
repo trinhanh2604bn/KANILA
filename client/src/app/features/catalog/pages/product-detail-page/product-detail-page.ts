@@ -10,6 +10,7 @@ import { CartService } from '../../../cart/services/cart.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
 import { WishlistService } from '../../../account/services/wishlist.service';
+import { CouponAvailableItem, CouponService } from '../../../account/services/coupon.service';
 
 interface PdpShade {
   id: string;
@@ -243,6 +244,7 @@ export class CatalogProductDetailPageComponent implements OnInit {
   stickyVisible = false;
   isAddingToCart = false;
   wished = false;
+  availableCoupons: CouponAvailableItem[] = [];
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -251,10 +253,14 @@ export class CatalogProductDetailPageComponent implements OnInit {
     private readonly cartService: CartService,
     private readonly toast: ToastService,
     private readonly checkoutService: CheckoutService,
-    private readonly wishlistService: WishlistService
+    private readonly wishlistService: WishlistService,
+    private readonly couponService: CouponService
   ) {}
 
   ngOnInit(): void {
+    this.couponService.getAvailable().pipe(take(1)).subscribe((list) => {
+      this.availableCoupons = list.slice(0, 3);
+    });
     this.route.paramMap.subscribe((params) => {
       const slugOrId = (params.get('slug') ?? '').trim();
       if (!slugOrId) {
@@ -454,6 +460,17 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   setReviewFilter(filter: 'all' | '5' | '4' | '3' | '2' | '1' | 'withImage' | 'verified'): void {
     this.reviewFilter = filter;
+  }
+
+  saveCoupon(couponId: string): void {
+    this.couponService.saveCoupon(couponId).pipe(take(1)).subscribe((res) => {
+      if (!res.success) {
+        this.toast.error('Không thể lưu mã giảm giá.');
+        return;
+      }
+      this.availableCoupons = this.availableCoupons.map((x) => x._id === couponId ? { ...x, isSaved: true } : x);
+      this.toast.success(res.alreadySaved ? 'Mã đã có trong tài khoản.' : 'Lưu mã thành công.');
+    });
   }
 
   ratingPercent(star: number): number {

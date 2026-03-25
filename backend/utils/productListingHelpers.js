@@ -206,7 +206,10 @@ async function queryListingProducts({ filter = {}, sort = { createdAt: -1 }, ski
   }
 
   const rows = await q;
-  const mediaMap = await loadPrimaryMediaUrlByProductIds(rows.map((p) => p._id));
+  // Performance optimization:
+  // Only resolve primary media when `imageUrl` is missing, to avoid an expensive media aggregation for all rows.
+  const idsWithoutImage = rows.filter((p) => !p.imageUrl).map((p) => p._id);
+  const mediaMap = idsWithoutImage.length ? await loadPrimaryMediaUrlByProductIds(idsWithoutImage) : new Map();
 
   return rows.map((p) => {
     const o = { ...p };

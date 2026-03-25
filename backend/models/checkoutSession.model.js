@@ -86,6 +86,21 @@ const checkoutSessionSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    applied_coupon_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coupon",
+      default: null,
+    },
+    applied_coupon_code: {
+      type: String,
+      default: "",
+      trim: true,
+      uppercase: true,
+    },
+    coupon_discount_amount: {
+      type: Number,
+      default: 0,
+    },
     tax_amount: {
       type: Number,
       default: 0,

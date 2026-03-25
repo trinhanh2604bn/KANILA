@@ -22,4 +22,7 @@ const productOptionValueSchema = new mongoose.Schema(
 
 productOptionValueSchema.index({ productOptionId: 1, displayOrder: 1 });
 
+// Common lookup path for option value facets
+productOptionValueSchema.index({ optionValue: 1, productOptionId: 1 });
+
 module.exports = mongoose.model("ProductOptionValue", productOptionValueSchema);

@@ -21,6 +21,7 @@ import { RecommendationService, RecommendedProductView } from '../../../../core/
 import { ProfileHubService } from '../../../account/services/profile-hub.service';
 import { ProductCardComponent } from '../components/product-card/product-card';
 import { ScrollToTop } from '../../../../layout/scroll-to-top/scroll-to-top';
+import { CouponAvailableItem, CouponService } from '../../../account/services/coupon.service';
 
 @Component({
   selector: 'app-mainpage',
@@ -52,6 +53,7 @@ export class Mainpage implements OnInit {
   personalizedLoading = false;
   personalizedError = '';
   hasSkinProfile = false;
+  campaignCoupons: CouponAvailableItem[] = [];
 
   constructor(
     private readonly productService: ProductService,
@@ -62,6 +64,7 @@ export class Mainpage implements OnInit {
     private readonly authService: AuthService,
     private readonly recommendationService: RecommendationService,
     private readonly profileHubService: ProfileHubService,
+    private readonly couponService: CouponService,
   ) {}
 
   ngOnInit(): void {
@@ -82,6 +85,9 @@ export class Mainpage implements OnInit {
     });
 
     this.loadPersonalizedRecommendations();
+    this.couponService.getAvailable().pipe(take(1)).subscribe((list) => {
+      this.campaignCoupons = list.slice(0, 4);
+    });
   }
 
   goCategory(): void {
@@ -279,5 +285,16 @@ export class Mainpage implements OnInit {
         : undefined,
       shortDescription: item.reasons?.[0] || '',
     };
+  }
+
+  saveCampaignCoupon(couponId: string): void {
+    this.couponService.saveCoupon(couponId).pipe(take(1)).subscribe((res) => {
+      if (!res.success) {
+        this.toast.error('Không thể lưu mã giảm giá.');
+        return;
+      }
+      this.campaignCoupons = this.campaignCoupons.map((x) => x._id === couponId ? { ...x, isSaved: true } : x);
+      this.toast.success(res.alreadySaved ? 'Mã đã có trong ví ưu đãi.' : 'Đã lưu mã ưu đãi.');
+    });
   }
 }

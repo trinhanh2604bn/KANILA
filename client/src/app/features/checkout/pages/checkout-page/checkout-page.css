@@ -326,6 +326,48 @@
   gap: 8px;
 }
 
+.voucher-saved {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.voucher-saved select {
+  border: 1px solid #f0d9e2;
+  border-radius: 12px;
+  height: 40px;
+  padding: 0 10px;
+}
+
+.voucher-saved button {
+  border: 1px solid #e6c6d4;
+  border-radius: 12px;
+  background: #fff;
+  color: #8f2e56;
+  font-weight: 700;
+  padding: 0 12px;
+}
+
+.voucher-suggest {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: #8f5f72;
+  font-size: 12px;
+}
+
+.voucher-suggest button {
+  border: 1px dashed #e4bfd0;
+  border-radius: 999px;
+  background: #fff8fb;
+  color: #8d2953;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
 .voucher-applied .discount {
   color: #b3255d;
   font-weight: 700;

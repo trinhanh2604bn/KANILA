@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { CouponsApiService } from '../../services/coupons-api.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { DialogService } from '../../../../core/services/dialog.service';
@@ -10,7 +11,7 @@ import { Coupon, CouponStatus } from '../../models/coupon.model';
 @Component({
   selector: 'app-coupon-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './coupon-detail-page.component.html',
   styleUrl: './coupon-detail-page.component.css'
 })
@@ -24,6 +25,8 @@ export class CouponDetailPageComponent implements OnInit {
   coupon = signal<Coupon | null>(null);
   loading = signal(true);
   copied = signal(false);
+  usageRows = signal<any[]>([]);
+  assignInput = signal('');
 
   previewOriginal = 500000;
 
@@ -48,12 +51,28 @@ export class CouponDetailPageComponent implements OnInit {
     this.api.getById(id).subscribe({
       next: (data) => {
         this.coupon.set(data);
+        this.loadUsage(data.id);
         this.loading.set(false);
       },
       error: () => {
         this.toast.error('Coupon not found');
         this.loading.set(false);
       }
+    });
+  }
+
+  assignCoupon(): void {
+    const c = this.coupon();
+    const raw = this.assignInput().trim();
+    if (!c || !raw) return;
+    const customerIds = raw.split(/[,\s]+/).map((x) => x.trim()).filter((x) => !!x);
+    if (!customerIds.length) return;
+    this.api.assignToUsers(c.id, customerIds).subscribe({
+      next: (res) => {
+        this.toast.success(`Assigned coupon: +${res.upserted}, existing ${res.matched}`);
+        this.assignInput.set('');
+      },
+      error: () => this.toast.error('Failed to assign coupon')
     });
   }
 
@@ -129,5 +148,12 @@ export class CouponDetailPageComponent implements OnInit {
 
   formatPrice(val: number): string {
     return val.toLocaleString('vi-VN') + '₫';
+  }
+
+  private loadUsage(id: string): void {
+    this.api.getUsage(id).subscribe({
+      next: (rows) => this.usageRows.set(rows),
+      error: () => this.usageRows.set([]),
+    });
   }
 }

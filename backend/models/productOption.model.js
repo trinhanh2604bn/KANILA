@@ -22,4 +22,7 @@ const productOptionSchema = new mongoose.Schema(
 
 productOptionSchema.index({ productId: 1, displayOrder: 1 });
 
+// Facet option lookup paths
+productOptionSchema.index({ optionName: 1, productId: 1 });
+
 module.exports = mongoose.model("ProductOption", productOptionSchema);

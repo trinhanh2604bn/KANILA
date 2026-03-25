@@ -16,7 +16,7 @@ import {
   ProductVariantRow,
   ReviewSummaryRow,
 } from '../../../../core/services/catalog-facet.service';
-import { ProductAttributeRow, ProductAttributeService } from '../../../../core/services/product-attribute.service';
+import { ProductAttributeRow } from '../../../../core/services/product-attribute.service';
 import { ProductService } from '../../../../core/services/product.service';
 import {
   CatalogBrandFilterItem,
@@ -65,6 +65,24 @@ export class Catalog implements OnInit {
   isScrolled: boolean = false;
   loading = true;
   hasError = false;
+
+  skeletonItems: number[] = Array.from({ length: 12 }, (_, i) => i);
+
+  // Indices for faster in-memory filtering (keeps correctness, reduces CPU churn).
+  private allProductIdSet: Set<string> = new Set();
+  private saleSet: Set<string> = new Set();
+  private indexByBrandLower: Map<string, Set<string>> = new Map();
+  private indexByParentSlug: Map<string, Set<string>> = new Map();
+  private indexBySubSlug: Map<string, Set<string>> = new Map();
+  private indexBySkinType: Map<string, Set<string>> = new Map();
+  private indexByProductType: Map<string, Set<string>> = new Map();
+  private indexByShade: Map<string, Set<string>> = new Map();
+  private indexByFinish: Map<string, Set<string>> = new Map();
+  private indexByBenefit: Map<string, Set<string>> = new Map();
+  private promotionSet: Set<string> = new Set();
+  private inStockSet: Set<string> = new Set();
+  private outOfStockSet: Set<string> = new Set();
+  private indexBySize: Map<string, Set<string>> = new Map();
 
   categories: CatalogCategoryItem[] = [];
 
@@ -150,7 +168,6 @@ export class Catalog implements OnInit {
     private readonly categoryService: CategoryService,
     private readonly brandService: BrandService,
     private readonly productService: ProductService,
-    private readonly productAttributeService: ProductAttributeService,
     private readonly facetService: CatalogFacetService
   ) {}
 
@@ -165,16 +182,23 @@ export class Catalog implements OnInit {
     forkJoin({
       categoryTree: this.categoryService.getHeaderCategories(),
       brandItems: this.brandService.getHeaderBrands(),
-      products: this.productService.getProducts(),
-      attributes: this.productAttributeService.getAll().pipe(catchError(() => of([]))),
-      options: this.facetService.getProductOptions().pipe(catchError(() => of([]))),
-      optionValues: this.facetService.getProductOptionValues().pipe(catchError(() => of([]))),
-      variants: this.facetService.getProductVariants().pipe(catchError(() => of([]))),
-      reviewSummaries: this.facetService.getReviewSummaries().pipe(catchError(() => of([]))),
-      inventoryBalances: this.facetService.getInventoryBalances().pipe(catchError(() => of([]))),
-      activePromotions: this.facetService.getActivePromotions().pipe(catchError(() => of([]))),
+      products: this.productService.getCardProducts(),
+      facets: this.facetService.getCatalogFacetsBundle().pipe(
+        catchError(() =>
+          of({
+            attributes: [],
+            options: [],
+            optionValues: [],
+            variants: [],
+            reviewSummaries: [],
+            inventoryBalances: [],
+            activePromotions: [],
+            hasActiveSystemPromotion: false,
+          })
+        )
+      ),
     }).subscribe({
-      next: ({ categoryTree, brandItems, products, attributes, options, optionValues, variants, reviewSummaries, inventoryBalances, activePromotions }) => {
+      next: ({ categoryTree, brandItems, products, facets }) => {
         this.categories = categoryTree.map((c) => ({
           id: c.id,
           slug: c.slug,
@@ -186,6 +210,16 @@ export class Catalog implements OnInit {
         this.brands = this.brandItems.map((b) => b.name);
         this.brandSlugMap = new Map(this.brandItems.map((b) => [b.slug, b.name]));
 
+        const {
+          attributes,
+          options,
+          optionValues,
+          variants,
+          reviewSummaries,
+          inventoryBalances,
+          hasActiveSystemPromotion,
+        } = facets;
+
         this.allProducts = this.mapProducts(
           products,
           attributes,
@@ -194,8 +228,10 @@ export class Catalog implements OnInit {
           variants,
           reviewSummaries,
           inventoryBalances,
-          activePromotions.length > 0
+          !!hasActiveSystemPromotion
         );
+
+        this.buildProductIndices();
         this.productTypes = this.extractProductTypes(this.allProducts);
         this.skinTypes = this.extractSkinTypes(this.allProducts);
         this.shadeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.shades));
@@ -242,6 +278,10 @@ export class Catalog implements OnInit {
     }));
 
     this.generatePagination();
+  }
+
+  trackByProductId(_: number, item: { product: Product }): string {
+    return item.product._id;
   }
 
   generatePagination() {
@@ -368,62 +408,102 @@ export class Catalog implements OnInit {
   }
 
   applyLocalFilters() {
-    let temp = [...this.allProducts];
-    if (this.isSalePage) temp = temp.filter((p) => p.isSale === true);
+    let candidate = this.allProductIdSet;
 
-    if (this.selectedSubCategory) temp = temp.filter((p) => p.subSlug === this.selectedSubCategory);
-    else if (this.selectedParentCategory) {
-      const parentSlug = this.selectedParentCategory.slug;
-      temp = temp.filter((p) => p.parentSlug === parentSlug);
+    // Category / subcategory / sale page
+    if (this.isSalePage) candidate = this.intersectSets(candidate, this.saleSet);
+    if (this.selectedSubCategory) {
+      candidate = this.intersectSets(candidate, this.indexBySubSlug.get(this.selectedSubCategory));
+    } else if (this.selectedParentCategory) {
+      candidate = this.intersectSets(candidate, this.indexByParentSlug.get(this.selectedParentCategory.slug));
     }
 
+    // Brand (header brand + selected brands)
     let activeBrandsToFilter = [...this.selectedBrands];
     if (this.selectedBrandFromHeader && !activeBrandsToFilter.includes(this.selectedBrandFromHeader)) {
-        activeBrandsToFilter.push(this.selectedBrandFromHeader);
+      activeBrandsToFilter.push(this.selectedBrandFromHeader);
     }
-
     if (activeBrandsToFilter.length > 0) {
-      const lowerSelectedBrands = activeBrandsToFilter.map((b) => b.toLowerCase());
-      temp = temp.filter((p) => lowerSelectedBrands.includes(p.brand.toLowerCase()));
+      const union = this.unionSets(
+        activeBrandsToFilter
+          .map((b) => this.indexByBrandLower.get(b.toLowerCase()))
+          .filter((s): s is Set<string> => !!s)
+      );
+      candidate = this.intersectSets(candidate, union);
     }
 
+    // Facets derived from attributes/options/variants
     if (this.selectedSkinTypes.length > 0) {
-      temp = temp.filter((p) => p.skinTypes.some((s) => this.selectedSkinTypes.includes(s)));
+      candidate = this.intersectSets(
+        candidate,
+        this.unionSets(this.selectedSkinTypes.map((s) => this.indexBySkinType.get(s)).filter((x): x is Set<string> => !!x))
+      );
     }
     if (this.selectedProductTypes.length > 0) {
-      temp = temp.filter((p) => this.selectedProductTypes.includes(p.productType));
+      candidate = this.intersectSets(
+        candidate,
+        this.unionSets(
+          this.selectedProductTypes.map((t) => this.indexByProductType.get(t)).filter((x): x is Set<string> => !!x)
+        )
+      );
     }
     if (this.selectedShades.length > 0) {
-      temp = temp.filter((p) => p.shades.some((s) => this.selectedShades.includes(s)));
+      candidate = this.intersectSets(
+        candidate,
+        this.unionSets(this.selectedShades.map((s) => this.indexByShade.get(s)).filter((x): x is Set<string> => !!x))
+      );
     }
     if (this.selectedFinishes.length > 0) {
-      temp = temp.filter((p) => p.finishes.some((s) => this.selectedFinishes.includes(s)));
+      candidate = this.intersectSets(
+        candidate,
+        this.unionSets(this.selectedFinishes.map((s) => this.indexByFinish.get(s)).filter((x): x is Set<string> => !!x))
+      );
     }
     if (this.selectedBenefits.length > 0) {
-      temp = temp.filter((p) => p.benefits.some((s) => this.selectedBenefits.includes(s)));
+      candidate = this.intersectSets(
+        candidate,
+        this.unionSets(this.selectedBenefits.map((s) => this.indexByBenefit.get(s)).filter((x): x is Set<string> => !!x))
+      );
     }
     if (this.selectedPromotions.length > 0) {
-      temp = temp.filter((p) => p.hasPromotion);
-    }
-    if (this.selectedRatings.length > 0) {
-      const minRating = Math.min(...this.selectedRatings);
-      temp = temp.filter((p) => p.rating >= minRating);
-    }
-    if (this.selectedStockStatuses.length > 0) {
-      temp = temp.filter((p) => (this.selectedStockStatuses.includes('Còn hàng') && p.inStock) || (this.selectedStockStatuses.includes('Hết hàng') && !p.inStock));
-    }
-    if (this.selectedSizes.length > 0) {
-      temp = temp.filter((p) => p.sizes.some((s) => this.selectedSizes.includes(s)));
+      candidate = this.intersectSets(candidate, this.promotionSet);
     }
 
+    if (this.selectedStockStatuses.length > 0) {
+      const union = new Set<string>();
+      if (this.selectedStockStatuses.includes('Còn hàng')) this.addSetInto(union, this.inStockSet);
+      if (this.selectedStockStatuses.includes('Hết hàng')) this.addSetInto(union, this.outOfStockSet);
+      candidate = this.intersectSets(candidate, union);
+    }
+
+    if (this.selectedSizes.length > 0) {
+      candidate = this.intersectSets(
+        candidate,
+        this.unionSets(this.selectedSizes.map((s) => this.indexBySize.get(s)).filter((x): x is Set<string> => !!x))
+      );
+    }
+
+    // Numeric filters / search (done in one ordered pass to preserve "default" sort behavior).
+    const shouldFilterByRating = this.selectedRatings.length > 0;
+    const minRating = shouldFilterByRating ? Math.min(...this.selectedRatings) : 0;
+
+    let q: string | null = null;
+    let qLoose: string | null = null;
     if (this.searchKeyword) {
-      const q = this.normalizeText(this.searchKeyword);
+      q = this.normalizeText(this.searchKeyword);
       this.searchOutOfDomain = !this.isDomainRelevantQuery(q);
-      if (this.searchOutOfDomain) {
-        temp = [];
-      } else {
-      const qLoose = this.toLooseText(q);
-      temp = temp.filter((p) => {
+      qLoose = this.searchOutOfDomain ? null : this.toLooseText(q);
+    } else {
+      this.searchOutOfDomain = false;
+    }
+
+    const temp: CatalogProductRow[] = [];
+    for (const p of this.allProducts) {
+      if (!candidate.has(p.id)) continue;
+      if (p.price < this.minPriceInput || p.price > this.maxPriceInput) continue;
+      if (shouldFilterByRating && p.rating < minRating) continue;
+      if (q) {
+        if (this.searchOutOfDomain) continue;
         const fields = [
           p.name,
           p.brand,
@@ -434,21 +514,21 @@ export class Catalog implements OnInit {
         ];
         const normalizedFields = fields.map((x) => this.normalizeText(x));
         const looseFields = normalizedFields.map((x) => this.toLooseText(x));
-        return normalizedFields.some((f) => this.isSearchMatch(f, q)) || looseFields.some((f) => this.isSearchMatch(f, qLoose));
-      });
+        const hitQ = normalizedFields.some((f) => this.isSearchMatch(f, q!));
+        const hitLoose = qLoose ? looseFields.some((f) => this.isSearchMatch(f, qLoose)) : false;
+        if (!hitQ && !hitLoose) continue;
       }
-    } else {
-      this.searchOutOfDomain = false;
+      temp.push(p);
     }
-
-    temp = temp.filter((p) => p.price >= this.minPriceInput && p.price <= this.maxPriceInput);
 
     if (this.activeSort === 'price_asc') temp.sort((a, b) => a.price - b.price);
     else if (this.activeSort === 'price_desc') temp.sort((a, b) => b.price - a.price);
     else if (this.activeSort === 'popular') temp.sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0));
     else if (this.activeSort === 'hot_deal') {
-      temp = temp.filter((p) => p.isSale);
-      temp.sort((a, b) => (b.oldPrice ?? b.price) - b.price - ((a.oldPrice ?? a.price) - a.price));
+      const onlySale = temp.filter((p) => p.isSale);
+      onlySale.sort((a, b) => (b.oldPrice ?? b.price) - b.price - ((a.oldPrice ?? a.price) - a.price));
+      // Keep array identity for the shared post-sort assignment.
+      temp.splice(0, temp.length, ...onlySale);
     }
 
     this.filteredProducts = temp;
@@ -456,6 +536,78 @@ export class Catalog implements OnInit {
     this.totalPages = Math.ceil(this.filteredProducts.length / this.itemsPerPage) || 1;
     this.currentPage = 1;
     this.updateDisplayProducts();
+  }
+
+  private buildProductIndices(): void {
+    // Performance note:
+    // - We precompute facet membership indices (brand/slug/skin/shade/finish/benefit/stock/size/promotion)
+    //   so `applyLocalFilters()` can intersect candidate sets and avoid repeated full-array `.filter()` chains.
+    // - This preserves existing in-memory filtering correctness while making filter changes feel much snappier.
+    this.allProductIdSet = new Set();
+    this.saleSet = new Set();
+    this.promotionSet = new Set();
+    this.inStockSet = new Set();
+    this.outOfStockSet = new Set();
+    this.indexByBrandLower = new Map();
+    this.indexByParentSlug = new Map();
+    this.indexBySubSlug = new Map();
+    this.indexBySkinType = new Map();
+    this.indexByProductType = new Map();
+    this.indexByShade = new Map();
+    this.indexByFinish = new Map();
+    this.indexByBenefit = new Map();
+    this.indexBySize = new Map();
+
+    for (const p of this.allProducts) {
+      const id = p.id;
+      this.allProductIdSet.add(id);
+
+      if (p.isSale) this.saleSet.add(id);
+      if (p.hasPromotion) this.promotionSet.add(id);
+      if (p.inStock) this.inStockSet.add(id);
+      else this.outOfStockSet.add(id);
+
+      this.addToIndex(this.indexByBrandLower, p.brand ? p.brand.toLowerCase() : '', id);
+      this.addToIndex(this.indexByParentSlug, p.parentSlug, id);
+      if (p.subSlug) this.addToIndex(this.indexBySubSlug, p.subSlug, id);
+
+      this.addToIndex(this.indexByProductType, p.productType, id);
+      for (const s of p.skinTypes ?? []) this.addToIndex(this.indexBySkinType, s, id);
+      for (const s of p.shades ?? []) this.addToIndex(this.indexByShade, s, id);
+      for (const s of p.finishes ?? []) this.addToIndex(this.indexByFinish, s, id);
+      for (const s of p.benefits ?? []) this.addToIndex(this.indexByBenefit, s, id);
+      for (const s of p.sizes ?? []) this.addToIndex(this.indexBySize, s, id);
+    }
+  }
+
+  private addToIndex(map: Map<string, Set<string>>, key: string, productId: string): void {
+    if (!key) return;
+    const k = key;
+    const cur = map.get(k);
+    if (cur) cur.add(productId);
+    else map.set(k, new Set([productId]));
+  }
+
+  private intersectSets(a: Set<string>, b?: Set<string> | null): Set<string> {
+    if (!b || b.size === 0) return new Set();
+    if (a.size === 0) return new Set();
+    const res = new Set<string>();
+    const [small, large] = a.size <= b.size ? [a, b] : [b, a];
+    for (const v of small) if (large.has(v)) res.add(v);
+    return res;
+  }
+
+  private unionSets(sets: Array<Set<string> | undefined>): Set<string> {
+    const res = new Set<string>();
+    for (const s of sets) {
+      if (!s) continue;
+      for (const v of s) res.add(v);
+    }
+    return res;
+  }
+
+  private addSetInto(target: Set<string>, source: Set<string>): void {
+    for (const v of source) target.add(v);
   }
 
   onMinPriceInput() {

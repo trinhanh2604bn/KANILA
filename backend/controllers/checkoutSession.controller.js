@@ -6,6 +6,7 @@ const Account = require("../models/account.model");
 const Product = require("../models/product.model");
 const ProductVariant = require("../models/productVariant.model");
 const Coupon = require("../models/coupon.model");
+const CustomerCoupon = require("../models/customerCoupon.model");
 const Promotion = require("../models/promotion.model");
 const ShippingMethod = require("../models/shippingMethod.model");
 const PaymentMethod = require("../models/paymentMethod.model");
@@ -16,6 +17,7 @@ const OrderAddress = require("../models/orderAddress.model");
 const OrderTotal = require("../models/orderTotal.model");
 const PaymentIntent = require("../models/paymentIntent.model");
 const PaymentTransaction = require("../models/paymentTransaction.model");
+const CouponRedemption = require("../models/couponRedemption.model");
 const validateObjectId = require("../utils/validateObjectId");
 const { pickCustomerId } = require("../utils/pickCustomerRef");
 const { normalizeCheckoutSessionBody } = require("../utils/cartCheckoutNormalize");
@@ -270,33 +272,69 @@ const validateSelectedItems = async (selectedItems) => {
   return { issues, enriched };
 };
 
-const calcCouponDiscount = async (couponCode, subtotal) => {
-  if (!couponCode) return { discount: 0, appliedCouponCode: null };
+const calcCouponDiscount = async (couponCode, subtotal, customerId = null, shippingFee = 0) => {
+  if (!couponCode) return { discount: 0, appliedCouponCode: null, couponId: null };
   const code = String(couponCode).trim().toUpperCase();
-  if (!code) return { discount: 0, appliedCouponCode: null };
+  if (!code) return { discount: 0, appliedCouponCode: null, couponId: null };
 
   const coupon = await Coupon.findOne({ couponCode: code, couponStatus: "active" }).lean();
   if (!coupon) return { error: { code: "INVALID_COUPON", message: "Coupon is invalid or inactive" } };
 
   const now = new Date();
-  if (coupon.validFrom && new Date(coupon.validFrom) > now) return { error: { code: "INVALID_COUPON", message: "Coupon is not active yet" } };
-  if (coupon.validTo && new Date(coupon.validTo) < now) return { error: { code: "INVALID_COUPON", message: "Coupon has expired" } };
+  if (coupon.validFrom && new Date(coupon.validFrom) > now)
+    return { error: { code: "INVALID_COUPON", message: "Coupon is not active yet" } };
+  if (coupon.validTo && new Date(coupon.validTo) < now)
+    return { error: { code: "INVALID_COUPON", message: "Coupon has expired" } };
   if (Number(coupon.minOrderAmount || 0) > subtotal) {
     return { error: { code: "INVALID_COUPON", message: "Order does not meet minimum amount for coupon" } };
   }
 
   const promotion = coupon.promotionId ? await Promotion.findById(coupon.promotionId).lean() : null;
-  if (!promotion || promotion.promotionStatus !== "active") return { error: { code: "INVALID_COUPON", message: "Promotion is unavailable" } };
+  if (!promotion || promotion.promotionStatus !== "active")
+    return { error: { code: "INVALID_COUPON", message: "Promotion is unavailable" } };
+
+  // Global usage limit
+  const usedTotalCount =
+    coupon.usageLimitTotal > 0 ? await CouponRedemption.countDocuments({ couponId: coupon._id, redemptionStatus: "used" }) : 0;
+  if (coupon.usageLimitTotal > 0 && usedTotalCount >= coupon.usageLimitTotal) {
+    return { error: { code: "COUPON_USAGE_LIMIT_REACHED", message: "Coupon usage limit has been reached" } };
+  }
+
+  // Ownership + per customer limit
+  const customerIdStr = customerId && validateObjectId(String(customerId)) ? String(customerId) : null;
+  if (customerIdStr) {
+    const usedPerCustomerCount =
+      coupon.usageLimitPerCustomer > 0
+        ? await CouponRedemption.countDocuments({ couponId: coupon._id, customer_id: customerIdStr, redemptionStatus: "used" })
+        : 0;
+    if (coupon.usageLimitPerCustomer > 0 && usedPerCustomerCount >= coupon.usageLimitPerCustomer) {
+      return { error: { code: "COUPON_PER_CUSTOMER_LIMIT_REACHED", message: "Coupon usage limit per customer has been reached" } };
+    }
+
+    const owned = await CustomerCoupon.findOne({ customer_id: customerIdStr, couponId: coupon._id }).lean();
+    if (!owned) return { error: { code: "COUPON_NOT_OWNED", message: "Coupon has not been saved to account" } };
+    if (owned.status === "used") return { error: { code: "COUPON_USED", message: "Coupon has already been used" } };
+  }
 
   let discount = 0;
   if (promotion.discountType === "percentage") {
     discount = Math.round((subtotal * Number(promotion.discountValue || 0)) / 100);
     const cap = Number(promotion.maxDiscountAmount || 0);
     if (cap > 0) discount = Math.min(discount, cap);
+    discount = Math.min(discount, subtotal);
+  } else if (promotion.discountType === "fixed") {
+    discount = toMoney(promotion.discountValue || 0);
+    discount = Math.min(discount, subtotal);
+  } else if (promotion.discountType === "free_shipping") {
+    discount = toMoney(shippingFee);
+    const cap = Number(promotion.maxDiscountAmount || 0);
+    if (cap > 0) discount = Math.min(discount, cap);
   } else {
     discount = toMoney(promotion.discountValue || 0);
+    discount = Math.min(discount, subtotal);
   }
-  return { discount: Math.min(discount, subtotal), appliedCouponCode: code };
+
+  return { discount: Math.max(0, discount), appliedCouponCode: code, couponId: coupon._id };
 };
 
 const toCheckoutSessionPayload = async (session) => {
@@ -319,6 +357,8 @@ const toCheckoutSessionPayload = async (session) => {
     subtotal: toMoney(session.subtotal_amount),
     shippingFee: toMoney(session.shipping_fee_amount),
     discount: toMoney(session.discount_amount),
+    couponDiscount: toMoney(session.coupon_discount_amount),
+    appliedCouponCode: session.applied_coupon_code || null,
     total: toMoney(session.total_amount),
     expiresAt: session.expires_at,
     selectedItems: selectedItems.map((item) => ({
@@ -592,7 +632,7 @@ const createMyCheckoutSession = async (req, res) => {
       }
     }
 
-    const couponResult = await calcCouponDiscount(couponCode, toMoney(summary.subtotal));
+    const couponResult = await calcCouponDiscount(couponCode, toMoney(summary.subtotal), customer._id, shippingFee);
     if (couponResult.error) return res.status(400).json({ success: false, ...couponResult.error });
 
     const discountAmount = toMoney(summary.discountTotal) + toMoney(couponResult.discount);
@@ -609,6 +649,9 @@ const createMyCheckoutSession = async (req, res) => {
       subtotal_amount: toMoney(summary.subtotal),
       shipping_fee_amount: shippingFee,
       discount_amount: discountAmount,
+      applied_coupon_id: couponResult.couponId || null,
+      applied_coupon_code: couponResult.appliedCouponCode || "",
+      coupon_discount_amount: toMoney(couponResult.discount),
       tax_amount: 0,
       total_amount: totalAmount,
       expires_at: expiresAt,
@@ -896,7 +939,7 @@ const updateMyCheckoutSession = async (req, res) => {
       session.selected_payment_method_id = paymentMethod._id;
     }
 
-    const couponResult = await calcCouponDiscount(couponCode, toMoney(summary.subtotal));
+    const couponResult = await calcCouponDiscount(couponCode, toMoney(summary.subtotal), customer._id, shippingFee);
     if (couponResult.error) return res.status(400).json({ success: false, ...couponResult.error });
 
     const shippingAddress = req.body?.shippingAddress;
@@ -941,6 +984,9 @@ const updateMyCheckoutSession = async (req, res) => {
     session.subtotal_amount = toMoney(summary.subtotal);
     session.shipping_fee_amount = shippingFee;
     session.discount_amount = discountAmount;
+    session.applied_coupon_id = couponResult.couponId || null;
+    session.applied_coupon_code = couponResult.appliedCouponCode || "";
+    session.coupon_discount_amount = toMoney(couponResult.discount);
     session.tax_amount = 0;
     session.total_amount = Math.max(0, toMoney(summary.subtotal) - discountAmount + shippingFee);
     session.expires_at = new Date(Date.now() + 30 * 60 * 1000);
@@ -1087,6 +1133,21 @@ const placeMyCheckoutSessionOrder = async (req, res) => {
       currency_code: "VND",
     });
 
+    if (session.applied_coupon_id && validateObjectId(String(session.applied_coupon_id))) {
+      await CouponRedemption.create({
+        couponId: session.applied_coupon_id,
+        customer_id: customer._id,
+        order_id: order._id,
+        discountAmount: toMoney(session.coupon_discount_amount),
+        redeemedAt: new Date(),
+        redemptionStatus: "used",
+      });
+      await CustomerCoupon.findOneAndUpdate(
+        { customer_id: customer._id, couponId: session.applied_coupon_id },
+        { $set: { status: "used", usedAt: new Date() } }
+      );
+    }
+
     let paymentIntent = null;
     let paymentTransaction = null;
     if (!isCod) {
@@ -1178,6 +1239,9 @@ const createGuestCheckoutSession = async (req, res) => {
     if (issues.length) return res.status(409).json({ success: false, message: "Checkout prepare failed", issues });
 
     const summary = computeCartSummary(selectedItems);
+    const couponCode = req.body?.couponCode || null;
+    const couponResult = await calcCouponDiscount(couponCode, toMoney(summary.subtotal), null, toMoney(summary.shippingFee));
+    if (couponResult.error) return res.status(400).json({ success: false, ...couponResult.error });
     const session = await CheckoutSession.create({
       owner_type: "guest",
       guest_session_id: guestSessionId,
@@ -1187,9 +1251,12 @@ const createGuestCheckoutSession = async (req, res) => {
       currency_code: "VND",
       subtotal_amount: toMoney(summary.subtotal),
       shipping_fee_amount: toMoney(summary.shippingFee),
-      discount_amount: toMoney(summary.discountTotal),
+      discount_amount: toMoney(summary.discountTotal) + toMoney(couponResult.discount),
+      applied_coupon_id: couponResult.couponId || null,
+      applied_coupon_code: couponResult.appliedCouponCode || "",
+      coupon_discount_amount: toMoney(couponResult.discount),
       tax_amount: 0,
-      total_amount: toMoney(summary.grandTotal),
+      total_amount: Math.max(0, toMoney(summary.grandTotal) - toMoney(couponResult.discount)),
       expires_at: new Date(Date.now() + 30 * 60 * 1000),
       guest_full_name: String(req.body?.shippingAddress?.recipientName || ""),
       guest_phone: String(req.body?.shippingAddress?.phone || ""),
@@ -1237,6 +1304,9 @@ const updateGuestCheckoutSession = async (req, res) => {
     const { issues } = await validateSelectedItems(selectedItems);
     if (issues.length) return res.status(409).json({ success: false, message: "Checkout prepare failed", issues });
     const summary = computeCartSummary(selectedItems);
+    const couponCode = req.body?.couponCode || session.applied_coupon_code || null;
+    const couponResult = await calcCouponDiscount(couponCode, toMoney(summary.subtotal), null, toMoney(summary.shippingFee));
+    if (couponResult.error) return res.status(400).json({ success: false, ...couponResult.error });
     const shippingAddress = req.body?.shippingAddress;
     if (shippingAddress) {
       if (!shippingAddress.recipientName || !shippingAddress.phone || !shippingAddress.addressLine1 || !shippingAddress.city) {
@@ -1276,9 +1346,12 @@ const updateGuestCheckoutSession = async (req, res) => {
       session.selected_shipping_method_id = req.body.shippingMethodId;
     }
     session.subtotal_amount = toMoney(summary.subtotal);
-    session.discount_amount = toMoney(summary.discountTotal);
+    session.discount_amount = toMoney(summary.discountTotal) + toMoney(couponResult.discount);
+    session.applied_coupon_id = couponResult.couponId || null;
+    session.applied_coupon_code = couponResult.appliedCouponCode || "";
+    session.coupon_discount_amount = toMoney(couponResult.discount);
     session.shipping_fee_amount = toMoney(summary.shippingFee);
-    session.total_amount = Math.max(0, toMoney(summary.grandTotal));
+    session.total_amount = Math.max(0, toMoney(summary.grandTotal) - toMoney(couponResult.discount));
     await session.save();
     const payload = await toCheckoutSessionPayload(session);
     return res.status(200).json({ success: true, message: "Guest checkout session updated", data: payload });

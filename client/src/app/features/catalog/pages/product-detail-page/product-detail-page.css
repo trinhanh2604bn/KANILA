@@ -1,3 +1,10 @@
+.coupon-collect { margin-top: 12px; padding: 10px; border: 1px solid #f2d7e2; border-radius: 14px; background: #fff8fb; }
+.coupon-collect p { margin: 0 0 8px; color: #7f2f4f; font-weight: 600; }
+.coupon-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.coupon-chips button { border: 1px dashed #e7c4d3; border-radius: 12px; background: #fff; padding: 8px 10px; text-align: left; color: #6d2c46; min-width: 170px; }
+.coupon-chips strong { display: block; }
+.coupon-chips span { display: block; font-size: 12px; color: #946379; }
+.coupon-chips em { display: block; font-size: 12px; color: #a42f5f; font-style: normal; margin-top: 3px; }
 .pdp-page {
   background: linear-gradient(180deg, #fff8fb 0%, #fffdfd 220px, #fff 100%);
   color: var(--kanila-text);

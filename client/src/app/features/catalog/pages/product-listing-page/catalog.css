@@ -376,3 +376,32 @@
     letter-spacing: 0.5px;
     pointer-events: none;
 }
+
+/* --- Product skeleton (perceived performance) --- */
+.product-skeleton-card {
+  height: 420px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  position: relative;
+}
+
+.product-skeleton-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(248, 249, 250, 0.2) 0%,
+    rgba(248, 249, 250, 0.9) 50%,
+    rgba(248, 249, 250, 0.2) 100%
+  );
+  transform: translateX(-100%);
+  animation: kanila-skeleton-shimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes kanila-skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

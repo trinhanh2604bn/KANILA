@@ -44,7 +44,7 @@ const getAllProducts = async (req, res) => {
         sort: { createdAt: -1 },
         skip: 0,
         limit: null,
-        listingProfile: "full",
+        listingProfile,
       });
       return res.status(200).json({
         success: true,

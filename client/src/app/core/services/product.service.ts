@@ -34,6 +34,16 @@ export class ProductService {
       .pipe(map((res) => res.data ?? []));
   }
 
+  /**
+   * Lightweight full collection (no pagination) using listing card fields.
+   * Useful for catalog filter UIs that still do in-memory filtering.
+   */
+  getCardProducts(): Observable<Product[]> {
+    return this.http
+      .get<{ success?: boolean; data?: Product[] }>(this.apiUrl, { params: { fields: 'card' } })
+      .pipe(map((res) => res.data ?? []));
+  }
+
   /** Home hero “nổi bật”: top sellers by `bought` (server `sort=popular`). */
   getHomeFeaturedProducts(limit = 3): Observable<Product[]> {
     const cap = Math.min(50, Math.max(1, limit));

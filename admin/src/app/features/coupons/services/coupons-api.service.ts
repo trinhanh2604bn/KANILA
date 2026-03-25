@@ -41,6 +41,21 @@ export class CouponsApiService {
     );
   }
 
+  getUsage(id: string): Observable<any[]> {
+    return this.http.get<ApiResponse<any[]>>(`${URL}/${id}/usage`).pipe(
+      map((res) => (Array.isArray(res.data) ? res.data : []))
+    );
+  }
+
+  assignToUsers(id: string, customerIds: string[]): Observable<{ matched: number; upserted: number }> {
+    return this.http.post<ApiResponse<any>>(`${URL}/${id}/assign`, { customerIds }).pipe(
+      map((res) => ({
+        matched: Number(res.data?.matched || 0),
+        upserted: Number(res.data?.upserted || 0),
+      }))
+    );
+  }
+
   toggleStatus(id: string): Observable<Coupon> {
     return this.getById(id).pipe(
       switchMap(coupon => {

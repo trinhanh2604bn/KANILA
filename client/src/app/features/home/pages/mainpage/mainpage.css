@@ -1,3 +1,11 @@
+.coupon-campaign { margin: 24px 0; }
+.campaign-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.campaign-grid article { border: 1px solid #f1d5e1; border-radius: 14px; background: #fff8fb; padding: 12px; box-shadow: 0 10px 20px rgba(127, 45, 78, 0.06); }
+.campaign-grid strong { color: #7f2d4d; display: block; }
+.campaign-grid p { margin: 6px 0; color: #673347; }
+.campaign-grid small { color: #946379; }
+.campaign-grid button { margin-top: 8px; border: 1px solid #e5bfd0; border-radius: 10px; padding: 7px 10px; background: #fff; color: #8f2e56; font-weight: 600; }
+@media (max-width: 900px) { .campaign-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 /* Aligns with client layout: <main class="container py-2"> — slider stays full-width above. */
 .mainpage-content {
   box-sizing: border-box;

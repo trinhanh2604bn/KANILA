@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { ProductAttributeRow } from './product-attribute.service';
 
 interface ApiResponse<T> {
   success?: boolean;
@@ -50,6 +51,26 @@ const storefrontFacetParams = { storefrontOnly: '1' } as const;
 @Injectable({ providedIn: 'root' })
 export class CatalogFacetService {
   constructor(private readonly http: HttpClient) {}
+
+  /**
+   * Single round-trip bundle for storefront catalog facets.
+   * Used by the catalog listing page to reduce request count.
+   */
+  getCatalogFacetsBundle(): Observable<{
+    attributes: ProductAttributeRow[];
+    options: ProductOptionRow[];
+    optionValues: ProductOptionValueRow[];
+    variants: ProductVariantRow[];
+    reviewSummaries: ReviewSummaryRow[];
+    inventoryBalances: InventoryBalanceRow[];
+    activePromotions: PromotionRow[];
+    hasActiveSystemPromotion: boolean;
+    // `getCatalogBundle` returns `{ data: { ... } }` with these exact keys.
+  }> {
+    return this.http.get<{ success?: boolean; data?: any }>('http://localhost:5000/api/catalog/facets').pipe(
+      map((res) => res.data ?? {})
+    );
+  }
 
   getProductOptions(): Observable<ProductOptionRow[]> {
     return this.http

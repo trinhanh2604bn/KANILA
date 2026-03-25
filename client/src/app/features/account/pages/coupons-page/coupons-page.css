@@ -1,13 +1,29 @@
-.card-soft { border-radius: 20px; background: #fff; border: 1px solid rgba(195, 136, 162, 0.18); box-shadow: 0 14px 30px rgba(83, 23, 44, 0.08); }
-.section-card { padding: 20px 22px; }
-h2 { margin: 0; color: #5a1a35; } p { margin: 6px 0 0; color: #8d5a71; }
-.stats { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.stats div { border: 1px solid #f2d6e3; border-radius: 12px; padding: 10px; background: #fffcfd; }
-.stats strong { display: block; color: #4f2334; font-size: 1.2rem; }
-.coupon-list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-.coupon-list li { border: 1px solid #f2d6e3; border-radius: 12px; padding: 10px; background: #fffcfd; display: flex; gap: 10px; align-items: center; }
-.coupon-list strong { color: #7d1e42; }
-.coupon-list span { text-transform: capitalize; color: #5f2f45; }
-.coupon-list small { margin-left: auto; color: #8d5a71; }
-.error { margin-top: 8px; color: #a4294d; font-size: 0.82rem; }
-.loading, .empty { margin-top: 10px; color: #8d5a71; }
+.coupon-page { border-radius: 22px; background: #fff; border: 1px solid rgba(208, 143, 170, 0.26); box-shadow: 0 14px 34px rgba(109, 29, 60, 0.09); padding: 22px; }
+.header h2 { margin: 0; color: #5d1f3d; }
+.header p { margin: 6px 0 0; color: #936579; }
+.summary-grid { margin-top: 14px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.summary-grid article { background: linear-gradient(180deg, #fff9fc, #fff); border: 1px solid #f2d5e2; border-radius: 14px; padding: 10px 12px; }
+.summary-grid small { color: #9d6b81; }
+.summary-grid strong { display: block; font-size: 1.2rem; color: #4a2132; }
+.tabs { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+.tabs button { border: 1px solid #f0d4e0; border-radius: 999px; padding: 8px 12px; background: #fff; color: #7f5065; }
+.tabs button.active { background: #8e2954; color: #fff; border-color: #8e2954; }
+.coupon-list { margin-top: 12px; display: grid; gap: 12px; }
+.coupon-card { display: grid; grid-template-columns: 1fr auto; border: 1px solid #efcfdd; background: #fffafd; border-radius: 16px; padding: 14px; gap: 12px; }
+.coupon-card.expiring { border-color: #f3b664; background: #fff9ef; }
+.coupon-card.used { border-color: #dad8df; background: #f9f8fb; opacity: 0.82; }
+.coupon-card.expired { border-color: #e0d8dc; background: #fbf9fa; opacity: 0.72; }
+.discount { font-size: 1.2rem; font-weight: 700; color: #7c1e45; }
+.condition, .expiry { margin: 5px 0 0; color: #8d5f72; font-size: 0.9rem; }
+.code { display: inline-block; font-size: 1rem; color: #572036; letter-spacing: 1px; }
+.actions { margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end; }
+.actions button { border: 1px solid #eccfda; background: #fff; border-radius: 10px; padding: 7px 10px; color: #7d3450; font-weight: 600; }
+.actions .use { background: #922b56; border-color: #922b56; color: #fff; }
+.actions .use:disabled { background: #d0c4cb; border-color: #d0c4cb; }
+.skeleton { margin-top: 12px; display: grid; gap: 10px; }
+.skeleton-card { height: 86px; border-radius: 14px; background: linear-gradient(90deg, #f8edf2, #fff5f9, #f8edf2); background-size: 180% 100%; animation: sk 1.2s infinite; }
+@keyframes sk { to { background-position: -180% 0; } }
+.empty-state { margin-top: 12px; text-align: center; padding: 20px; color: #936579; }
+.empty-state img { width: 120px; height: 120px; object-fit: cover; border-radius: 18px; opacity: 0.85; }
+.cta { display: inline-block; margin-top: 10px; border-radius: 999px; background: #8e2954; color: #fff; padding: 8px 14px; text-decoration: none; }
+.error { margin-top: 8px; color: #b12f5a; }

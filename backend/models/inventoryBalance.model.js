@@ -44,4 +44,7 @@ const inventoryBalanceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Facet / availability hot path
+inventoryBalanceSchema.index({ variantId: 1, availableQty: 1 });
+
 module.exports = mongoose.model("InventoryBalance", inventoryBalanceSchema);

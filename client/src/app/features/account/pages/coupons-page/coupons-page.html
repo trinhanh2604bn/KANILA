@@ -1,18 +1,54 @@
-<section class="card-soft section-card">
-  <h2>Mã giảm giá</h2>
-  <p>Ưu đãi còn hiệu lực trong tài khoản của bạn.</p>
-  <div class="stats">
-    <div><small>Tổng mã</small><strong>{{ couponCount }}</strong></div>
-    <div><small>Sắp hết hạn</small><strong>{{ expiringCouponCount }}</strong></div>
+<section class="coupon-page">
+  <header class="header">
+    <h2>Mã giảm giá của bạn</h2>
+    <p>Sử dụng ưu đãi để tiết kiệm khi mua sắm</p>
+  </header>
+
+  <div class="summary-grid">
+    <article><small>Tổng mã</small><strong>{{ summary.total }}</strong></article>
+    <article><small>Có thể sử dụng</small><strong>{{ summary.usable }}</strong></article>
+    <article><small>Sắp hết hạn</small><strong>{{ summary.expiringSoon }}</strong></article>
+    <article><small>Đã dùng</small><strong>{{ summary.used }}</strong></article>
   </div>
+
+  <nav class="tabs">
+    <button type="button" [class.active]="activeTab==='usable'" (click)="setTab('usable')">Có thể dùng</button>
+    <button type="button" [class.active]="activeTab==='expiring'" (click)="setTab('expiring')">Sắp hết hạn</button>
+    <button type="button" [class.active]="activeTab==='used'" (click)="setTab('used')">Đã dùng</button>
+    <button type="button" [class.active]="activeTab==='expired'" (click)="setTab('expired')">Hết hạn</button>
+  </nav>
+
   <div class="error" *ngIf="error">{{ error }}</div>
-  <div class="loading" *ngIf="loading">Đang tải coupon...</div>
-  <div class="empty" *ngIf="!loading && !items.length">Bạn chưa có mã giảm giá.</div>
-  <ul class="coupon-list" *ngIf="!loading && items.length">
-    <li *ngFor="let c of items">
-      <strong>{{ c.couponId?.couponCode || 'COUPON' }}</strong>
-      <span>{{ c.redemptionStatus }}</span>
-      <small *ngIf="c.redeemedAt">{{ c.redeemedAt | date:'dd/MM/yyyy' }}</small>
-    </li>
-  </ul>
+  <div class="skeleton" *ngIf="loading">
+    <div *ngFor="let i of [1,2,3]" class="skeleton-card"></div>
+  </div>
+
+  <div class="coupon-list" *ngIf="!loading && filteredItems.length">
+    <article
+      class="coupon-card"
+      [class.expiring]="c.expiringSoon"
+      [class.used]="c.isUsed"
+      [class.expired]="c.isExpired"
+      *ngFor="let c of filteredItems"
+    >
+      <div class="left">
+        <div class="discount">{{ c.discountLabel }}</div>
+        <p class="condition">Đơn tối thiểu {{ c.minOrderAmount | number }}đ</p>
+        <p class="expiry">HSD: {{ c.validTo ? (c.validTo | date:'dd/MM/yyyy') : 'Không giới hạn' }}</p>
+      </div>
+      <div class="right">
+        <strong class="code">{{ c.couponCode }}</strong>
+        <div class="actions">
+          <button type="button" (click)="copyCode(c.couponCode)">Copy code</button>
+          <button type="button" class="use" [disabled]="c.isUsed || c.isExpired" (click)="useNow(c.couponCode)">Dùng ngay</button>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !filteredItems.length">
+    <img src="assets/images/banner/nen.png" alt="empty" />
+    <p>Chưa có mã trong danh mục này.</p>
+    <a routerLink="/catalog" class="cta">Khám phá ưu đãi</a>
+  </div>
 </section>

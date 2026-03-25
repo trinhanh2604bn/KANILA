@@ -148,6 +148,30 @@
             <p class="meta-line"><span class="meta-label">ID</span> <span class="text-muted text-mono">{{ c.id }}</span></p>
           </div>
         </div>
+
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Assign To Users</h2>
+          </div>
+          <div class="card-body">
+            <p class="meta-line" style="display:block;">Nhập danh sách Customer ID (phân tách bằng dấu phẩy hoặc khoảng trắng)</p>
+            <textarea rows="3" class="assign-box" [ngModel]="assignInput()" (ngModelChange)="assignInput.set($event)"></textarea>
+            <button class="btn btn-primary" style="margin-top:10px;" (click)="assignCoupon()">Assign</button>
+          </div>
+        </div>
+
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title">Recent Usage</h2>
+          </div>
+          <div class="card-body">
+            <div class="usage-row" *ngFor="let u of usageRows()">
+              <span>{{ u.customer_id?.full_name || u.customer_id?.customer_code || 'Customer' }}</span>
+              <strong>{{ u.discountAmount | number }}₫</strong>
+            </div>
+            <p class="text-muted" *ngIf="!usageRows().length">Chưa có lượt sử dụng.</p>
+          </div>
+        </div>
       </div>
     </div>
   } @else {

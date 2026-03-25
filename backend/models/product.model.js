@@ -153,6 +153,12 @@ productSchema.index({ bought: -1, createdAt: -1 });
 /** Product code lookup (search fast path + admin) */
 productSchema.index({ productCode: 1 });
 
+// Storefront listing hot paths (used by catalog/category/brand/price pages)
+productSchema.index({ productStatus: 1, isActive: 1, categoryId: 1, price: 1 });
+productSchema.index({ productStatus: 1, isActive: 1, brandId: 1, price: 1 });
+productSchema.index({ productStatus: 1, isActive: 1, categoryId: 1, bought: -1 });
+productSchema.index({ productStatus: 1, isActive: 1, averageRating: -1 });
+
 productSchema.pre("save", function syncProductStatus(next) {
   if (this.isModified("productStatus") && !this.isModified("isActive")) {
     this.isActive = this.productStatus === "active";
