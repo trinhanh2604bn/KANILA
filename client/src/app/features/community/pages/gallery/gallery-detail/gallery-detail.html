@@ -1,0 +1,78 @@
+<div class="gallery-detail-page" *ngIf="article as a">
+  <header class="gd-top">
+    <button type="button" class="gd-back" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i> Quay lại Gallery
+    </button>
+  </header>
+
+  <article class="gd-article">
+    <h1 class="gd-title">{{ a.title }}</h1>
+    <div class="gd-hero">
+      <img [src]="a.image" [alt]="a.title" />
+    </div>
+    <div class="gd-body">
+      <p *ngFor="let para of a.body">{{ para }}</p>
+    </div>
+  </article>
+
+  <hr class="gd-rule" />
+
+  <section class="gd-related">
+    <h2 class="gd-section-title">Bài đăng khác</h2>
+    <div class="gd-related-grid">
+      <a
+        class="gd-related-card"
+        *ngFor="let o of otherArticles"
+        [routerLink]="['/community/gallery', o.id]"
+      >
+        <div class="gd-related-thumb">
+          <img [src]="o.image" [alt]="o.title" />
+        </div>
+        <h3>{{ o.title }}</h3>
+      </a>
+    </div>
+  </section>
+
+  <hr class="gd-rule" />
+
+  <section class="gd-comments-section">
+    <h2 class="gd-section-title">Bình luận</h2>
+
+      <div class="gd-comments-main">
+        <div class="gd-comment-form">
+          <span class="gd-comment-user-pill">{{ currentUserName }}</span>
+          <input
+            type="text"
+            class="gd-comment-input"
+            [(ngModel)]="newComment"
+            placeholder="Bình luận của bạn..."
+            (keyup.enter)="postComment()"
+          />
+          <button type="button" class="gd-comment-post" (click)="postComment()">Đăng</button>
+        </div>
+
+        <ul class="gd-comment-list">
+          <li class="gd-comment-item" *ngFor="let c of displayedComments">
+            <div class="gd-comment-avatar">
+              <img [src]="c.avatar" [alt]="c.user" />
+              <span class="gd-comment-name">{{ c.user }}</span>
+            </div>
+            <div class="gd-comment-bubble-wrap">
+              <div class="gd-comment-bubble">{{ c.content }}</div>
+              <div class="gd-comment-meta">
+                <button type="button">Trả lời</button>
+                <span>{{ c.timestamp }}</span>
+              </div>
+            </div>
+          </li>
+        </ul>
+
+        <button type="button" class="gd-show-more" *ngIf="comments.length > previewCommentCount" (click)="toggleShowMoreComments()">
+          {{ showAllComments ? 'Thu gọn ↑' : 'Xem thêm ↓' }}
+        </button>
+      </div>
+
+
+
+  </section>
+</div>

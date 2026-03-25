@@ -1,0 +1,92 @@
+<div class="cd-page" *ngIf="challenge as ch">
+  <header class="cd-top">
+    <button type="button" class="cd-back" (click)="goBack()">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> Quay lại
+    </button>
+
+  </header>
+
+  <section class="cd-hero">
+    <div class="cd-hero__media">
+      <img [src]="ch.coverImage" [alt]="ch.title" />
+      <div class="cd-hero__gradient"></div>
+      <div class="cd-hero__titles">
+        <p class="cd-hero__hash">{{ ch.hashtag }}</p>
+        <h1>{{ ch.title }}</h1>
+        <p class="cd-hero__sub">{{ ch.subtitle }}</p>
+      </div>
+    </div>
+  </section>
+
+  <main class="cd-main">
+    <section class="cd-info card-elevated">
+      <h2>Thông tin challenge</h2>
+      <p class="cd-lead">{{ ch.description }}</p>
+
+      <div class="cd-block">
+        <h3>Cách thức tham gia</h3>
+        <p class="cd-preline">{{ ch.rules }}</p>
+      </div>
+
+      <div class="cd-block">
+        <h3>Hashtag challenge</h3>
+        <span class="cd-tag">{{ ch.hashtag }}</span>
+      </div>
+
+      <div class="cd-block">
+        <h3>Phần quà người chiến thắng</h3>
+        <p>{{ ch.rewardsDetail }}</p>
+      </div>
+
+      <div class="cd-block">
+        <h3>Cách tính điểm</h3>
+        <p>{{ ch.scoring }}</p>
+      </div>
+
+      <div class="cd-block cd-deadline-block">
+        <h3>Thời gian kết thúc</h3>
+        <p class="cd-deadline">{{ formatDeadline(ch.endDateIso) }}</p>
+        <p class="cd-countdown">{{ deadlineCountdown(ch.endDateIso) }}</p>
+      </div>
+    </section>
+
+    <section class="cd-cta-banner">
+      <div class="cd-cta-banner__inner">
+        <p class="cd-cta-banner__label">Sẵn sàng tham gia cùng KANILA?</p>
+        <button type="button" class="cd-cta cd-cta--glow" (click)="goJoin()">Tham gia ngay</button>
+      </div>
+    </section>
+
+    <section class="cd-posts">
+      <h2 class="cd-posts__title">Các bài viết đã tham gia challenge</h2>
+      <div class="cd-masonry" *ngIf="mergedPosts.length; else noPosts">
+        <article class="cd-post" *ngFor="let p of mergedPosts">
+          <div class="cd-post__img-wrap">
+            <div class="cd-post__media-grid" [class.cd-post__media-grid--single]="postMedia(p).length <= 1">
+              <ng-container *ngFor="let url of postMedia(p)">
+                <video *ngIf="isVideoUrl(url, p)" class="cd-post__media" [src]="url" controls playsinline preload="metadata"></video>
+                <img *ngIf="!isVideoUrl(url, p)" class="cd-post__media" [src]="url" [alt]="p.caption" loading="lazy" />
+              </ng-container>
+            </div>
+          </div>
+          <div class="cd-post__body">
+            <div class="cd-post__user">
+              <img [src]="p.avatar" [alt]="p.userName" />
+              <span>{{ p.userName }}</span>
+            </div>
+            <p class="cd-post__caption">{{ p.caption }}</p>
+            <span class="cd-post__likes"><i class="bi bi-heart-fill" aria-hidden="true"></i> {{ p.likes | number }}</span>
+          </div>
+        </article>
+      </div>
+      <ng-template #noPosts>
+        <p class="cd-empty">Chưa có bài tham gia. Chờ cộng đồng hoặc đăng bài đầu tiên.</p>
+      </ng-template>
+    </section>
+  </main>
+
+  <div class="cd-toast" *ngIf="toastVisible" role="status" aria-live="polite">
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ toastMessage }}</span>
+  </div>
+</div>

@@ -1,5 +1,13 @@
 import { Routes } from '@angular/router';
 import { ClientLayout } from './layout/client-layout/client-layout';
+import { PostDetailPage } from './features/community/pages/gallery/post-detail/post-detail';
+import { ProfilePage } from './features/community/pages/profile/profile';
+import { ChallengesPage } from './features/community/pages/challenges/challenges';
+import { ChallengeDetailPage } from './features/community/pages/challenges/challenge-detail/challenge-detail';
+import { ChallengeJoinPage } from './features/community/pages/challenges/challenge-join/challenge-join';
+import { GalleryDetailPage } from './features/community/pages/gallery/gallery-detail/gallery-detail';
+import { GalleryPage } from './features/community/pages/gallery/gallery';
+import { CommunityComponent } from './features/community/pages/communityhome/communityhome';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'home' },
   { path: 'home', loadChildren: () => import('./features/home/home.routes').then((m) => m.HOME_ROUTES) },
@@ -23,7 +31,16 @@ export const routes: Routes = [
       { path: 'search', loadChildren: () => import('./features/search/search.routes').then((m) => m.SEARCH_ROUTES) },
       { path: 'loyalty', loadChildren: () => import('./features/loyalty/loyalty.routes').then((m) => m.LOYALTY_ROUTES) },
       { path: 'admin', loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES) },
-      
+            { path: 'community', redirectTo: 'community/communityhome', pathMatch: 'full' },
+            { path: 'community/communityhome', component: CommunityComponent },
+            { path: 'community/gallery', component: GalleryPage },
+            { path: 'community/gallery/:id', component: GalleryDetailPage },
+            { path: 'community/challenges/:id/join', component: ChallengeJoinPage },
+            { path: 'community/challenges/:id', component: ChallengeDetailPage },
+            { path: 'community/challenges', component: ChallengesPage },
+            { path: 'community/profile', component: ProfilePage },
+            { path: 'community/post/:id', component: PostDetailPage },
+
     ],
   },
   { path: '**', redirectTo: 'home' },

@@ -1,0 +1,56 @@
+<div class="gallery-page">
+
+
+  <section class="community-topbar">
+    <nav class="community-topbar__tabs">
+      <a href="javascript:void(0)" (click)="goCommunityHome()">Community</a>
+      <a class="active" routerLink="/community/gallery" routerLinkActive="active">Gallery</a>
+      <a routerLink="/community/challenges" routerLinkActive="active">Challenges</a>
+      <a routerLink="/community/profile" routerLinkActive="active">Profile</a>
+    </nav>
+  </section>
+
+  <section class="gallery-hero">
+    <h1>GALLERY</h1>
+    <p>Khám phá những bức ảnh và xu hướng làm đẹp đang được cộng đồng yêu thích nhất</p>
+  </section>
+
+  <section class="gallery-masonry" *ngIf="!isLoading; else loadingState">
+    <article
+      class="gallery-card"
+      *ngFor="let item of masonryItems"
+      #galleryCard
+      [attr.data-id]="item.id"
+      [class.revealed]="revealedIds.has(item.id)"
+      [class.size-large]="item.size === 'large'"
+      [class.layout-reverse]="item.layout === 'media-right'"
+      role="link"
+      tabindex="0"
+      (click)="goToDetail(item.id)"
+      (keyup.enter)="goToDetail(item.id)"
+    >
+      <div class="gallery-card__media">
+        <img [src]="item.image" [alt]="item.caption" loading="lazy" />
+      </div>
+
+      <div class="gallery-card__content">
+        <small>{{ item.date }}</small>
+        <h3>{{ item.caption }}</h3>
+        <p class="gallery-card__excerpt" [attr.title]="item.excerpt">{{ formatGalleryExcerpt(item.excerpt) }}</p>
+        <div class="tag-row">
+          <span *ngFor="let p of item.products">{{ p }}</span>
+        </div>
+        <button type="button" class="read-more-btn" (click)="goToDetail(item.id); $event.stopPropagation()">Read More</button>
+
+      </div>
+    </article>
+  </section>
+
+  <ng-template #loadingState>
+    <section class="gallery-masonry">
+      <article class="gallery-skeleton" *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8]"></article>
+    </section>
+  </ng-template>
+
+
+</div>

@@ -20,6 +20,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { RecommendationService, RecommendedProductView } from '../../../../core/services/recommendation.service';
 import { ProfileHubService } from '../../../account/services/profile-hub.service';
 import { ProductCardComponent } from '../components/product-card/product-card';
+import { ScrollToTop } from '../../../../layout/scroll-to-top/scroll-to-top';
 
 @Component({
   selector: 'app-mainpage',
@@ -33,7 +34,7 @@ import { ProductCardComponent } from '../components/product-card/product-card';
   Footer,
 Header,
 GlobalToastComponent,
-ProductCardComponent],
+ProductCardComponent, ScrollToTop],
   templateUrl: './mainpage.html',
   styleUrl: './mainpage.css',
 })
@@ -87,6 +88,10 @@ export class Mainpage implements OnInit {
     // No dedicated category/list route exists in this client yet.
     // For now, navigate to the home page.
     this.router.navigateByUrl('/');
+  }
+
+  goToCommunity(): void {
+    this.router.navigate(['/community/communityhome']);
   }
 
   trackById(_index: number, product: Product): string {
