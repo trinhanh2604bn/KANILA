@@ -45,4 +45,5 @@ export interface Product {
   coverage_type?: string;
   sales_count?: number;
   is_best_seller?: boolean;
+  shades?: { name: string; hex: string }[];
 }

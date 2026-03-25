@@ -85,6 +85,13 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    shades: [
+      {
+        name: { type: String, required: true },
+        hex: { type: String, required: true },
+        _id: false,
+      },
+    ],
     skin_types_supported: {
       type: [String],
       default: [],
@@ -152,6 +159,8 @@ productSchema.index({ categoryId: 1, createdAt: -1 });
 productSchema.index({ bought: -1, createdAt: -1 });
 /** Product code lookup (search fast path + admin) */
 productSchema.index({ productCode: 1 });
+productSchema.index({ skin_types_supported: 1 });
+productSchema.index({ "shades.hex": 1 });
 
 // Storefront listing hot paths (used by catalog/category/brand/price pages)
 productSchema.index({ productStatus: 1, isActive: 1, categoryId: 1, price: 1 });

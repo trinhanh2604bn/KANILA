@@ -19,6 +19,7 @@ const PRODUCT_LISTING_FIELDS = [
   "averageRating",
   "isActive",
   "productStatus",
+  "shades",
   "skin_types_supported",
   "concerns_targeted",
   "ingredient_flags",
@@ -50,6 +51,8 @@ const PRODUCT_LISTING_FIELDS_CARD = [
   "averageRating",
   "isActive",
   "productStatus",
+  "shades",
+  "skin_types_supported",
 ].join(" ");
 
 const MAX_PAGE_SIZE = 100;
@@ -150,6 +153,30 @@ function buildMongoFilterFromQuery(query, opts = {}) {
   const minRating = query.minRating != null && query.minRating !== "" ? Number(query.minRating) : null;
   if (minRating != null && Number.isFinite(minRating) && minRating > 0) {
     filter.averageRating = { $gte: minRating };
+  }
+
+  // Skin type filter: product.skin_types_supported intersects with selected values
+  const skinTypesParam = query.skinTypes;
+  if (skinTypesParam != null && String(skinTypesParam).trim()) {
+    const skinTypes = String(skinTypesParam)
+      .split(",")
+      .map((x) => decodeURIComponent(x.trim()))
+      .filter(Boolean);
+    if (skinTypes.length > 0) {
+      filter.skin_types_supported = { $in: skinTypes };
+    }
+  }
+
+  // Shade filter: product must contain at least one selected shade hex
+  const shadesParam = query.shades;
+  if (shadesParam != null && String(shadesParam).trim()) {
+    const shadeHexes = String(shadesParam)
+      .split(",")
+      .map((x) => decodeURIComponent(x.trim()))
+      .filter(Boolean);
+    if (shadeHexes.length > 0) {
+      filter["shades.hex"] = { $in: shadeHexes };
+    }
   }
 
   const sortStr = String(query.sort || "").toLowerCase().trim();
