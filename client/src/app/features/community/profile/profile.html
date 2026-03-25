@@ -1,0 +1,265 @@
+<div class="profile-page">
+  <section class="community-topbar">
+    <nav class="community-topbar__tabs">
+      <a href="javascript:void(0)" (click)="goCommunityHome()">Community</a>
+      <a routerLink="/community/gallery" routerLinkActive="active">Gallery</a>
+      <a routerLink="/community/challenges" routerLinkActive="active">Challenges</a>
+      <a class="active" routerLink="/community/profile" routerLinkActive="active">Profile</a>
+    </nav>
+  </section>
+
+  <section class="profile-header-card">
+    <div class="profile-header__main">
+      <img class="profile-avatar" [src]="user.avatar" [alt]="user.name" width="64" height="64" />
+      <div class="profile-header__text">
+        <h1 class="profile-username">{{ user.name }}</h1>
+        <p class="profile-handle">{{ user.handle }}</p>
+        <p class="profile-bio">{{ user.bio }}</p>
+      </div>
+    </div>
+    <div class="profile-stats" role="list">
+      <div class="profile-stat" role="listitem">
+        <span class="profile-stat__value">{{ statsPosts | number }}</span>
+        <span class="profile-stat__label">Bài viết</span>
+      </div>
+      <div class="profile-stat" role="listitem">
+        <span class="profile-stat__value">{{ followers | number }}</span>
+        <span class="profile-stat__label">Người theo dõi</span>
+      </div>
+      <div class="profile-stat" role="listitem">
+        <span class="profile-stat__value">{{ following | number }}</span>
+        <span class="profile-stat__label">Đang theo dõi</span>
+      </div>
+    </div>
+  </section>
+
+  <nav class="profile-tabs" aria-label="Nội dung hồ sơ">
+    <button
+      type="button"
+      *ngFor="let t of tabs"
+      class="profile-tab"
+      [class.profile-tab--active]="activeTab === t.id"
+      (click)="setTab(t.id)"
+    >
+      {{ t.label }}
+    </button>
+  </nav>
+
+  <section class="profile-content">
+    <div class="profile-grid profile-grid--skeleton" *ngIf="isLoading" aria-hidden="true">
+      <div class="profile-skeleton-card" *ngFor="let _ of skeletonSlots"></div>
+    </div>
+
+    <ng-container *ngIf="!isLoading">
+      <!-- Bài viết (của user) -->
+      <div class="profile-feed" *ngIf="activeTab === 'posts' && myPosts.length">
+        <article
+          class="profile-feed-card"
+          *ngFor="let post of myPosts; trackBy: trackPost"
+          (click)="openPostModal(post)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="openPostModal(post)"
+        >
+          <button
+            type="button"
+            class="profile-feed-card__delete"
+            aria-label="Xóa bài viết"
+            (click)="deleteMyPost(post.id, $event)"
+          >
+            ×
+          </button>
+          <div class="profile-feed-card__media">
+            <img [src]="post.image" [alt]="post.title" loading="lazy" />
+            <div class="profile-feed-card__overlay"></div>
+            <div class="profile-feed-card__badges">
+              <span><i class="bi bi-heart-fill" aria-hidden="true"></i> {{ post.likes | number }}</span>
+              <span><i class="bi bi-chat-fill" aria-hidden="true"></i> {{ post.comments | number }}</span>
+            </div>
+          </div>
+          <div class="profile-feed-card__body">
+            <h3 class="profile-feed-card__title">{{ post.title }}</h3>
+            <p class="profile-feed-card__caption">{{ post.caption }}</p>
+            <time class="profile-feed-card__date">{{ formatDate(post.createdAt) }}</time>
+          </div>
+        </article>
+      </div>
+
+      <!-- Đã lưu -->
+      <div class="profile-feed" *ngIf="activeTab === 'saved' && savedPosts.length">
+        <article
+          class="profile-feed-card"
+          *ngFor="let post of savedPosts; trackBy: trackPost"
+          (click)="openPostModal(post)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="openPostModal(post)"
+        >
+          <div class="profile-feed-card__media">
+            <img [src]="post.image" [alt]="post.title" loading="lazy" />
+            <div class="profile-feed-card__overlay"></div>
+            <div class="profile-feed-card__badges">
+              <span><i class="bi bi-heart-fill" aria-hidden="true"></i> {{ post.likes | number }}</span>
+              <span><i class="bi bi-chat-fill" aria-hidden="true"></i> {{ post.comments | number }}</span>
+            </div>
+          </div>
+          <div class="profile-feed-card__body">
+            <h3 class="profile-feed-card__title">{{ post.title }}</h3>
+            <p class="profile-feed-card__caption">{{ post.caption }}</p>
+            <time class="profile-feed-card__date">{{ formatDate(post.createdAt) }}</time>
+          </div>
+        </article>
+      </div>
+
+      <!-- Đã thích -->
+      <div class="profile-feed" *ngIf="activeTab === 'liked' && likedPosts.length">
+        <article
+          class="profile-feed-card"
+          *ngFor="let post of likedPosts; trackBy: trackPost"
+          (click)="openPostModal(post)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="openPostModal(post)"
+        >
+          <div class="profile-feed-card__media">
+            <img [src]="post.image" [alt]="post.title" loading="lazy" />
+            <div class="profile-feed-card__overlay"></div>
+            <div class="profile-feed-card__badges">
+              <span><i class="bi bi-heart-fill" aria-hidden="true"></i> {{ post.likes | number }}</span>
+              <span><i class="bi bi-chat-fill" aria-hidden="true"></i> {{ post.comments | number }}</span>
+            </div>
+          </div>
+          <div class="profile-feed-card__body">
+            <h3 class="profile-feed-card__title">{{ post.title }}</h3>
+            <p class="profile-feed-card__caption">{{ post.caption }}</p>
+            <time class="profile-feed-card__date">{{ formatDate(post.createdAt) }}</time>
+          </div>
+        </article>
+      </div>
+
+      <!-- Challenges -->
+      <div class="profile-feed" *ngIf="activeTab === 'challenges' && challengeSubmissions.length">
+        <article
+          class="profile-feed-card profile-feed-card--challenge"
+          *ngFor="let row of challengeSubmissions; trackBy: trackChallenge"
+          (click)="openChallengeModal(row)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="openChallengeModal(row)"
+        >
+          <div class="profile-feed-card__challenge-tag">{{ row.challengeName }}</div>
+          <div class="profile-feed-card__media profile-feed-card__media--square">
+            <img [src]="row.post.image" [alt]="row.challengeName" loading="lazy" />
+            <div class="profile-feed-card__overlay"></div>
+            <div class="profile-feed-card__badges">
+              <span><i class="bi bi-heart-fill" aria-hidden="true"></i> {{ row.post.likes | number }}</span>
+            </div>
+          </div>
+          <div class="profile-feed-card__body">
+            <p class="profile-feed-card__caption">{{ row.post.caption }}</p>
+            <time class="profile-feed-card__date">{{ formatDate(safeCreatedAt(row.post)) }}</time>
+          </div>
+        </article>
+      </div>
+
+      <p class="profile-empty" *ngIf="!isLoading && !hasList()">{{ emptyMessage }}</p>
+    </ng-container>
+  </section>
+
+  <!-- Toast -->
+  <div class="profile-toast" *ngIf="toastVisible" role="status" aria-live="polite">
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ toastMessage }}</span>
+  </div>
+
+  <!-- Modal: community post -->
+  <div
+    class="profile-modal-backdrop"
+    *ngIf="modalPost"
+    (click)="closeModals()"
+    role="presentation"
+  >
+    <section class="profile-modal" (click)="$event.stopPropagation()" aria-modal="true" role="dialog">
+      <button type="button" class="profile-modal__close" (click)="closeModals()" aria-label="Đóng">×</button>
+      <div class="profile-modal__grid">
+        <div class="profile-modal__gallery">
+          <img [src]="modalPost.image" [alt]="modalPost.title" />
+        </div>
+        <div class="profile-modal__detail">
+          <div class="profile-modal__author">
+            <img [src]="modalPost.author.avatar" [alt]="modalPost.author.name" />
+            <div>
+              <strong>{{ modalPost.author.name }}</strong>
+              <span>{{ modalPost.timestamp }}</span>
+            </div>
+          </div>
+          <h2>{{ modalPost.title }}</h2>
+          <p class="profile-modal__caption">{{ modalPost.caption }}</p>
+          <div class="profile-modal__stats">
+            <span><i class="bi bi-heart-fill"></i> {{ modalPost.likes | number }} lượt thích</span>
+            <span><i class="bi bi-chat-fill"></i> {{ modalPost.comments | number }} bình luận</span>
+          </div>
+          <div class="profile-modal__comments">
+            <h4>Bình luận</h4>
+            <div class="profile-modal__comment" *ngFor="let c of mockThread">
+              <strong>{{ c.user }}</strong>
+              <p>{{ c.text }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal: challenge submission -->
+  <div
+    class="profile-modal-backdrop"
+    *ngIf="modalChallenge"
+    (click)="closeModals()"
+    role="presentation"
+  >
+    <section class="profile-modal" (click)="$event.stopPropagation()" aria-modal="true" role="dialog">
+      <button type="button" class="profile-modal__close" (click)="closeModals()" aria-label="Đóng">×</button>
+      <p class="profile-modal__challenge-label">{{ modalChallenge.challengeName }}</p>
+      <div class="profile-modal__grid profile-modal__grid--challenge">
+        <div class="profile-modal__gallery profile-modal__gallery--multi">
+          <ng-container *ngFor="let url of challengeMedia(modalChallenge.post)">
+            <video
+              *ngIf="isChallengeVideo(url, modalChallenge.post)"
+              class="profile-modal__media-item"
+              [src]="url"
+              controls
+              playsinline
+            ></video>
+            <img
+              *ngIf="!isChallengeVideo(url, modalChallenge.post)"
+              class="profile-modal__media-item"
+              [src]="url"
+              [alt]="modalChallenge.challengeName"
+            />
+          </ng-container>
+        </div>
+        <div class="profile-modal__detail">
+          <div class="profile-modal__author">
+            <img [src]="modalChallenge.post.avatar" [alt]="modalChallenge.post.userName" />
+            <div>
+              <strong>{{ modalChallenge.post.userName }}</strong>
+              <span>{{ formatDate(safeCreatedAt(modalChallenge.post)) }}</span>
+            </div>
+          </div>
+          <p class="profile-modal__caption">{{ modalChallenge.post.caption }}</p>
+          <div class="profile-modal__stats">
+            <span><i class="bi bi-heart-fill"></i> {{ modalChallenge.post.likes | number }} lượt thích</span>
+          </div>
+          <div class="profile-modal__comments">
+            <h4>Bình luận</h4>
+            <div class="profile-modal__comment" *ngFor="let c of mockThread">
+              <strong>{{ c.user }}</strong>
+              <p>{{ c.text }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

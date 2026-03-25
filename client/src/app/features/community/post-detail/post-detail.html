@@ -1,0 +1,70 @@
+<section class="post-detail-page" *ngIf="post as p">
+  <div class="post-detail-container">
+    <button class="back-btn" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i> Quay lại cộng đồng
+    </button>
+
+    <article class="detail-card fade-in">
+      <header class="detail-header">
+        <div class="detail-author">
+          <img [src]="p.author.avatar" [alt]="p.author.name" />
+          <div>
+            <h2>{{ p.author.name }}</h2>
+            <p>
+              <span class="badge">{{ p.author.badge }}</span>
+              <span>{{ p.timestamp }}</span>
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div class="detail-content">
+        <h3>{{ p.title }}</h3>
+        <p class="detail-caption">{{ p.caption }}</p>
+
+        <div class="detail-media">
+          <img class="detail-main-image" [src]="mainImage" [alt]="p.title" />
+          <div class="detail-thumbs">
+            <img
+              *ngFor="let img of p.images; let i = index"
+              [src]="img"
+              [alt]="p.title + ' thumbnail'"
+              [class.active]="i === currentImageIndex"
+              (click)="selectImage(i)"
+            />
+          </div>
+        </div>
+
+        <div class="detail-actions">
+          <button class="like-btn" [class.active]="p.liked" (click)="toggleLike()">
+            <i class="bi" [class.bi-heart-fill]="p.liked" [class.bi-heart]="!p.liked"></i>
+            {{ p.likes }}
+          </button>
+          <button><i class="bi bi-chat-dots"></i> {{ p.comments }}</button>
+          <button (click)="toggleSave()">
+            <i class="bi" [class.bi-bookmark-fill]="p.saved" [class.bi-bookmark]="!p.saved"></i>
+            {{ p.saved ? 'Đã lưu' : 'Lưu' }}
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <section class="comments-card fade-in">
+      <h3>Bình luận</h3>
+      <div class="comments-list">
+        <article class="comment-item" *ngFor="let c of comments">
+          <img [src]="c.avatar" [alt]="c.user" />
+          <div>
+            <h4>{{ c.user }} <span>· {{ c.timestamp }}</span></h4>
+            <p>{{ c.content }}</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="comment-input-sticky">
+        <input [(ngModel)]="newComment" placeholder="Write a comment..." />
+        <button (click)="addComment()">Gửi</button>
+      </div>
+    </section>
+  </div>
+</section>

@@ -1,0 +1,76 @@
+<div class="challenges-page">
+  <section class="community-topbar">
+    <nav class="community-topbar__tabs">
+      <a href="javascript:void(0)" (click)="goCommunityHome()">Community</a>
+      <a routerLink="/community/gallery" routerLinkActive="active">Gallery</a>
+      <a class="active" routerLink="/community/challenges" routerLinkActive="active">Challenges</a>
+      <a routerLink="/community/profile" routerLinkActive="active">Profile</a>
+    </nav>
+  </section>
+
+  <section class="challenges-hero">
+    <h1>CHALLENGES</h1>
+    <p class="challenges-hero__subtitle">
+      Tham gia thử thách làm đẹp để nhận quà và tăng tương tác cùng cộng đồng KANILA.
+    </p>
+  </section>
+
+  <section class="challenges-toolbar" aria-label="Lọc và sắp xếp">
+   
+    <div class="challenges-sort">
+      <label class="sort-label" for="challenge-sort">Sắp xếp</label>
+      <select id="challenge-sort" class="sort-select" [value]="sortBy" (change)="onSortChange($event)">
+        <option value="all">Tất cả</option>
+        <option value="newest">Mới nhất</option>
+        <option value="popular">Phổ biến</option>
+        <option value="ending">Sắp kết thúc</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="challenges-grid" *ngIf="filteredCards.length; else emptyState">
+    <article class="challenge-card" *ngFor="let c of filteredCards">
+      <div class="challenge-card__media">
+        <img [src]="c.thumbnail" [alt]="c.title" loading="lazy" />
+        <div class="challenge-card__badges">
+          <span class="badge badge--hot" *ngIf="showHotBadge(c)">HOT</span>
+          <span class="badge badge--ending" *ngIf="showEndingSoonBadge(c)">Sắp kết thúc</span>
+          <span class="badge badge--popular" *ngIf="showPopularBadge(c)">Phổ biến</span>
+        </div>
+      </div>
+      <div class="challenge-card__body">
+        <h3 class="challenge-card__title">{{ c.title }}</h3>
+        <p class="challenge-card__subtitle">{{ c.subtitle }}</p>
+        <div class="challenge-card__meta">
+          <span class="meta-item">
+            <i class="bi bi-people-fill" aria-hidden="true"></i>
+            {{ c.participants | number }} người
+          </span>
+          <span class="meta-item meta-item--reward">
+            <i class="bi bi-gift-fill" aria-hidden="true"></i>
+            {{ c.rewardsSummary }}
+          </span>
+        </div>
+        <div class="challenge-card__divider"></div>
+        <p class="challenge-card__deadline">{{ deadlineLabel(c.endDateIso) }}</p>
+        <div class="challenge-card__actions">
+          <button type="button" class="challenge-card__btn challenge-card__btn--secondary" (click)="goDetail(c.id, $event)">
+            Xem thêm
+          </button>
+          <button
+            type="button"
+            class="challenge-card__btn challenge-card__cta"
+            [class.challenge-card__cta--joined]="isJoined(c.id)"
+            (click)="onPrimaryCta(c, $event)"
+          >
+            {{ isJoined(c.id) ? 'Đã tham gia' : 'Tham gia ngay' }}
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <ng-template #emptyState>
+    <p class="challenges-empty">Không có thử thách nào khớp bộ lọc. Thử chọn “Tất cả”.</p>
+  </ng-template>
+</div>

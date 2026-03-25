@@ -1,0 +1,109 @@
+<div class="cj-page" *ngIf="challenge as ch">
+  <header class="cj-top">
+    <a routerLink="/community/challenges" class="cj-back-link">← Challenges</a>
+    <nav class="cj-nav">
+      <a routerLink="/community/communityhome">Community</a>
+      <a routerLink="/community/gallery">Gallery</a>
+      <a routerLink="/community/challenges" class="active">Challenges</a>
+      <a routerLink="/community/profile">Profile</a>
+    </nav>
+  </header>
+
+  <section class="cj-header card-glow">
+    <div class="cj-header__cover">
+      <img [src]="ch.coverImage" [alt]="ch.title" />
+    </div>
+    <div class="cj-header__text">
+      <p class="cj-label">Đang tham gia</p>
+      <h1>{{ ch.title }}</h1>
+      <p class="cj-hash">{{ ch.hashtag }}</p>
+    </div>
+  </section>
+
+  <main class="cj-main">
+    <section class="cj-panel card-glow">
+      <h2>Đăng bài dự thi</h2>
+      <p class="cj-hint">
+        Tải tối đa {{ maxFiles }} ảnh hoặc video, có thể thêm dần. Cần ít nhất một ảnh/video <strong>hoặc</strong> caption để đăng.
+      </p>
+
+      <p class="cj-warn" *ngIf="fileLimitWarning" role="alert">{{ fileLimitWarning }}</p>
+
+      <input
+        #fileInput
+        type="file"
+        class="cj-file-input"
+        id="cj-file"
+        accept="image/*,video/*"
+        multiple
+        (change)="onFileChange($event)"
+      />
+
+      <div
+        class="cj-drop"
+        [class.cj-drop--active]="isDragOver"
+        (click)="onDropZoneClick(fileInput)"
+        (keydown.enter)="onDropZoneClick(fileInput)"
+        (keydown.space)="$event.preventDefault(); onDropZoneClick(fileInput)"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="'Mở chọn tệp, tối đa ' + maxFiles + ' ảnh hoặc video'"
+      >
+        <div class="cj-drop__label">
+          <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+          <span>Kéo thả ảnh hoặc video vào đây</span>
+          <small>hoặc nhấn để chọn (nhiều tệp cùng lúc) — còn {{ slotsLeft }} chỗ</small>
+        </div>
+      </div>
+
+
+
+      <div class="cj-preview-grid" *ngIf="pendingMedia.length">
+        <div class="cj-thumb" *ngFor="let item of pendingMedia">
+          <button type="button" class="cj-thumb__remove" (click)="removePending(item.id); $event.stopPropagation()" aria-label="Xóa">
+            ×
+          </button>
+          <img *ngIf="!isVideoFile(item.file)" [src]="item.url" alt="" />
+          <video *ngIf="isVideoFile(item.file)" [src]="item.url" muted playsinline preload="metadata"></video>
+        </div>
+      </div>
+
+      <label class="cj-field-label" for="cj-caption">Caption</label>
+      <textarea
+        id="cj-caption"
+        class="cj-textarea"
+        rows="4"
+        [(ngModel)]="caption"
+        (ngModelChange)="onCaptionChange()"
+        placeholder="Chia sẻ routine, sản phẩm và cảm nhận… Nhớ thêm hashtag challenge!"
+      ></textarea>
+
+      <label class="cj-field-label" for="cj-name">Challenge</label>
+      <input id="cj-name" type="text" class="cj-input" [value]="challengeTitle" readonly />
+
+      <p class="cj-validation" *ngIf="validationMessage" role="alert">{{ validationMessage }}</p>
+      <p class="cj-error" *ngIf="submitError" role="alert">{{ submitError }}</p>
+
+      <div class="cj-actions">
+        <button type="button" class="cj-btn cj-btn--ghost" [disabled]="submitting" (click)="cancel()">Hủy</button>
+        <button
+          type="button"
+          class="cj-btn cj-btn--primary"
+          [class.cj-btn--primary--muted]="!canSubmit && !submitting"
+          [disabled]="submitting"
+          (click)="onSubmitClick()"
+        >
+          {{ submitting ? 'Đang đăng…' : 'Đăng' }}
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div class="cj-submit-toast" *ngIf="submitSuccessVisible" role="status" aria-live="polite">
+    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+    <span>{{ submitSuccessMessage }}</span>
+  </div>
+</div>
