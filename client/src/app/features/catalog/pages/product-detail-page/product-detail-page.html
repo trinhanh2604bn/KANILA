@@ -228,27 +228,13 @@
         </div>
       </div>
 
-      <div class="reco-block">
-        <h3>Same Brand</h3>
-        <div class="reco-scroll">
-          <app-product-card
-            class="pdp-reco-card-host"
-            *ngFor="let item of sameBrandProducts"
-            [product]="recoToProduct(item)"
-          ></app-product-card>
-        </div>
-      </div>
+      <app-same-brand-section
+        [currentProductId]="productId"
+        [currentBrandId]="currentBrandId"
+        [currentCategoryId]="currentCategoryId"
+      ></app-same-brand-section>
 
-      <div class="reco-block">
-        <h3>Recently Viewed</h3>
-        <div class="reco-scroll">
-          <app-product-card
-            class="pdp-reco-card-host"
-            *ngFor="let item of recentProducts"
-            [product]="recoToProduct(item)"
-          ></app-product-card>
-        </div>
-      </div>
+      <app-recently-viewed-section [currentProductId]="productId"></app-recently-viewed-section>
     </section>
 
     <section class="pdp-reviews" id="pdp-reviews">

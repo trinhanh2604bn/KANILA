@@ -156,17 +156,31 @@
 
                         <div class="position-relative">
                             <button class="btn-filter filter-chip transition-all d-flex align-items-center" [class.active]="selectedShades.length > 0 || openDropdown === 'shade'" (click)="toggleDropdown('shade', $event)">
-                                Shade/Màu <i class="bi bi-chevron-down ms-2 small-icon"></i>
+                                <i class="bi bi-palette-fill me-2" *ngIf="selectedShades.length > 0" style="font-size: 0.8rem;"></i>
+                                Shade/Màu
+                                <span class="filter-count-badge" *ngIf="selectedShades.length > 0">{{ selectedShades.length }}</span>
+                                <i class="bi bi-chevron-down ms-2 small-icon"></i>
                             </button>
-                            <div class="dropdown-panel shadow p-3 rounded-4" style="min-width: 280px;" *ngIf="openDropdown === 'shade'" (click)="$event.stopPropagation()">
-                                <div class="d-flex flex-wrap gap-2">
-                                    <div *ngFor="let item of shadeOptions"
-                                         class="shade-swatch transition-all"
-                                         [class.active]="selectedShades.includes(item)"
-                                         [style.background-color]="getShadeColor(item)"
-                                         [title]="item"
-                                         (click)="toggleShade(item)">
-                                        <i class="bi bi-check" *ngIf="selectedShades.includes(item)"></i>
+                            <div class="dropdown-panel shade-dropdown shadow-lg rounded-4" *ngIf="openDropdown === 'shade'" (click)="$event.stopPropagation()">
+                                <div class="shade-dropdown-header">
+                                    <i class="bi bi-palette-fill"></i>
+                                    <span>Chọn Shade / Màu sắc</span>
+                                </div>
+                                <div class="shade-grid-wrapper">
+                                    <div class="shade-grid">
+                                        <div *ngFor="let item of shadeOptions"
+                                             class="shade-swatch-item transition-all"
+                                             [class.active]="selectedShades.includes(item.hex)"
+                                             (click)="toggleShade(item.hex)"
+                                             [attr.title]="item.name + ' • ' + item.hex">
+                                            <div class="shade-swatch-circle"
+                                                 [style.background-color]="item.hex"
+                                                 [class.light-shade]="isLightColor(item.hex)">
+                                                <i class="bi bi-check-lg shade-check" *ngIf="selectedShades.includes(item.hex)"></i>
+                                            </div>
+                                            <span class="shade-swatch-label">{{ item.name }}</span>
+                                            <span class="shade-count">({{ getShadeCount(item.hex) }})</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -174,19 +188,33 @@
 
                         <div class="position-relative">
                             <button class="btn-filter filter-chip transition-all d-flex align-items-center" [class.active]="selectedSkinTypes.length > 0 || openDropdown === 'skin'" (click)="toggleDropdown('skin', $event)">
-                                Làn da <i class="bi bi-chevron-down ms-2 small-icon"></i>
+                                <i class="bi bi-droplet-fill me-2" *ngIf="selectedSkinTypes.length > 0" style="font-size: 0.8rem;"></i>
+                                Làn da
+                                <span class="filter-count-badge" *ngIf="selectedSkinTypes.length > 0">{{ selectedSkinTypes.length }}</span>
+                                <i class="bi bi-chevron-down ms-2 small-icon"></i>
                             </button>
-                            <div class="dropdown-panel shadow p-3 rounded-4" style="min-width: 260px;" *ngIf="openDropdown === 'skin'" (click)="$event.stopPropagation()">
-                                <div class="skin-hint mb-3" *ngIf="suggestedSkinType">
-                                    <span class="text-muted small">Gợi ý cho bạn:</span>
-                                    <button type="button" class="btn btn-sm skin-suggest-btn" (click)="applySuggestedSkinType()">{{ suggestedSkinType }}</button>
+                            <div class="dropdown-panel skin-dropdown shadow-lg rounded-4" *ngIf="openDropdown === 'skin'" (click)="$event.stopPropagation()">
+                                <div class="skin-dropdown-header">
+                                    <i class="bi bi-droplet-half"></i>
+                                    <span>Loại da phù hợp</span>
                                 </div>
-                                <div class="d-flex flex-wrap gap-2">
+                                <div class="skin-hint mb-3" *ngIf="suggestedSkinType">
+                                    <i class="bi bi-stars text-warning me-1"></i>
+                                    <span class="text-muted small">Gợi ý cho bạn:</span>
+                                    <button type="button" class="btn btn-sm skin-suggest-btn ms-2" (click)="applySuggestedSkinType()">
+                                        <i class="bi" [ngClass]="getSkinTypeIcon(suggestedSkinType)"></i>
+                                        {{ getSkinTypeLabel(suggestedSkinType) }}
+                                    </button>
+                                </div>
+                                <div class="skin-chips-grid">
                                     <button *ngFor="let skin of skinTypes"
-                                            class="skin-select-chip transition-all"
+                                            class="skin-chip-btn transition-all"
                                             [class.active]="selectedSkinTypes.includes(skin)"
                                             (click)="toggleSkinType(skin)">
-                                        {{ skin }}
+                                        <i class="bi" [ngClass]="getSkinTypeIcon(skin)"></i>
+                                        <span class="skin-chip-label">{{ getSkinTypeLabel(skin) }}</span>
+                                        <span class="skin-chip-count">({{ getSkinTypeCount(skin) }})</span>
+                                        <i class="bi bi-check-lg skin-chip-check" *ngIf="selectedSkinTypes.includes(skin)"></i>
                                     </button>
                                 </div>
                             </div>
@@ -207,10 +235,10 @@
                         </ng-container>
 
                         <div class="applied-chip transition-all" *ngFor="let item of selectedSkinTypes">
-                            <span class="chip-text">Da: {{ item }}</span><i class="bi bi-x" (click)="removeFilter('skin', item)"></i>
+                            <span class="chip-text">Da: {{ getSkinTypeLabel(item) }}</span><i class="bi bi-x" (click)="removeFilter('skin', item)"></i>
                         </div>
                         <div class="applied-chip transition-all" *ngFor="let item of selectedShades">
-                            <span class="chip-text">Màu: {{ item }}</span><i class="bi bi-x" (click)="removeFilter('shade', item)"></i>
+                            <span class="chip-text">Màu: {{ getShadeLabel(item) }}</span><i class="bi bi-x" (click)="removeFilter('shade', item)"></i>
                         </div>
                         <div class="applied-chip transition-all" *ngFor="let item of selectedFinishes">
                             <span class="chip-text">Finish: {{ item }}</span><i class="bi bi-x" (click)="removeFilter('finish', item)"></i>

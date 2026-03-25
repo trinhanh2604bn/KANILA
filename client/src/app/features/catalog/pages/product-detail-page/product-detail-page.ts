@@ -11,6 +11,8 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { CheckoutService } from '../../../checkout/services/checkout.service';
 import { WishlistService } from '../../../account/services/wishlist.service';
 import { CouponAvailableItem, CouponService } from '../../../account/services/coupon.service';
+import { SameBrandSectionComponent } from './components/same-brand/same-brand.component';
+import { RecentlyViewedSectionComponent } from './components/recently-viewed/recently-viewed.component';
 
 interface PdpShade {
   id: string;
@@ -56,7 +58,7 @@ interface PdpMiniProduct {
 @Component({
   selector: 'app-catalog-product-detail-page',
   standalone: true,
-  imports: [CommonModule, RouterModule, ProductCardComponent],
+  imports: [CommonModule, RouterModule, ProductCardComponent, SameBrandSectionComponent, RecentlyViewedSectionComponent],
   templateUrl: './product-detail-page.html',
   styleUrl: './product-detail-page.css',
 })
@@ -155,7 +157,10 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   loading = true;
   hasError = false;
-  private productId = '';
+  productId = '';
+
+  currentBrandId = '';
+  currentCategoryId = '';
 
   bundleProducts: PdpMiniProduct[] = [
     { name: 'Soft Velvet Puff Duo', brand: 'KANILA Atelier', attribute: '2 pcs, seamless blend', rating: 4.7, price: 149000, image: 'https://images.unsplash.com/photo-1629198721130-39b7f9f2e4fb?auto=format&fit=crop&w=600&q=80' },
@@ -170,17 +175,7 @@ export class CatalogProductDetailPageComponent implements OnInit {
     { name: 'Cloud Cover Tint', brand: 'Maison Flawless', attribute: 'Light-medium coverage', rating: 4.4, price: 560000, image: 'https://images.unsplash.com/photo-1503235930437-8c6293ba41f5?auto=format&fit=crop&w=600&q=80' },
   ];
 
-  sameBrandProducts: PdpMiniProduct[] = [
-    { name: 'Skin Veil Concealer', brand: 'KANILA Atelier', attribute: 'High coverage, crease-free', rating: 4.8, price: 320000, image: 'https://images.unsplash.com/photo-1590156202996-79f2b73f95c1?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Velvet Cheek Mousse', brand: 'KANILA Atelier', attribute: 'Soft-matte blush tint', rating: 4.7, price: 330000, image: 'https://images.unsplash.com/photo-1631730487054-4ab2ea4d2c8f?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Glass Tint Lip Oil', brand: 'KANILA Atelier', attribute: 'Sheer glossy wash', rating: 4.6, price: 290000, image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=600&q=80' },
-  ];
-
-  recentProducts: PdpMiniProduct[] = [
-    { name: 'Glow Corrector Palette', brand: 'Nude Bloom', attribute: 'Peach/green/lilac correctors', rating: 4.5, price: 450000, image: 'https://images.unsplash.com/photo-1596815064285-45ed8a9c0463?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Feather Lash Mascara', brand: 'Maison Flawless', attribute: 'Length + curl hold', rating: 4.6, price: 370000, image: 'https://images.unsplash.com/photo-1583001931096-959e9a1a6223?auto=format&fit=crop&w=600&q=80' },
-    { name: 'Radiance Mist', brand: 'Le Rosé Beauty', attribute: 'Hydrating setting mist', rating: 4.4, price: 310000, image: 'https://images.unsplash.com/photo-1571781418606-70265b9cce90?auto=format&fit=crop&w=600&q=80' },
-  ];
+  // Same Brand + Recently Viewed are rendered via dedicated components (see `components/`).
 
   reviews: PdpReview[] = [
     {
@@ -504,7 +499,9 @@ export class CatalogProductDetailPageComponent implements OnInit {
     this.productName = detail.productName;
     this.productSubtitle = detail.subtitle;
     this.brandName = detail.brandName;
+    this.currentBrandId = detail.brandId ?? '';
     this.breadcrumb = ['Trang chủ', detail.parentCategoryName || detail.categoryName || 'Sản phẩm', detail.categoryName || 'Chi tiết'];
+    this.currentCategoryId = detail.categoryId ?? '';
     this.badges = detail.badges.length ? detail.badges : this.badges;
 
     this.rating = detail.averageRating || 0;
@@ -545,8 +542,6 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
     this.bundleProducts = this.toMiniProducts(detail.recommendations.frequentlyBoughtTogether);
     this.similarProducts = this.toMiniProducts(detail.recommendations.similarProducts);
-    this.sameBrandProducts = this.toMiniProducts(detail.recommendations.sameBrandProducts);
-    this.recentProducts = this.toMiniProducts(detail.recommendations.recentlyViewed);
 
     this.reviews = detail.reviews.length
       ? detail.reviews.map((r) => ({

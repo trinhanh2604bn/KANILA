@@ -101,6 +101,30 @@ function buildMongoFilterFromQuery(query, opts = {}) {
   const storefrontOnly = !!opts.storefrontOnly;
   const filter = {};
 
+  // Explicit allowlist filtering by product ids (used by Recently Viewed).
+  const idsParam = query.ids;
+  if (idsParam != null && String(idsParam).trim()) {
+    const ids = String(idsParam)
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .filter((id) => validateObjectId(id));
+    if (ids.length > 0) {
+      filter._id = { $in: ids.map((id) => new mongoose.Types.ObjectId(id)) };
+    }
+  }
+
+  // Exclude a single product id (used by Same Brand / Recently Viewed).
+  const excludeProductId = query.excludeProductId;
+  if (excludeProductId != null && String(excludeProductId).trim() && validateObjectId(String(excludeProductId))) {
+    const ex = new mongoose.Types.ObjectId(String(excludeProductId));
+    if (filter._id && typeof filter._id === "object") {
+      filter._id.$nin = [...(filter._id.$nin ?? []), ex];
+    } else {
+      filter._id = { $nin: [ex] };
+    }
+  }
+
   if (storefrontOnly) {
     filter.isActive = { $ne: false };
     filter.productStatus = { $ne: "inactive" };

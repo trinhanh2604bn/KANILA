@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, forkJoin, map, merge, of, Subject, switchMap } from 'rxjs';
 import { HeaderCategoryItem } from '../../../../core/models/header.model';
 import { Product } from '../../../../core/models/product.model';
 import { BrandService } from '../../../../core/services/brand.service';
 import { CategoryService } from '../../../../core/services/category.service';
+import { CatalogFilterOptionsService } from '../../../../core/services/catalog-filter-options.service';
 import { ProductCardComponent } from '../../../home/pages/components/product-card/product-card';
 import {
   CatalogFacetService,
@@ -25,6 +26,11 @@ import {
   CatalogSortOption,
 } from '../../models/catalog-filter.model';
 
+interface ShadeOption {
+  name: string;
+  hex: string;
+}
+
 interface CatalogProductRow {
   id: string;
   name: string;
@@ -38,6 +44,7 @@ interface CatalogProductRow {
   skinTypes: string[];
   productType: string;
   shades: string[];
+  shadeObjects: ShadeOption[];
   finishes: string[];
   benefits: string[];
   hasPromotion: boolean;
@@ -48,7 +55,7 @@ interface CatalogProductRow {
   price: number;
   oldPrice: number | null;
   isSale: boolean;
-  isFakedSale?: boolean; // THÊM CỜ ĐÁNH DẤU SẢN PHẨM DEMO SALE
+  isFakedSale?: boolean;
   sold: number;
   imageUrl?: string;
   description?: string;
@@ -89,7 +96,7 @@ export class Catalog implements OnInit {
   brands: string[] = [];
   productTypes: string[] = [];
   skinTypes: string[] = [];
-  shadeOptions: string[] = [];
+  shadeOptions: ShadeOption[] = [];
   finishOptions: string[] = [];
   benefitOptions: string[] = [];
   promotionOptions: string[] = ['Đang giảm giá'];
@@ -132,6 +139,24 @@ export class Catalog implements OnInit {
   maxPriceInput: number = 5000000;
   maxLimit: number = 5000000;
   suggestedSkinType: string | null = null;
+
+  /** Vietnamese label map for skin types */
+  readonly skinTypeLabelMap: Record<string, string> = {
+    oily: 'Da dầu',
+    dry: 'Da khô',
+    combination: 'Da hỗn hợp',
+    sensitive: 'Da nhạy cảm',
+    normal: 'Da thường',
+  };
+
+  /** Icon map for skin types */
+  readonly skinTypeIconMap: Record<string, string> = {
+    oily: 'bi-droplet-fill',
+    dry: 'bi-sun-fill',
+    combination: 'bi-circle-half',
+    sensitive: 'bi-shield-fill-exclamation',
+    normal: 'bi-check-circle-fill',
+  };
 
   brandSearchText: string = '';
   searchKeyword: string = '';
@@ -234,7 +259,7 @@ export class Catalog implements OnInit {
         this.buildProductIndices();
         this.productTypes = this.extractProductTypes(this.allProducts);
         this.skinTypes = this.extractSkinTypes(this.allProducts);
-        this.shadeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.shades));
+        this.shadeOptions = this.extractUniqueShadeOptions(this.allProducts);
         this.finishOptions = this.extractUnique(this.allProducts.flatMap((p) => p.finishes));
         this.benefitOptions = this.extractUnique(this.allProducts.flatMap((p) => p.benefits));
         this.sizeOptions = this.extractUnique(this.allProducts.flatMap((p) => p.sizes));
@@ -321,7 +346,27 @@ export class Catalog implements OnInit {
     return this.brands.filter(b => b.toLowerCase().includes(lowerSearch));
   }
 
+  isLightColor(hex: string): boolean {
+    const c = hex.replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.75;
+  }
+
+  private normalizeShadeHex(hex: string): string {
+    const raw = String(hex ?? '').trim();
+    if (!raw) return '';
+    const withHash = raw.startsWith('#') ? raw : `#${raw}`;
+    return `#${withHash.slice(1).toUpperCase()}`;
+  }
+
   getShadeColor(shadeName: string): string {
+    // Look up from shadeOptions (real hex from product data)
+    const match = this.shadeOptions.find((s) => s.name === shadeName);
+    if (match) return match.hex;
+    // Fallback: name-based mapping
     const lower = shadeName.toLowerCase();
     if (lower.includes('đỏ') || lower.includes('red') || lower.includes('ruby')) return '#C41E3A';
     if (lower.includes('hồng') || lower.includes('pink') || lower.includes('rose')) return '#FFB6C1';
@@ -333,6 +378,28 @@ export class Catalog implements OnInit {
     if (lower.includes('ngăm') || lower.includes('dark') || lower.includes('tan')) return '#A0522D';
     if (lower.includes('đen') || lower.includes('black')) return '#1a1a1a';
     return '#E9ECEF';
+  }
+
+  getShadeLabel(shadeHex: string): string {
+    const normalized = String(shadeHex ?? '').trim().toUpperCase();
+    const match = this.shadeOptions.find((s) => String(s.hex ?? '').trim().toUpperCase() === normalized);
+    return match?.name ?? shadeHex;
+  }
+
+  getSkinTypeLabel(skinType: string): string {
+    return this.skinTypeLabelMap[skinType] || skinType;
+  }
+
+  getSkinTypeIcon(skinType: string): string {
+    return this.skinTypeIconMap[skinType] || 'bi-circle';
+  }
+
+  getShadeCount(shadeHex: string): number {
+    return this.indexByShade.get(shadeHex)?.size ?? 0;
+  }
+
+  getSkinTypeCount(skinType: string): number {
+    return this.indexBySkinType.get(skinType)?.size ?? 0;
   }
 
   getSortLabel(sortValue: string): string {
@@ -393,8 +460,8 @@ export class Catalog implements OnInit {
 
   resetToAllProducts() {
     this.updateRouteState({
-      category: null, sub: null, brand: null, filterBrands: null, productType: null, skin: null,
-      shade: null, finish: null, benefit: null, promotion: null, rating: null,
+      category: null, sub: null, brand: null, filterBrands: null, productType: null, skinTypes: null,
+      shades: null, finish: null, benefit: null, promotion: null, rating: null,
       stock: null, size: null, minPrice: null, maxPrice: null, sort: null, search: null,
     });
   }
@@ -651,7 +718,7 @@ export class Catalog implements OnInit {
     const next = [...this.selectedSkinTypes];
     if (index > -1) next.splice(index, 1);
     else next.push(type);
-    this.updateRouteState({ skin: next.length ? next.join(',') : null });
+    this.updateRouteState({ skinTypes: next.length ? next.join(',') : null });
   }
   toggleProductType(type: string) {
     const next = this.toggleStringSelection(this.selectedProductTypes, type);
@@ -659,7 +726,7 @@ export class Catalog implements OnInit {
   }
   toggleShade(value: string) {
     const next = this.toggleStringSelection(this.selectedShades, value);
-    this.updateRouteState({ shade: next.length ? next.join(',') : null });
+    this.updateRouteState({ shades: next.length ? next.join(',') : null });
   }
   toggleFinish(value: string) {
     const next = this.toggleStringSelection(this.selectedFinishes, value);
@@ -696,13 +763,13 @@ export class Catalog implements OnInit {
     if (type === 'brand' && value) {
       this.updateRouteState({ filterBrands: this.toBrandParam(this.selectedBrands.filter((b) => b !== value)) });
     } else if (type === 'skin' && value) {
-      this.updateRouteState({ skin: this.selectedSkinTypes.filter((s) => s !== value).join(',') || null });
+      this.updateRouteState({ skinTypes: this.selectedSkinTypes.filter((s) => s !== value).join(',') || null });
     } else if (type === 'price') {
       this.updateRouteState({ minPrice: null, maxPrice: null });
     } else if (type === 'productType' && value) {
       this.updateRouteState({ productType: this.selectedProductTypes.filter((x) => x !== value).join(',') || null });
     } else if (type === 'shade' && value) {
-      this.updateRouteState({ shade: this.selectedShades.filter((x) => x !== value).join(',') || null });
+      this.updateRouteState({ shades: this.selectedShades.filter((x) => x !== value).join(',') || null });
     } else if (type === 'finish' && value) {
       this.updateRouteState({ finish: this.selectedFinishes.filter((x) => x !== value).join(',') || null });
     } else if (type === 'benefit' && value) {
@@ -721,8 +788,8 @@ export class Catalog implements OnInit {
 
   clearAllFilters() {
     this.updateRouteState({
-      skin: null, minPrice: null, maxPrice: null, brand: null, filterBrands: null, productType: null,
-      shade: null, finish: null, benefit: null, promotion: null, rating: null,
+      skinTypes: null, minPrice: null, maxPrice: null, brand: null, filterBrands: null, productType: null,
+      shades: null, finish: null, benefit: null, promotion: null, rating: null,
       stock: null, size: null, search: null,
     });
   }
@@ -761,8 +828,10 @@ export class Catalog implements OnInit {
     const filterBrandsParam = (params['filterBrands'] ?? '').trim();
 
     const productTypeParam = (params['productType'] ?? '').trim();
-    const skinParam = (params['skin'] ?? '').trim();
-    const shadeParam = (params['shade'] ?? '').trim();
+    // New keys (backend + spec): `skinTypes`, `shades`.
+    // Backward compatibility: accept legacy `skin`, `shade` too.
+    const skinParam = (params['skinTypes'] ?? params['skin'] ?? '').trim();
+    const shadeParam = (params['shades'] ?? params['shade'] ?? '').trim();
     const finishParam = (params['finish'] ?? '').trim();
     const benefitParam = (params['benefit'] ?? '').trim();
     const promotionParam = (params['promotion'] ?? '').trim();
@@ -780,9 +849,11 @@ export class Catalog implements OnInit {
     const headerBrandNames = headerBrandSlugs.map((slug) => this.brandSlugMap.get(slug) ?? this.matchBrandName(slug)).filter(Boolean) as string[];
     const filterBrandNames = filterBrandSlugs.map((slug) => this.brandSlugMap.get(slug) ?? this.matchBrandName(slug)).filter(Boolean) as string[];
 
-    const skinTypes = skinParam ? skinParam.split(',').map((s) => decodeURIComponent(s.trim())).filter(Boolean) : [];
+    const skinTypes = skinParam
+      ? skinParam.split(',').map((s) => decodeURIComponent(s.trim()).toLowerCase()).filter(Boolean)
+      : [];
     const productTypes = this.splitParam(productTypeParam);
-    const shades = this.splitParam(shadeParam);
+    const shades = this.splitParam(shadeParam).map((h) => this.normalizeShadeHex(h)).filter(Boolean);
     const finishes = this.splitParam(finishParam);
     const benefits = this.splitParam(benefitParam);
     const promotions = this.splitParam(promotionParam);
@@ -892,6 +963,14 @@ export class Catalog implements OnInit {
         const isDiscount = !!(oldPrice && oldPrice > currentPrice);
 
         const brandName = p.brandId?.brandName ?? '';
+        const productShadeHexes = (p.shades ?? [])
+          .map((s) => (s?.hex ? this.normalizeShadeHex(String(s.hex)) : ''))
+          .filter(Boolean);
+        const optionHexes =
+          (optionFacet.shades ?? [])
+            .filter((x) => typeof x === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(x))
+            .map((x) => this.normalizeShadeHex(String(x)));
+
         return {
           id: p._id,
           name: p.productName,
@@ -903,8 +982,15 @@ export class Catalog implements OnInit {
           parentSlug: categoryCtx.parentSlug,
           subSlug: categoryCtx.subSlug,
           productType: categoryCtx.parentName,
-          skinTypes: skinTypeMap.get(p._id) ?? [],
-          shades: optionFacet.shades,
+          skinTypes: [
+            ...new Set([
+              ...((skinTypeMap.get(p._id) ?? []) as string[]).map((x) => String(x).toLowerCase()),
+              ...((p.skin_types_supported ?? []) as string[]).map((x) => String(x).toLowerCase()),
+            ]),
+          ],
+          // Filter key for Shade/Màu must be the real hex value (`Product.shades.hex`).
+          shades: [...new Set([...productShadeHexes, ...optionHexes])],
+          shadeObjects: p.shades ?? [],
           finishes: finishBenefit.finishes,
           benefits: finishBenefit.benefits,
           hasPromotion: isDiscount || hasActiveSystemPromotion,
@@ -957,6 +1043,19 @@ export class Catalog implements OnInit {
 
   private extractUnique(values: string[]): string[] {
     return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }
+
+  private extractUniqueShadeOptions(products: CatalogProductRow[]): ShadeOption[] {
+    const map = new Map<string, ShadeOption>();
+    for (const p of products) {
+      for (const s of p.shadeObjects ?? []) {
+        const hex = s.hex ? this.normalizeShadeHex(String(s.hex)) : '';
+        if (s.name && hex && !map.has(hex)) {
+          map.set(hex, { name: s.name, hex });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   private computeMaxPrice(products: CatalogProductRow[]): number {

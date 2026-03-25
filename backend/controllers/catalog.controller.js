@@ -113,7 +113,75 @@ const getCatalogFacets = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/catalog/shades
+ * Distinct shades from `Product.shades` with their hex + name (for UI swatches).
+ */
+const getDistinctShades = async (req, res) => {
+  try {
+    const rows = await Product.aggregate([
+      { $unwind: "$shades" },
+      {
+        $match: {
+          "shades.hex": { $type: "string", $ne: "" },
+          "shades.name": { $type: "string", $ne: "" },
+        },
+      },
+      {
+        $group: {
+          _id: "$shades.hex",
+          name: { $first: "$shades.name" },
+        },
+      },
+      { $project: { _id: 0, hex: "$_id", name: 1 } },
+      { $sort: { name: 1 } },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Distinct shades",
+      data: rows,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * GET /api/catalog/skin-types
+ * Distinct skin-type values from `Product.skin_types_supported` (for multi-select chips).
+ */
+const getDistinctSkinTypes = async (req, res) => {
+  try {
+    const rows = await Product.aggregate([
+      { $unwind: "$skin_types_supported" },
+      {
+        $match: {
+          skin_types_supported: { $type: "string", $ne: "" },
+        },
+      },
+      {
+        $group: {
+          _id: "$skin_types_supported",
+        },
+      },
+      { $project: { _id: 0, value: "$_id" } },
+      { $sort: { value: 1 } },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      message: "Distinct skin types",
+      data: rows,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getCatalogBundle,
   getCatalogFacets,
+  getDistinctShades,
+  getDistinctSkinTypes,
 };

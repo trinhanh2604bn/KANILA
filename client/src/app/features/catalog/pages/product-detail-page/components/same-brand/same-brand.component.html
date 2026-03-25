@@ -1,0 +1,26 @@
+<div class="reco-block">
+  <h3>Same Brand</h3>
+
+  <div class="reco-scroll" *ngIf="loading">
+    <div class="pdp-reco-card-host" *ngFor="let _ of [0,1,2,3,4,5,6,7]">
+      <div class="pdp-skeleton-card"></div>
+    </div>
+  </div>
+
+  <div class="text-muted" style="margin-top: 10px; font-weight: 600;" *ngIf="!loading && !hasError && products.length === 0">
+    No similar products found
+  </div>
+
+  <div class="reco-scroll" *ngIf="!loading && !hasError && products.length > 0">
+    <app-product-card
+      class="pdp-reco-card-host"
+      *ngFor="let p of products; trackBy: trackById"
+      [product]="p"
+    ></app-product-card>
+  </div>
+
+  <div class="text-muted" style="margin-top: 10px; font-weight: 600;" *ngIf="hasError">
+    Could not load similar products. Please try again.
+  </div>
+</div>
+

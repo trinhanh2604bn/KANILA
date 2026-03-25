@@ -54,7 +54,9 @@ const getAllProducts = async (req, res) => {
       });
     }
 
-    const { filter, sort } = buildMongoFilterFromQuery(req.query, { storefrontOnly: false });
+    // Storefront listing should not return inactive products.
+    // (Existing Angular catalog historically filtered out inactive on the client.)
+    const { filter, sort } = buildMongoFilterFromQuery(req.query, { storefrontOnly: true });
     const skip = (pag.page - 1) * pag.limit;
     const [total, data] = await Promise.all([
       Product.countDocuments(filter),

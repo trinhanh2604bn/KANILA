@@ -69,7 +69,9 @@ export interface ProductDetailData {
   productName: string;
   subtitle: string;
   brandName: string;
+  brandId?: string;
   categoryName: string;
+  categoryId?: string;
   parentCategoryName?: string;
   price: number;
   oldPrice?: number;
