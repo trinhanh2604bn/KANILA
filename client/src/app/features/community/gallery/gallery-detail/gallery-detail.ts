@@ -7,7 +7,7 @@ import {
   TRENDING_GALLERY_ARTICLES,
   TrendingGalleryArticle,
   getTrendingArticleById
-} from '../trending-gallery.data';
+} from '../../shared/trending-gallery.data';
 
 interface GalleryDetailComment {
   id: string;

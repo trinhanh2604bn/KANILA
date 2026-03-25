@@ -2,12 +2,12 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Subscription } from 'rxjs';
-import type { CommunityPostItem } from '../community-post.model';
-import { CommunityPostsService } from '../community-posts.service';
+import type { CommunityPostItem } from '../shared/community-post.model';
+import { CommunityPostsService } from '../shared/community-posts.service';
 import {
   ChallengeUserStateService,
   type UserChallengeSubmissionView
-} from '../challenges/challenge-user-state.service';
+} from '../challenges/services/challenge-user-state.service';
 import {
   getPostDisplayMedia,
   isVideoMediaUrl,

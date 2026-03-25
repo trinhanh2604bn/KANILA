@@ -3,8 +3,8 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CommunityPostsService } from '../community-posts.service';
-import type { CommunityPostItem } from '../community-post.model';
+import { CommunityPostsService } from '../../shared/community-posts.service';
+import type { CommunityPostItem } from '../../shared/community-post.model';
 
 interface DetailAuthor {
   name: string;

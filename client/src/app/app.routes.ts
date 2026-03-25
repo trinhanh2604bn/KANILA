@@ -3,9 +3,9 @@ import { ClientLayout } from './layout/client-layout/client-layout';
 
 import { Mainpage } from './features/home/pages/mainpage/mainpage';
 import { CommunityComponent } from './features/community/communityhome/community';
-import { PostDetailPage } from './features/community/post-detail/post-detail';
+import { PostDetailPage } from './features/community/gallery/post-detail/post-detail';
 import { GalleryPage } from './features/community/gallery/gallery';
-import { GalleryDetailPage } from './features/community/gallery-detail/gallery-detail';
+import { GalleryDetailPage } from './features/community/gallery/gallery-detail/gallery-detail';
 import { ChallengesPage } from './features/community/challenges/challenges';
 import { ChallengeDetailPage } from './features/community/challenges/challenge-detail/challenge-detail';
 import { ChallengeJoinPage } from './features/community/challenges/challenge-join/challenge-join';

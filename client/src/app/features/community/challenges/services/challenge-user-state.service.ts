@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
-import { getChallengeById, type ChallengeParticipantPost } from './challenges.data';
+import { getChallengeById, type ChallengeParticipantPost } from '../challenges.data';
 
 export interface UserChallengeSubmissionView {
   challengeId: string;

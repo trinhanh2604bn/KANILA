@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { TRENDING_GALLERY_ARTICLES } from '../trending-gallery.data';
+import { TRENDING_GALLERY_ARTICLES } from '../shared/trending-gallery.data';
 
 type GalleryFilter = 'trending' | 'newest' | 'loved';
 

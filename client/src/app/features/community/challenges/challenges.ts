@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { ChallengeUserStateService } from './challenge-user-state.service';
+import { ChallengeUserStateService } from './services/challenge-user-state.service';
 import { CHALLENGES, type ChallengeDefinition } from './challenges.data';
 
 type ChallengeFilter = 'all' | 'ending' | 'popular' | 'rewards' | 'joined';

@@ -3,7 +3,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ChallengeUserStateService } from '../challenge-user-state.service';
+import { ChallengeUserStateService } from '../services/challenge-user-state.service';
 import {
   CHALLENGE_SUBMIT_SUCCESS_MESSAGE,
   ChallengeDefinition,

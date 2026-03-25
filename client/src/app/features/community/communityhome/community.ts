@@ -4,9 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CHALLENGES, formatChallengeDeadlineVi } from '../challenges/challenges.data';
-import { TRENDING_GALLERY_ARTICLES } from '../trending-gallery.data';
-import { COMMUNITY_CURRENT_USER_ID, type CommunityPostItem } from '../community-post.model';
-import { CommunityPostsService } from '../community-posts.service';
+import { TRENDING_GALLERY_ARTICLES } from '../shared/trending-gallery.data';
+import { COMMUNITY_CURRENT_USER_ID, type CommunityPostItem } from '../shared/community-post.model';
+import { CommunityPostsService } from '../shared/community-posts.service';
 
 type FeedTab = 'forYou' | 'trending' | 'looks' | 'reviews' | 'swatches' | 'questions' | 'following' | 'saved';
 

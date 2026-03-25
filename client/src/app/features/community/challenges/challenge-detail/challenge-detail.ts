@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ChallengeUserStateService } from '../challenge-user-state.service';
+import { ChallengeUserStateService } from '../services/challenge-user-state.service';
 import {
   CHALLENGE_SUBMIT_SUCCESS_MESSAGE,
   ChallengeDefinition,
