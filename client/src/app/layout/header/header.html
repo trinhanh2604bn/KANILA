@@ -280,7 +280,7 @@
               <ng-template #loggedOutBlock>
                 <div class="account-summary-card guest-card">
                   <div class="account-summary-copy">
-                    <strong>Chào bạn!</strong>
+                    <strong>Chào bạn!   </strong> <span></span>
                     <span>Đăng nhập để nhận ưu đãi dành riêng cho bạn</span>
                   </div>
                 </div>
@@ -297,23 +297,6 @@
                     (click)="closeAccountMenu()"
                     >Đăng ký</a
                   >
-                </div>
-                <div class="account-group account-group-compact">
-                  <a
-                    routerLink="/account/skin-profile"
-                    class="account-row"
-                    (click)="closeAccountMenu()"
-                    ><i class="bi bi-droplet"></i><span>Làn da của bạn</span
-                    ><i class="bi bi-chevron-right"></i
-                  ></a>
-                  <a routerLink="/account/wishlist" class="account-row" (click)="closeAccountMenu()"
-                    ><i class="bi bi-heart"></i><span>Danh mục yêu thích</span
-                    ><i class="bi bi-chevron-right"></i
-                  ></a>
-                  <a routerLink="/account/coupons" class="account-row" (click)="closeAccountMenu()"
-                    ><i class="bi bi-ticket-perforated"></i><span>Mã giảm giá</span
-                    ><i class="bi bi-chevron-right"></i
-                  ></a>
                 </div>
               </ng-template>
             </div>
