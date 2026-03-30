@@ -69,6 +69,8 @@ interface CatalogProductRow {
 })
 export class Catalog implements OnInit {
   isSalePage: boolean = false;
+  isNewPage: boolean = false; 
+  isPopularPage: boolean = false;
   isScrolled: boolean = false;
   loading = true;
   hasError = false;
@@ -198,8 +200,10 @@ export class Catalog implements OnInit {
 
   ngOnInit() {
     this.route.url.subscribe((urlSegments) => {
-      this.isSalePage = urlSegments.length > 0 && urlSegments[0].path === 'sale';
-    });
+  this.isSalePage = urlSegments.length > 0 && urlSegments[0].path === 'sale';
+  this.isNewPage = urlSegments.length > 0 && urlSegments[0].path === 'new';         // Thêm
+  this.isPopularPage = urlSegments.length > 0 && urlSegments[0].path === 'popular'; // Thêm
+});
 
     this.loading = true;
     this.hasError = false;
@@ -589,16 +593,23 @@ export class Catalog implements OnInit {
       temp.push(p);
     }
 
-    if (this.activeSort === 'price_asc') temp.sort((a, b) => a.price - b.price);
-    else if (this.activeSort === 'price_desc') temp.sort((a, b) => b.price - a.price);
-    else if (this.activeSort === 'popular') temp.sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0));
-    else if (this.activeSort === 'new') temp.sort((a, b) => b.id.localeCompare(a.id));
-    else if (this.activeSort === 'hot_deal') {
-      const onlySale = temp.filter((p) => p.isSale);
-      onlySale.sort((a, b) => (b.oldPrice ?? b.price) - b.price - ((a.oldPrice ?? a.price) - a.price));
-      // Keep array identity for the shared post-sort assignment.
-      temp.splice(0, temp.length, ...onlySale);
-    }
+    // Xác định chế độ sort thực tế. Nếu là 'default', tự động lấy sort theo trang
+let effectiveSort = this.activeSort;
+if (effectiveSort === 'default') {
+  if (this.isNewPage) effectiveSort = 'new';
+  else if (this.isPopularPage) effectiveSort = 'popular';
+  else if (this.isSalePage) effectiveSort = 'hot_deal';
+}
+
+if (effectiveSort === 'price_asc') temp.sort((a, b) => a.price - b.price);
+else if (effectiveSort === 'price_desc') temp.sort((a, b) => b.price - a.price);
+else if (effectiveSort === 'popular') temp.sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0));
+else if (effectiveSort === 'new') temp.sort((a, b) => b.id.localeCompare(a.id));
+else if (effectiveSort === 'hot_deal') {
+  const onlySale = temp.filter((p) => p.isSale);
+  onlySale.sort((a, b) => (b.oldPrice ?? b.price) - b.price - ((a.oldPrice ?? a.price) - a.price));
+  temp.splice(0, temp.length, ...onlySale);
+}
 
     this.filteredProducts = temp;
 
@@ -910,7 +921,7 @@ export class Catalog implements OnInit {
   }
 
   private isValidSort(sort: string): boolean {
-    return ['default', 'popular', 'hot_deal', 'price_desc', 'price_asc'].includes(sort);
+    return ['default', 'popular', 'hot_deal', 'new', 'price_desc', 'price_asc'].includes(sort);
   }
 
   private toBrandParam(names: string[]): string | null {

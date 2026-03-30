@@ -1,21 +1,70 @@
-<section class="card-soft security-card">
-  <header class="card-head">
-    <div>
-      <h2>Bảo mật tài khoản</h2>
-      <p>Tăng cường bảo vệ tài khoản để mua sắm an toàn hơn.</p>
+<section class="security-container">
+  <div class="security-header">
+    <div class="header-content">
+      <h2 class="title-gradient">Thiết lập bảo mật</h2>
+      <p class="subtitle">Quản lý mật khẩu và các phương thức đăng nhập để bảo vệ tài khoản của bạn.</p>
     </div>
-  </header>
-  <div class="security-actions">
-    <button type="button" class="security-item" (click)="openChangePasswordModal()"><i class="bi bi-key"></i><span>Đổi mật khẩu</span></button>
-    <div class="loading" *ngIf="loading">Đang tải trạng thái bảo mật...</div>
-    <div class="error" *ngIf="error">{{ error }}</div>
-    <div class="security-meta">
-      <span class="security-pill" [class.ok]="hasPassword">{{ hasPassword ? 'Mật khẩu: Đã thiết lập' : 'Mật khẩu: Chưa thiết lập' }}</span>
-      <span class="security-pill provider-pill" *ngFor="let p of linkedProviders">
-        {{ p.provider | uppercase }}
-        <button type="button" class="unlink-btn" [disabled]="busyProvider === p.provider" (click)="unlinkProvider(p.provider)">Gỡ</button>
-      </span>
-      <span class="security-pill" *ngIf="!linkedProviders.length">Chưa liên kết social</span>
+    <div class="security-score" *ngIf="!loading">
+      <div class="score-circle" [class.secure]="hasPassword">
+        <i class="bi" [class.bi-shield-check]="hasPassword" [class.bi-shield-exclamation]="!hasPassword"></i>
+      </div>
+      <div class="score-info">
+        <span class="status-label">{{ hasPassword ? 'Mức độ bảo mật: Cao' : 'Cần thiết lập mật khẩu' }}</span>
+        <div class="status-bar"><div class="bar-fill" [style.width]="hasPassword ? '100%' : '30%'"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="security-grid">
+    <!-- Password Section -->
+    <div class="security-card main-action" (click)="openChangePasswordModal()">
+      <div class="card-icon password-icon">
+        <i class="bi bi-shield-lock"></i>
+      </div>
+      <div class="card-content">
+        <h3>Mật khẩu đăng nhập</h3>
+        <p>{{ hasPassword ? 'Thay đổi mật khẩu định kỳ để tăng tính bảo mật' : 'Bạn chưa thiết lập mật khẩu cho tài khoản này' }}</p>
+      </div>
+      <div class="card-status">
+        <span class="badge" [class.badge-success]="hasPassword" [class.badge-warn]="!hasPassword">
+          {{ hasPassword ? 'Đã thiết lập' : 'Chưa có' }}
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </div>
+    </div>
+
+    <!-- Social Links Section -->
+    <div class="security-card social-card">
+      <div class="card-icon social-icon">
+        <i class="bi bi-person-badge"></i>
+      </div>
+      <div class="card-content">
+        <h3>Liên kết mạng xã hội</h3>
+        <p>Đăng nhập nhanh chóng và an toàn qua các tài khoản liên kết</p>
+        
+        <div class="provider-list" *ngIf="linkedProviders.length">
+          <div class="provider-item" *ngFor="let p of linkedProviders">
+            <div class="provider-info">
+              <i class="bi" [ngClass]="p.provider === 'google' ? 'bi-google' : 'bi-facebook'"></i>
+              <span>{{ p.provider | titlecase }}</span>
+            </div>
+            <button type="button" class="btn-unlink" 
+                    [disabled]="busyProvider === p.provider" 
+                    (click)="unlinkProvider(p.provider); $event.stopPropagation()">
+              {{ busyProvider === p.provider ? 'Đang gỡ...' : 'Hủy liên kết' }}
+            </button>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!linkedProviders.length && !loading">
+          <i class="bi bi-info-circle"></i> Chưa liên kết với tài khoản mạng xã hội nào
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="security-footer" *ngIf="error">
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i> {{ error }}
     </div>
   </div>
 </section>

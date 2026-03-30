@@ -17,7 +17,7 @@
 
         <nav class="d-none d-xl-block">
           <ul class="list-unstyled d-flex mb-0 gap-4 align-items-center position-static">
-            <li><a routerLink="/catalog/sale" class="nav-link-header">Sale</a></li>
+            <li><a routerLink="/catalog/sale" class="nav-link-header">Deal HOT</a></li>
 
             <li class="nav-item-mega position-static">
               <a routerLink="/catalog" class="nav-link-header d-flex align-items-center">
@@ -78,37 +78,15 @@
 
                   <div class="mega-grid-bottom">
                     <div class="mega-col">
-                      <a
-                        routerLink="/catalog"
-                        [queryParams]="{ sort: 'popular' }"
-                        class="text-decoration-none mega-title-link"
-                      >
-                        <h6 class="mega-col-title">New & Trending</h6>
-                      </a>
-                      <ul class="list-unstyled mb-0">
-                        <li>
-                          <a routerLink="/catalog" [queryParams]="{ sort: 'new' }" class="mega-link"
-                            >Sản phẩm mới</a
-                          >
-                        </li>
-                        <li>
-                          <a
-                            routerLink="/catalog"
-                            [queryParams]="{ sort: 'popular' }"
-                            class="mega-link"
-                            >Hot</a
-                          >
-                        </li>
-                        <li>
-                          <a
-                            routerLink="/catalog"
-                            [queryParams]="{ sort: 'popular' }"
-                            class="mega-link"
-                            >Bán chạy</a
-                          >
-                        </li>
-                      </ul>
-                    </div>
+  <a routerLink="/catalog/popular" class="text-decoration-none mega-title-link">
+    <h6 class="mega-col-title">New & Trending</h6>
+  </a>
+  <ul class="list-unstyled mb-0">
+    <li><a routerLink="/catalog/new" class="mega-link">Sản phẩm mới</a></li>
+    <li><a routerLink="/catalog/sale" class="mega-link">Khuyến mãi</a></li>
+    <li><a routerLink="/catalog/popular" class="mega-link">Bán chạy</a></li>
+  </ul>
+</div>
 
                     <div class="mega-cards-grid">
                       <a

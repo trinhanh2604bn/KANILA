@@ -23,6 +23,44 @@ export class CommunityComponent implements OnInit, OnDestroy {
 
   activeTab: FeedTab = 'forYou';
   searchKeyword = '';
+
+  // --- CODE MỚI THÊM VÀO TỪ ĐÂY ---
+  get isSearching(): boolean {
+    return this.searchKeyword.trim().length > 0;
+  }
+
+  get searchedChallenges() {
+    if (!this.isSearching) return [];
+    const kw = this.searchKeyword.trim().toLowerCase();
+    return CHALLENGES.filter((c) =>
+      c.title.toLowerCase().includes(kw) ||
+      c.subtitle.toLowerCase().includes(kw) ||
+      c.hashtag.toLowerCase().includes(kw)
+    );
+  }
+
+  get searchedGallery() {
+    if (!this.isSearching) return [];
+    const kw = this.searchKeyword.trim().toLowerCase();
+    return TRENDING_GALLERY_ARTICLES.filter((a) =>
+      a.title.toLowerCase().includes(kw) ||
+      a.excerpt.toLowerCase().includes(kw)
+    );
+  }
+
+  get hasSearchResults(): boolean {
+    return (
+      this.filteredPosts.length > 0 ||
+      this.searchedChallenges.length > 0 ||
+      this.searchedGallery.length > 0
+    );
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1; // Reset trang khi gõ phím mới
+  }
+  // --- KẾT THÚC CODE MỚI ---
+
   sortBy: 'all' | 'newest' | 'popular' | 'bookmarked' = 'all';
   currentPage = 1;
   readonly pageSize = 10;
@@ -63,7 +101,7 @@ export class CommunityComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private communityPosts: CommunityPostsService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.postsSub = this.communityPosts.postsObservable.subscribe((p) => {

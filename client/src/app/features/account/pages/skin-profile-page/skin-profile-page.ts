@@ -57,7 +57,7 @@ export class SkinProfilePageComponent implements OnInit {
     }).pipe(take(1)).subscribe({ next: () => { this.saveMessage = 'Đã cập nhật hồ sơ làn da.'; this.loadRecommendations(); } });
   }
 
-  viewRecommendedProducts(): void { this.router.navigate(['/catalog'], { queryParams: { personalized: '1' } }); }
+  viewRecommendedProducts(): void { window.location.href = 'http://localhost:56348/recommendations/me'; }
   nextSkinStep(): void { this.skinStep = Math.min(3, this.skinStep + 1); }
   prevSkinStep(): void { this.skinStep = Math.max(1, this.skinStep - 1); }
   toggleSkinType(option: string): void { this.skinTypeSelections = this.toggle(this.skinTypeSelections, option); }

@@ -8,5 +8,7 @@ export const CATALOG_ROUTES: Routes = [
   { path: 'tag/:slug', loadComponent: () => import('./pages/collection-tag-page/collection-tag-page').then((m) => m.CatalogCollectionTagPageComponent) },
   { path: 'recommendations', loadComponent: () => import('./pages/recommendation-page/recommendation-page').then((m) => m.CatalogRecommendationPageComponent) },
   { path: 'sale', component: Catalog },
+  { path: 'new', component: Catalog },     
+  { path: 'popular', component: Catalog },
   { path: '', component: Catalog },
 ];

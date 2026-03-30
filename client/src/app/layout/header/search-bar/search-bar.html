@@ -90,7 +90,7 @@
         </button>
       </ng-container>
 
-      <div class="search-empty" *ngIf="flatSuggestions.length === 0 && !domainRejected">
+      <div class="search-empty" *ngIf="keywordControl.value.trim() && flatSuggestions.length === 0 && !domainRejected">
         Không tìm thấy gợi ý phù hợp. Thử từ khóa khác.
       </div>
       <div class="search-empty" *ngIf="domainRejected">

@@ -20,7 +20,8 @@
     <div class="hero__right">
       <div class="hero__search">
         <span class="hero__search-icon"><i class="bi bi-search"></i></span>
-        <input type="text" [(ngModel)]="searchKeyword" placeholder="Tìm kiếm hoặc đặt câu hỏi" />
+        <input type="text" [(ngModel)]="searchKeyword" (ngModelChange)="onSearchChange()"
+          placeholder="Tìm kiếm bài viết, gallery, challenge..." />
       </div>
       <div class="hero__stats">
         <div class="hero__stat-item">
@@ -37,161 +38,230 @@
             <strong>{{ quickStats.postCount | number }}</strong>
             <p>Bài viết</p>
           </div>
-       </div>
+        </div>
 
         <div class="hero__stat-item">
           <i class="bi bi-trophy-fill hero__stat-icon"></i>
           <div>
-          <strong>{{ quickStats.activeChallenges }} challenge </strong>
-          <p>Đang chạy</p>
+            <strong>{{ quickStats.activeChallenges }} challenge </strong>
+            <p>Đang chạy</p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="discovery-section">
-    <div class="discovery-header">
-      <div></div>
-      <div class="discovery-title">TRENDING GALLERY</div>
-      <button class="discovery-viewall" type="button" (click)="goGalleryPage()">
-        Xem tất cả <i class="bi bi-arrow-right-short" aria-hidden="true"></i>
-      </button>
-    </div>
-    <p class="challenges-subtitle">Khám phá những bức ảnh và xu hướng làm đẹp đang được cộng đồng yêu thích nhất</p>
+  <ng-container *ngIf="!isSearching">
+    <section class="discovery-section">
+      <div class="discovery-header">
+        <div></div>
+        <div class="discovery-title">TRENDING GALLERY</div>
+        <button class="discovery-viewall" type="button" (click)="goGalleryPage()">
+          Xem tất cả <i class="bi bi-arrow-right-short" aria-hidden="true"></i>
+        </button>
+      </div>
+      <p class="challenges-subtitle">Khám phá những bức ảnh và xu hướng làm đẹp đang được cộng đồng yêu thích nhất</p>
 
-    <div class="card-scroll-wrapper">
-      <div class="post-card1" *ngFor="let item of trendingGalleryItems">
-        <div class="book" (click)="goTrendingGalleryDetail(item.id)">
-          <p class="post-caption">
-            {{ item.title }}
-            <br /><br />
-            {{ item.excerpt }}
-          </p>
-          <div class="cover">
-            <img [src]="item.image" [alt]="item.title" class="section-img" />
+      <div class="card-scroll-wrapper">
+        <div class="post-card1" *ngFor="let item of trendingGalleryItems">
+          <div class="book" (click)="goTrendingGalleryDetail(item.id)">
+            <p class="post-caption">
+              {{ item.title }}
+              <br /><br />
+              {{ item.excerpt }}
+            </p>
+            <div class="cover">
+              <img [src]="item.image" [alt]="item.title" class="section-img" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-</section>
+    </section>
 
-  <!-- CHALLENGES -->
-  <section class="challenges-section">
-    <div class="discovery-header">
-      <div></div>
-      <div class="discovery-title">CHALLENGES</div>
-      <button class="discovery-viewall" type="button" (click)="goChallengesPage()">
-        Xem tất cả <i class="bi bi-arrow-right-short" aria-hidden="true"></i>
-      </button>
-    </div>
-    <p class="challenges-subtitle">Tham gia thử thách làm đẹp để nhận quà và tăng tương tác cùng cộng đồng KANILA</p>
+    <!-- CHALLENGES -->
+    <section class="challenges-section">
+      <div class="discovery-header">
+        <div></div>
+        <div class="discovery-title">CHALLENGES</div>
+        <button class="discovery-viewall" type="button" (click)="goChallengesPage()">
+          Xem tất cả <i class="bi bi-arrow-right-short" aria-hidden="true"></i>
+        </button>
+      </div>
+      <p class="challenges-subtitle">Tham gia thử thách làm đẹp để nhận quà và tăng tương tác cùng cộng đồng KANILA</p>
 
-    <div class="challenges-grid">
-      <article class="challenge-card" *ngFor="let challenge of challengesHome">
-        <div class="challenge-card__badge">{{ challenge.badge }}</div>
-        <img [src]="challenge.thumbnail" [alt]="challenge.title" class="challenge-card__thumb" />
-        <div class="challenge-card__body">
-          <h4>{{ challenge.title }}</h4>
-          <p class="challenge-card__desc">{{ challenge.subtitle }}</p>
-          <p class="challenge-card__deadline">{{ formatChallengeDeadline(challenge.endDateIso) }}</p>
+      <div class="challenges-grid">
+        <article class="challenge-card" *ngFor="let challenge of challengesHome">
+          <div class="challenge-card__badge">{{ challenge.badge }}</div>
+          <img [src]="challenge.thumbnail" [alt]="challenge.title" class="challenge-card__thumb" />
+          <div class="challenge-card__body">
+            <h4>{{ challenge.title }}</h4>
+            <p class="challenge-card__desc">{{ challenge.subtitle }}</p>
+            <p class="challenge-card__deadline">{{ formatChallengeDeadline(challenge.endDateIso) }}</p>
 
-          <div class="challenge-card__stats">
-            <span><i class="bi bi-images"></i> {{ challenge.entries }} bài dự thi</span>
-            <span><i class="bi bi-heart-fill"></i> {{ challenge.likes }} lượt thích</span>
-            <span><i class="bi bi-people-fill"></i> {{ challenge.participants }} người tham gia</span>
-          </div>
-
-          <div class="challenge-card__actions">
-            <button type="button" class="challenge-btn challenge-btn--primary" (click)="goChallengeJoin(challenge.id)">
-              Tham Gia Ngay
-            </button>
-            <button type="button" class="challenge-btn" (click)="goChallengeDetail(challenge.id)">Xem thêm</button>
-          </div>
-        </div>
-      </article>
-    </div>
-  </section>
-
-
-  <!-- POSTS BOARD -->
-  <section class="posts-board">
-    <div class="posts-board__header">
-      <h3><b>All Posts</b></h3>
-      <button class="posts-board__cta" (click)="openCreatePost()">Tạo bài viết</button>
-    </div>
-
-    <div class="posts-board__grid">
-      <aside class="posts-board__left">
-        <button class="menu-item" [class.active]="sortBy === 'all'" (click)="selectAll()">Tất cả</button>
-        <button class="menu-item" [class.active]="sortBy === 'newest'" (click)="setSort('newest')">Mới nhất</button>
-        <button class="menu-item" [class.active]="sortBy === 'popular'" (click)="setSort('popular')">Phổ biến</button>
-        <button class="menu-item" [class.active]="sortBy === 'bookmarked'" (click)="setSort('bookmarked')">Bookmark</button>
-      </aside>
-
-      <main class="posts-board__feed">
-        <article class="post-card" *ngFor="let post of pagedPosts">
-          <header class="post-card__header">
-            <div class="author">
-              <img [src]="post.author.avatar" [alt]="post.author.name" />
-              <div>
-                <h4>{{ post.author.name }}</h4>
-                <p>{{ post.type | uppercase }} · {{ post.timestamp }}</p>
-              </div>
+            <div class="challenge-card__stats">
+              <span><i class="bi bi-images"></i> {{ challenge.entries }} bài dự thi</span>
+              <span><i class="bi bi-heart-fill"></i> {{ challenge.likes }} lượt thích</span>
+              <span><i class="bi bi-people-fill"></i> {{ challenge.participants }} người tham gia</span>
             </div>
 
-          </header>
-          <h3 class="post-title" (click)="openPostDetail(post)">{{ post.title }}</h3>
-          <p class="post-caption">{{ post.caption }}</p>
-          <div class="post-media-grid">
-            <img
-              class="post-media-square"
-              *ngFor="let img of (post.images?.length ? post.images.slice(0, 4) : [post.image])"
-              [src]="img"
-              [alt]="post.title + ' image'"
-              (click)="openPostDetail(post)"
-            />
-          </div>
-          <div class="chips"><span *ngFor="let chip of post.chips">{{ chip }}</span></div>
-          <div class="post-actions">
-            <button class="post-like-btn" [class.active]="post.liked" (click)="toggleLike(post.id)">
-              <i class="bi" [class.bi-heart-fill]="post.liked" [class.bi-heart]="!post.liked"></i>
-              {{ post.likes }}
-            </button>
-            <button (click)="openPostDetail(post)">
-              <i class="bi bi-chat-dots"></i> {{ post.comments }}
-            </button>
-            <button class="post-bookmark-btn" [class.active]="post.saved" (click)="toggleSave(post.id)">
-              <i class="bi" [class.bi-bookmark-fill]="post.saved" [class.bi-bookmark]="!post.saved"></i>
-              {{ post.saved ? 'Đã lưu' : 'Lưu' }}
-            </button>
+            <div class="challenge-card__actions">
+              <button type="button" class="challenge-btn challenge-btn--primary"
+                (click)="goChallengeJoin(challenge.id)">
+                Tham Gia Ngay
+              </button>
+              <button type="button" class="challenge-btn" (click)="goChallengeDetail(challenge.id)">Xem thêm</button>
+            </div>
           </div>
         </article>
+      </div>
+    </section>
 
-        <div class="posts-pagination">
-          <button class="page-nav page-nav--side" (click)="previousPage()" [disabled]="currentPageSafe === 1">
-            <i class="bi bi-chevron-left"></i>
-          </button>
 
-          <div class="page-numbers">
-            <button
-              class="page-number"
-              *ngFor="let page of visiblePageNumbers"
-              [class.active]="page === currentPageSafe"
-              (click)="goToPage(page)"
-            >
-              {{ page }}
+    <!-- POSTS BOARD -->
+    <section class="posts-board">
+      <div class="posts-board__header">
+        <h3><b>All Posts</b></h3>
+        <button class="posts-board__cta" (click)="openCreatePost()">Tạo bài viết</button>
+      </div>
+
+      <div class="posts-board__grid">
+        <aside class="posts-board__left">
+          <button class="menu-item" [class.active]="sortBy === 'all'" (click)="selectAll()">Tất cả</button>
+          <button class="menu-item" [class.active]="sortBy === 'newest'" (click)="setSort('newest')">Mới nhất</button>
+          <button class="menu-item" [class.active]="sortBy === 'popular'" (click)="setSort('popular')">Phổ biến</button>
+          <button class="menu-item" [class.active]="sortBy === 'bookmarked'"
+            (click)="setSort('bookmarked')">Bookmark</button>
+        </aside>
+
+        <main class="posts-board__feed">
+          <article class="post-card" *ngFor="let post of pagedPosts">
+            <header class="post-card__header">
+              <div class="author">
+                <img [src]="post.author.avatar" [alt]="post.author.name" />
+                <div>
+                  <h4>{{ post.author.name }}</h4>
+                  <p>{{ post.type | uppercase }} · {{ post.timestamp }}</p>
+                </div>
+              </div>
+
+            </header>
+            <h3 class="post-title" (click)="openPostDetail(post)">{{ post.title }}</h3>
+            <p class="post-caption">{{ post.caption }}</p>
+            <div class="post-media-grid">
+              <img class="post-media-square"
+                *ngFor="let img of (post.images?.length ? post.images.slice(0, 4) : [post.image])" [src]="img"
+                [alt]="post.title + ' image'" (click)="openPostDetail(post)" />
+            </div>
+            <div class="chips"><span *ngFor="let chip of post.chips">{{ chip }}</span></div>
+            <div class="post-actions">
+              <button class="post-like-btn" [class.active]="post.liked" (click)="toggleLike(post.id)">
+                <i class="bi" [class.bi-heart-fill]="post.liked" [class.bi-heart]="!post.liked"></i>
+                {{ post.likes }}
+              </button>
+              <button (click)="openPostDetail(post)">
+                <i class="bi bi-chat-dots"></i> {{ post.comments }}
+              </button>
+              <button class="post-bookmark-btn" [class.active]="post.saved" (click)="toggleSave(post.id)">
+                <i class="bi" [class.bi-bookmark-fill]="post.saved" [class.bi-bookmark]="!post.saved"></i>
+                {{ post.saved ? 'Đã lưu' : 'Lưu' }}
+              </button>
+            </div>
+          </article>
+
+          <div class="posts-pagination">
+            <button class="page-nav page-nav--side" (click)="previousPage()" [disabled]="currentPageSafe === 1">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+
+            <div class="page-numbers">
+              <button class="page-number" *ngFor="let page of visiblePageNumbers"
+                [class.active]="page === currentPageSafe" (click)="goToPage(page)">
+                {{ page }}
+              </button>
+            </div>
+
+            <button class="page-nav page-nav--side" (click)="nextPage()" [disabled]="currentPageSafe === totalPages">
+              <i class="bi bi-chevron-right"></i>
             </button>
           </div>
+        </main>
 
-          <button class="page-nav page-nav--side" (click)="nextPage()" [disabled]="currentPageSafe === totalPages">
-            <i class="bi bi-chevron-right"></i>
-          </button>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-container *ngIf="isSearching">
+    <section class="search-results-wrapper">
+
+      <div class="search-empty-state" *ngIf="!hasSearchResults">
+        <i class="bi bi-search"></i>
+        <h3>Rất tiếc không có nội dung bạn tìm kiếm.</h3>
+        <p>Vui lòng tìm từ khóa khác hoặc kiểm tra lại lỗi chính tả.</p>
+      </div>
+
+      <div class="search-populated" *ngIf="hasSearchResults">
+
+        <div class="search-group" *ngIf="searchedChallenges.length > 0">
+          <h3 class="search-group-title">Challenges ({{ searchedChallenges.length }})</h3>
+          <div class="challenges-grid">
+            <article class="challenge-card" *ngFor="let challenge of searchedChallenges">
+              <div class="challenge-card__badge">{{ challenge.badge || 'Mới' }}</div>
+              <img [src]="challenge.thumbnail" [alt]="challenge.title" class="challenge-card__thumb" />
+              <div class="challenge-card__body">
+                <h4>{{ challenge.title }}</h4>
+                <p class="challenge-card__desc">{{ challenge.subtitle }}</p>
+                <div class="challenge-card__actions">
+                  <button type="button" class="challenge-btn challenge-btn--primary"
+                    (click)="goChallengeJoin(challenge.id)">Tham Gia</button>
+                  <button type="button" class="challenge-btn" (click)="goChallengeDetail(challenge.id)">Xem
+                    thêm</button>
+                </div>
+              </div>
+            </article>
+          </div>
         </div>
-      </main>
 
-    </div>
-  </section>
+        <div class="search-group" *ngIf="searchedGallery.length > 0">
+          <h3 class="search-group-title">Gallery ({{ searchedGallery.length }})</h3>
+          <div class="card-scroll-wrapper" style="flex-wrap: wrap; overflow: hidden;">
+            <div class="post-card1" *ngFor="let item of searchedGallery">
+              <div class="book" (click)="goTrendingGalleryDetail(item.id)">
+                <p class="post-caption">{{ item.title }}</p>
+                <div class="cover">
+                  <img [src]="item.image" [alt]="item.title" class="section-img" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="search-group" *ngIf="filteredPosts.length > 0">
+          <h3 class="search-group-title">Bài viết cộng đồng ({{ filteredPosts.length }})</h3>
+          <main class="posts-board__feed" style="grid-template-columns: repeat(2, 1fr);">
+            <article class="post-card" *ngFor="let post of pagedPosts">
+              <header class="post-card__header">
+                <div class="author">
+                  <img [src]="post.author.avatar" [alt]="post.author.name" />
+                  <div>
+                    <h4>{{ post.author.name }}</h4>
+                    <p>{{ post.timestamp }}</p>
+                  </div>
+                </div>
+              </header>
+              <h3 class="post-title" style="cursor: pointer;" (click)="openPostDetail(post)">{{ post.title }}</h3>
+              <p class="post-caption">{{ post.caption }}</p>
+              <div class="post-media-grid">
+                <img class="post-media-square"
+                  *ngFor="let img of (post.images?.length ? post.images.slice(0, 4) : [post.image])" [src]="img"
+                  (click)="openPostDetail(post)" />
+              </div>
+            </article>
+          </main>
+        </div>
+
+      </div>
+    </section>
+  </ng-container>
 
   <div class="create-post-overlay" *ngIf="isCreatePostOpen" (click)="closeCreatePost()">
     <section class="create-post-modal" (click)="$event.stopPropagation()">
@@ -203,34 +273,19 @@
           <i class="bi bi-x-lg"></i>
         </button>
       </header>
-
       <div class="create-post-form-panel">
         <div class="create-post-user">
           <img [src]="currentUser.avatar" [alt]="currentUser.name" />
           <strong>{{ currentUser.name }}</strong>
         </div>
 
-        <input
-          class="create-post-input"
-          type="text"
-          [(ngModel)]="createPostTitle"
-          placeholder="Tiêu đề bài"
-        />
+        <input class="create-post-input" type="text" [(ngModel)]="createPostTitle" placeholder="Tiêu đề bài" />
 
-        <textarea
-          class="create-post-textarea"
-          [(ngModel)]="createPostText"
-          placeholder="Bạn đang nghĩ gì?"
-          rows="5"
-        ></textarea>
+        <textarea class="create-post-textarea" [(ngModel)]="createPostText" placeholder="Bạn đang nghĩ gì?"
+          rows="5"></textarea>
 
-        <div
-          class="create-post-upload-dropzone"
-          [class.drag-over]="isDragOverUpload"
-          (dragover)="onUploadDragOver($event)"
-          (dragleave)="onUploadDragLeave($event)"
-          (drop)="onUploadDrop($event)"
-        >
+        <div class="create-post-upload-dropzone" [class.drag-over]="isDragOverUpload"
+          (dragover)="onUploadDragOver($event)" (dragleave)="onUploadDragLeave($event)" (drop)="onUploadDrop($event)">
           <label class="upload-dropzone-content">
             <i class="bi bi-camera"></i>
             <span>Thêm Ảnh Hoặc Video</span>

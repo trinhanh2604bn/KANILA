@@ -46,7 +46,7 @@ export class SearchBarComponent implements OnInit {
   products: Product[] = [];
   categories: HeaderCategoryItem[] = [];
   brands: HeaderBrandItem[] = [];
-  readonly staticKeywords = ['son li lau troi', 'kem nen cho da dau', 'mascara khong troi'];
+  readonly staticKeywords = ['lip', 'foundation', 'face', 'mascara'];
 
   productSuggestions: SuggestionItem[] = [];
   categorySuggestions: SuggestionItem[] = [];
@@ -55,12 +55,12 @@ export class SearchBarComponent implements OnInit {
   historySuggestions: SuggestionItem[] = [];
   domainRejected = false;
   readonly domainKeywords = [
-    'my pham', 'makeup', 'skincare', 'son', 'son moi', 'phan', 'phan phu', 'phan mat', 'phan ma',
-    'kem', 'kem nen', 'kem duong', 'kem chong nang', 'duong', 'serum', 'toner', 'cushion', 'mascara',
-    'eyeliner', 'khoi', 'mat na', 'tay trang', 'sua rua mat', 'chong nang', 'duong am', 'lip', 'foundation',
-    'blush', 'powder', 'concealer', 'make up', 'nuoc hoa hong'
+    'my pham', 'makeup', 'skincare', 'son', 'phan', 'phan phu', 'phan mat', 'phan ma',
+    'kem', 'kem nen', 'duong', 'serum', 'toner', 'cushion', 'mascara',
+    'eyeliner', 'tay trang', 'chong nang', 'duong am', 'lip', 'foundation',
+    'blush', 'powder', 'make up'
   ];
-  readonly domainHints = ['son moi', 'phan phu', 'kem duong'];
+  readonly domainHints = ['lip', 'foundation', 'face'];
 
   isOpen = false;
   activeIndex = -1;
@@ -114,13 +114,6 @@ export class SearchBarComponent implements OnInit {
         }
         this.applySuggestionsFromState(keyword, state.products);
       });
-
-    this.hydrateKeywordFromUrl();
-    this.router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd) {
-        this.hydrateKeywordFromUrl();
-      }
-    });
   }
 
   onFocus(): void {
@@ -158,6 +151,7 @@ export class SearchBarComponent implements OnInit {
     this.pushHistory(keyword);
     this.isOpen = false;
     this.router.navigate(['/catalog'], { queryParams: { search: keyword } });
+    this.keywordControl.setValue('', { emitEvent: false });
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -187,6 +181,7 @@ export class SearchBarComponent implements OnInit {
     this.isOpen = false;
     if (item.type === 'product') {
       this.router.navigate(['/catalog', 'product', item.slug || item.value]);
+      this.keywordControl.setValue('', { emitEvent: false });
       return;
     }
     if (item.type === 'category') {
@@ -195,22 +190,23 @@ export class SearchBarComponent implements OnInit {
         ? { category, sub: item.slug || item.value }
         : { category };
       this.router.navigate(['/catalog'], { queryParams });
+      this.keywordControl.setValue('', { emitEvent: false });
       return;
     }
     if (item.type === 'brand') {
       this.router.navigate(['/catalog'], { queryParams: { brand: item.slug || item.value } });
+      this.keywordControl.setValue('', { emitEvent: false });
       return;
     }
-    this.keywordControl.setValue(item.value, { emitEvent: false });
     this.pushHistory(item.value);
     this.router.navigate(['/catalog'], { queryParams: { search: item.value } });
+    this.keywordControl.setValue('', { emitEvent: false });
   }
 
   isActive(item: SuggestionItem): boolean {
     return this.flatSuggestions[this.activeIndex] === item;
   }
 
-  /** Builds suggestions from server-matched products + local categories/brands (no full product list). */
   private applySuggestionsFromState(keyword: string, products: Product[]): void {
     const normalizedKeyword = this.normalize(keyword);
     const looseKeyword = this.toLooseText(normalizedKeyword);
@@ -290,9 +286,7 @@ export class SearchBarComponent implements OnInit {
   private isMatch(field: string, keyword: string, looseKeyword: string): boolean {
     if (!field || !keyword) return false;
     const looseField = this.toLooseText(field);
-    // Strict contains matching keeps suggestions relevant and avoids random false positives.
     if (field.includes(keyword) || looseField.includes(looseKeyword)) return true;
-    // Basic typo tolerance only for reasonably long single-token keywords.
     if (keyword.length >= 4 && !keyword.includes(' ')) {
       return field
         .split(' ')
@@ -355,15 +349,7 @@ export class SearchBarComponent implements OnInit {
     ];
   }
 
-  private hydrateKeywordFromUrl(): void {
-    const queryString = this.router.url.split('?')[1] ?? '';
-    if (!queryString) return;
-    const params = new URLSearchParams(queryString);
-    const search = params.get('search') ?? '';
-    if (search && this.keywordControl.value !== search) {
-      this.keywordControl.setValue(search, { emitEvent: false });
-    }
-  }
+
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {

@@ -34,15 +34,15 @@ export class Header implements OnInit, OnDestroy {
       imageUrl: 'assets/images/Set.jpg'
     },
     {
-      title: 'Sản phẩm Hot',
-      subtitle: 'Top sản phẩm được yêu thích',
-      cta: 'Xem bộ sưu tập',
-      icon: 'bi-stars',
-      route: ['/catalog'],
-      queryParams: { sort: 'popular' },
-      tone: 'tone-hot',
-      imageUrl: 'assets/images/hot.jpg'
-    },
+  title: 'Sản phẩm Hot',
+  subtitle: 'Top sản phẩm được yêu thích',
+  cta: 'Xem bộ sưu tập',
+  icon: 'bi-stars',
+  route: ['/catalog', 'popular'], 
+  queryParams: {},          
+  tone: 'tone-hot',
+  imageUrl: 'assets/images/hot.jpg'
+},
     {
       title: 'Deal Hot',
       subtitle: 'Ưu đãi giới hạn hôm nay',

@@ -18,6 +18,26 @@ const {
   generateSnapshotByAccountId,
 } = require("../services/recommendationSnapshot.service");
 
+// Some legacy/migrated accounts have date fields persisted as `{}` objects.
+// Mongoose will then fail `cast`/`validate` on `account.save()` during login.
+const normalizeDateField = (value) => {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+};
+
+const sanitizeAccountDatesForSave = (account) => {
+  account.email_verified_at = normalizeDateField(account.email_verified_at);
+  account.phone_verified_at = normalizeDateField(account.phone_verified_at);
+  account.last_login_at = normalizeDateField(account.last_login_at);
+  account.created_at = normalizeDateField(account.created_at);
+  account.updated_at = normalizeDateField(account.updated_at);
+};
+
 const validatePassword = (password) => {
   if (!password || password.length < 6) {
     return "Password must be at least 6 characters long";
@@ -145,7 +165,7 @@ const validateNewPasswordStrength = (password) => {
     return "Mật khẩu mới phải có ít nhất một chữ cái.";
   }
   if (!/[0-9]/.test(password)) {
-    return "Mật khẩu mới phải có ít nhất một chữ số.";
+    return "Mật khẩu mới phải có ít nhất một chữ số (gồm chữ và số).";
   }
   return null;
 };
@@ -634,9 +654,9 @@ const changeMyPassword = async (req, res) => {
       });
     }
 
-    const currentPassword = String(req.body.currentPassword || "").trim();
-    const newPassword = String(req.body.newPassword || "").trim();
-    const confirmPassword = String(req.body.confirmPassword || "").trim();
+    const currentPassword = String(req.body.currentPassword || "");
+    const newPassword = String(req.body.newPassword || "");
+    const confirmPassword = String(req.body.confirmPassword || "");
 
     if (!currentPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
@@ -661,6 +681,7 @@ const changeMyPassword = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     account.password_hash = await bcrypt.hash(newPassword, salt);
+    sanitizeAccountDatesForSave(account);
     await account.save();
 
     return res.status(200).json({ success: true, message: "Đã cập nhật mật khẩu thành công." });

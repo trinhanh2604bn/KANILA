@@ -19,9 +19,12 @@
         <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
 
         <a routerLink="/catalog" class="transition-all"
-              [ngClass]="{'breadcrumb-active': !selectedParentCategory && !selectedBrandFromHeader, 'breadcrumb-link': selectedParentCategory || selectedBrandFromHeader}">
-            {{ isSalePage ? 'Chương trình Sale' : 'Sản phẩm' }}
-        </a>
+      [ngClass]="{'breadcrumb-active': !selectedParentCategory && !selectedBrandFromHeader, 'breadcrumb-link': selectedParentCategory || selectedBrandFromHeader}">
+    <ng-container *ngIf="isSalePage">Chương trình Sale</ng-container>
+    <ng-container *ngIf="isNewPage">Sản phẩm mới</ng-container>
+    <ng-container *ngIf="isPopularPage">Bán chạy</ng-container>
+    <ng-container *ngIf="!isSalePage && !isNewPage && !isPopularPage">Sản phẩm</ng-container>
+</a>
 
         <ng-container *ngIf="selectedBrandFromHeader">
             <i class="bi bi-chevron-right mx-2 breadcrumb-chevron"></i>
@@ -51,7 +54,7 @@
 
     <div class="sticky-filter-wrapper transition-all" [class.collapsed]="isScrolled">
 
-        <section class="catalog-section section-categories mb-1" *ngIf="!selectedParentCategory || selectedBrandFromHeader">
+        <section class="catalog-section section-categories mb-1" *ngIf="(!selectedParentCategory || selectedBrandFromHeader) && !searchKeyword">
             <div class="d-flex align-items-center gap-3 overflow-auto pb-1">
                 <h2 class="text-uppercase mb-0 category-title" *ngIf="selectedBrandFromHeader">
                     {{ selectedBrandFromHeader }}
@@ -65,7 +68,7 @@
             </div>
         </section>
 
-        <section class="catalog-section section-categories mb-2 pb-2" *ngIf="selectedParentCategory && !selectedBrandFromHeader">
+        <section class="catalog-section section-categories mb-2 pb-2" *ngIf="(selectedParentCategory && !selectedBrandFromHeader) && !searchKeyword">
             <div class="d-flex align-items-center gap-4">
                 <h2 class="text-uppercase mb-0 category-title">
                     {{ selectedParentCategory.name }}
@@ -282,21 +285,21 @@
                 <div class="d-flex align-items-center gap-2 ms-auto sort-container">
                     <span class="text-muted small me-2 d-none d-sm-inline">Sắp xếp theo:</span>
                     <div class="position-relative d-inline-block">
-                        <button class="btn-sort-dropdown transition-all d-flex align-items-center justify-content-between"
-                                (click)="toggleDropdown('sortGlobal', $event)">
-                            <span class="fw-bold" style="color: var(--kanila-red);">{{ getSortLabel(activeSort) }}</span>
-                            <i class="bi bi-chevron-down ms-2" style="font-size: 0.8rem; color: var(--kanila-text);"></i>
-                        </button>
+    <button class="btn-sort-dropdown transition-all d-flex align-items-center justify-content-between"
+            (click)="toggleDropdown('sortGlobal', $event)">
+        <span class="fw-bold" style="color: var(--kanila-red);">{{ getSortLabel(activeSort) }}</span>
+        <i class="bi bi-chevron-down ms-2" style="font-size: 0.8rem; color: var(--kanila-text);"></i>
+    </button>
 
-                        <div class="dropdown-panel shadow-sm rounded-3 py-2 px-0" style="min-width: 180px; right: 0; left: auto;" *ngIf="openDropdown === 'sortGlobal'" (click)="$event.stopPropagation()">
-                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'default'" (click)="selectSort('default')">Mặc định</button>
-                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'popular'" (click)="selectSort('popular')">Bán chạy</button>
-                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'new'" (click)="selectSort('new')">Sản phẩm mới</button>
-                            <button *ngIf="!isSalePage" class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'hot_deal'" (click)="selectSort('hot_deal')">Deal HOT</button>
-                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_asc'" (click)="selectSort('price_asc')">Giá Thấp - Cao</button>
-                            <button class="dropdown-item py-2 px-3 small" [class.text-danger]="activeSort === 'price_desc'" (click)="selectSort('price_desc')">Giá Cao - Thấp</button>
-                        </div>
-                    </div>
+    <div class="dropdown-panel shadow-sm rounded-3 py-2 px-0" style="min-width: 180px; right: 0; left: auto;" *ngIf="openDropdown === 'sortGlobal'" (click)="$event.stopPropagation()">
+        <button class="dropdown-item py-2 px-3 small" (click)="selectSort('default')">Mặc định</button>
+        <button *ngIf="!isPopularPage" class="dropdown-item py-2 px-3 small" (click)="selectSort('popular')">Bán chạy</button>
+        <button *ngIf="!isNewPage" class="dropdown-item py-2 px-3 small" (click)="selectSort('new')">Sản phẩm mới</button>
+        <button *ngIf="!isSalePage" class="dropdown-item py-2 px-3 small" (click)="selectSort('hot_deal')">Deal HOT</button>
+        <button class="dropdown-item py-2 px-3 small" (click)="selectSort('price_asc')">Giá Thấp - Cao</button>
+        <button class="dropdown-item py-2 px-3 small" (click)="selectSort('price_desc')">Giá Cao - Thấp</button>
+    </div>
+</div>
                 </div>
             </div>
         </section>
