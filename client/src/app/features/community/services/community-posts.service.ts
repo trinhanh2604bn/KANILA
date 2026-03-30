@@ -130,14 +130,16 @@ export class CommunityPostsService {
     const imagePool = [
       'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1583241800698-05000784748b?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1596704017256-bf4b63a5b4e2?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1542838687-5cd4f6dc4b16?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1598528738936-c50861cc75a9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1608979048467-6194dabc6a3d?auto=format&fit=crop&w=1200&q=80',
+      'https://plus.unsplash.com/premium_photo-1683120953880-fc8b6213b627?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=1200&q=80'
     ];
     const captions = [
       'Layout nhẹ nhàng đi làm, nền mỏng và má hồng peach.',

@@ -264,7 +264,7 @@ export class Mainpage implements OnInit {
   saveCampaignCoupon(couponId: string): void {
     this.couponService.saveCoupon(couponId).pipe(take(1)).subscribe((res) => {
       if (!res.success) {
-        this.toast.error('Không thể lưu mã giảm giá.');
+        this.toast.error('Không thể lưu mã giảm giá. Hãy đăng nhập để sử dụng.');
         return;
       }
       this.campaignCoupons = this.campaignCoupons.map((x) => x._id === couponId ? { ...x, isSaved: true } : x);
