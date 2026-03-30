@@ -14,7 +14,7 @@
     <div class="meta">
       <div><span>Mã đơn</span><strong>#{{ detail.order_number }}</strong></div>
       <div><span>Ngày đặt</span><strong>{{ detail.placed_at | date:'dd/MM/yyyy HH:mm' }}</strong></div>
-      <div><span>Trạng thái</span><strong>{{ detail.order_status }}</strong></div>
+      <div><span>Trạng thái</span><strong>{{ statusLabel(detail.order_status, detail.fulfillment_status) }}</strong></div>
     </div>
 
     <div class="timeline">
@@ -47,7 +47,7 @@
             <strong>{{ it.product_name_snapshot || 'Sản phẩm' }}</strong>
             <p>{{ it.variant_name_snapshot || '' }}</p>
             <button
-              *ngIf="detail.order_status === 'completed' && it._id"
+              *ngIf="['completed', 'delivered'].includes(detail.order_status) && it._id"
               type="button"
               class="btn-review"
               (click)="goWriteReview(it._id)"
@@ -65,7 +65,7 @@
       <h3>Lịch sử cập nhật</h3>
       <ul class="events">
         <li *ngFor="let e of tracking?.events">
-          <strong>{{ e.status }}</strong> - {{ e.description }} ({{ e.timestamp | date:'dd/MM HH:mm' }})
+          <strong>{{ statusLabel(e.status) }}</strong> - {{ e.description }} ({{ e.timestamp | date:'dd/MM HH:mm' }})
         </li>
       </ul>
     </article>

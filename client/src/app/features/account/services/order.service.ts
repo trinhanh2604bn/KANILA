@@ -132,4 +132,37 @@ export class AccountOrderService {
       catchError(() => of(false))
     );
   }
+
+  // ─── Status Mapping ────────────────────────────────────────────────────────
+
+  /** Maps raw backend status to friendly Vietnamese label. */
+  getStatusLabel(status: string, fulfillmentStatus?: string): string {
+    const s = (status || '').toLowerCase();
+    const ff = (fulfillmentStatus || '').toLowerCase();
+
+    if (ff === 'returned') return 'Đã trả hàng';
+    if (s === 'return_requested') return 'Yêu cầu trả hàng';
+    if (s === 'refunded') return 'Đã hoàn tiền';
+    if (s === 'cancelled') return 'Đã hủy';
+    if (s === 'pending') return 'Chờ xác nhận';
+    if (s === 'confirmed') return 'Đã xác nhận';
+    if (s === 'processing') return 'Đang chuẩn bị hàng';
+    if (s === 'shipped') return 'Đang giao hàng';
+    if (s === 'delivered') return 'Đã giao hàng';
+    if (s === 'completed') return 'Hoàn tất';
+
+    return status || 'Đơn hàng';
+  }
+
+  /** Maps raw backend status to CSS class for badges. */
+  getStatusClass(status: string, fulfillmentStatus?: string): string {
+    const s = (status || '').toLowerCase();
+    const ff = (fulfillmentStatus || '').toLowerCase();
+
+    if (s === 'completed' || s === 'delivered') return 'done';
+    if (s === 'shipped' || s === 'processing') return 'shipping';
+    if (s === 'cancelled') return 'cancelled';
+    if (s === 'return_requested' || s === 'returned' || s === 'refunded') return 'returned';
+    return 'processing';
+  }
 }

@@ -16,7 +16,7 @@ export class OrdersPageComponent implements OnInit {
     { key: 'all', label: 'Tất cả' },
     { key: 'processing', label: 'Đang xử lý' },
     { key: 'shipping', label: 'Đang giao' },
-    { key: 'delivered', label: 'Đã giao' },
+    { key: 'delivered', label: 'Hoàn tất' },
     { key: 'cancelled', label: 'Đã hủy' },
     { key: 'returned', label: 'Trả hàng' },
   ] as const;
@@ -114,43 +114,35 @@ export class OrdersPageComponent implements OnInit {
 
   canCancel(order: MyOrderItemView): boolean {
     const s = (order.order_status || '').toLowerCase();
-    return ['pending', 'confirmed', 'processing'].includes(s);
+    return s === 'pending';
   }
 
   canReturn(order: MyOrderItemView): boolean {
-    const orderStatus = (order.order_status || '').toLowerCase();
-    const ff = (order.fulfillment_status || '').toLowerCase();
-    return orderStatus === 'completed' || ff === 'fulfilled';
+    const s = (order.order_status || '').toLowerCase();
+    return ['delivered', 'completed'].includes(s);
   }
 
   statusLabel(order: MyOrderItemView): string {
-    if ((order.fulfillment_status || '').toLowerCase() === 'returned') return 'Trả hàng';
-    const status = (order.order_status || '').toLowerCase();
-    if (['pending', 'confirmed', 'processing'].includes(status)) return 'Đang xử lý';
-    if (status === 'cancelled') return 'Đã hủy';
-    if (status === 'completed') return 'Đã giao';
-    if ((order.shipment_status || '').toLowerCase().includes('ship')) return 'Đang giao';
-    return status || 'Đơn hàng';
+    return this.orderService.getStatusLabel(order.order_status, order.fulfillment_status);
+  }
+
+  statusLabelByString(status: string): string {
+    return this.orderService.getStatusLabel(status);
   }
 
   statusClass(order: MyOrderItemView): string {
-    const lbl = this.statusLabel(order);
-    if (lbl === 'Đã giao') return 'done';
-    if (lbl === 'Đang giao') return 'shipping';
-    if (lbl === 'Đã hủy') return 'cancelled';
-    if (lbl === 'Trả hàng') return 'returned';
-    return 'processing';
+    return this.orderService.getStatusClass(order.order_status, order.fulfillment_status);
   }
 
   private matchesTab(order: MyOrderItemView): boolean {
     if (this.activeTab === 'all') return true;
     const status = this.statusLabel(order);
     return (
-      (this.activeTab === 'processing' && status === 'Đang xử lý') ||
-      (this.activeTab === 'shipping' && status === 'Đang giao') ||
-      (this.activeTab === 'delivered' && status === 'Đã giao') ||
+      (this.activeTab === 'processing' && ['Chờ xác nhận', 'Đã xác nhận', 'Đang chuẩn bị hàng'].includes(status)) ||
+      (this.activeTab === 'shipping' && status === 'Đang giao hàng') ||
+      (this.activeTab === 'delivered' && ['Đã giao hàng', 'Hoàn tất'].includes(status)) ||
       (this.activeTab === 'cancelled' && status === 'Đã hủy') ||
-      (this.activeTab === 'returned' && status === 'Trả hàng')
+      (this.activeTab === 'returned' && ['Yêu cầu trả hàng', 'Đã trả hàng'].includes(status))
     );
   }
 }

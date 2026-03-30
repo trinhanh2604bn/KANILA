@@ -73,7 +73,7 @@
           <p *ngIf="!trackingByOrderId[order._id]">Không có dữ liệu tracking.</p>
           <ul *ngIf="trackingByOrderId[order._id]?.events?.length">
             <li *ngFor="let e of trackingByOrderId[order._id]!.events">
-              <strong>{{ e.status }}</strong> - {{ e.description }} ({{ e.timestamp | date:'dd/MM HH:mm' }})
+              <strong>{{ statusLabelByString(e.status) }}</strong> - {{ e.description }} ({{ e.timestamp | date:'dd/MM HH:mm' }})
             </li>
           </ul>
         </ng-container>

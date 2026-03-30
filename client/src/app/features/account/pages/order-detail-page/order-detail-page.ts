@@ -33,23 +33,29 @@ export class OrderDetailPageComponent implements OnInit {
   }
 
   get timeline(): Array<{ key: string; label: string; done: boolean; active: boolean }> {
-    const status = String(this.detail?.order_status || '').toLowerCase();
-    const ff = String(this.detail?.fulfillment_status || '').toLowerCase();
+    const s = String(this.detail?.order_status || '').toLowerCase();
     const steps = [
-      { key: 'placed', label: 'Đặt hàng' },
+      { key: 'pending', label: 'Đặt hàng' },
       { key: 'confirmed', label: 'Xác nhận' },
-      { key: 'shipping', label: 'Đang giao' },
+      { key: 'shipped', label: 'Đang giao' },
       { key: 'delivered', label: 'Đã giao' },
     ];
-    const currentIndex =
-      status === 'completed' || ff === 'fulfilled'
-        ? 3
-        : ff === 'partially_fulfilled'
-          ? 2
-          : ['processing', 'confirmed'].includes(status)
-            ? 1
-            : 0;
-    return steps.map((s, idx) => ({ ...s, done: idx <= currentIndex, active: idx === currentIndex }));
+
+    let currentIndex = 0;
+    if (['delivered', 'completed'].includes(s)) currentIndex = 3;
+    else if (s === 'shipped') currentIndex = 2;
+    else if (['confirmed', 'processing'].includes(s)) currentIndex = 1;
+    else currentIndex = 0;
+
+    return steps.map((step, idx) => ({
+      ...step,
+      done: idx <= currentIndex,
+      active: idx === currentIndex,
+    }));
+  }
+
+  statusLabel(status: string, ff?: string): string {
+    return this.orderService.getStatusLabel(status, ff);
   }
 
   formatAddress(): string {
