@@ -28,7 +28,9 @@ const FULFILLMENT_TRANSITIONS = {
   partially_shipped:  ["shipped"],
   shipped:            ["in_transit", "delivered"],
   in_transit:         ["delivered"],
-  delivered:          ["partially_returned", "returned"],
+  delivered:          ["return_requested"],
+  return_requested:   ["return_approved", "delivered"],
+  return_approved:    ["partially_returned", "returned"],
   partially_returned: ["returned"],
   returned:           [],                       // terminal
 };

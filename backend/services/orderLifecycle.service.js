@@ -346,14 +346,10 @@ async function approveReturn(returnId, accountId) {
     approvedAt: new Date(),
   });
 
-  // Approve all return items with requested quantities
-  await ReturnItem.updateMany(
-    { returnId: ret._id, approvedQty: 0 },
-    [{ $set: { approvedQty: "$requestedQty" } }]
-  );
-
   const order = await getOrderOrFail(ret.order_id);
-  await logHistory(ret.order_id, order, {}, accountId, `Return ${ret.returnNumber} approved`);
+  order.fulfillment_status = "return_approved";
+  await order.save();
+  await logHistory(ret.order_id, order, { fulfillment_status: "return_approved" }, accountId, `Return ${ret.returnNumber} approved`);
 
   return Return.findById(returnId);
 }
@@ -427,20 +423,14 @@ async function completeReturn(returnId, accountId, options = {}) {
   const order = await getOrderOrFail(ret.order_id);
   const allReturns = await Return.find({ order_id: ret.order_id, returnStatus: "completed" }).lean();
 
-  // Simplified: if any completed return exists, mark as partially_returned or returned
-  const fulfillmentUpdates = {};
+  // Determine if full or partial return
+  const orderUpdates = {};
   if (allReturns.length > 0) {
-    // Check if order was fully returned or partially
-    fulfillmentUpdates.fulfillment_status = "partially_returned";
-  }
-
-  const orderUpdates = { ...fulfillmentUpdates };
-  if (fulfillmentUpdates.fulfillment_status) {
-    orderUpdates.order_status = order.order_status === "completed" ? "returned" : order.order_status;
-    if (orderUpdates.order_status === "returned") {
-      fulfillmentUpdates.fulfillment_status = "returned";
-      orderUpdates.fulfillment_status = "returned";
-    }
+    // For now, simplify: if any return is completed, we mark as returned or partially_returned
+    // In a more complex system, we'd check if all order items were return-completed.
+    orderUpdates.order_status = "returned";
+    orderUpdates.fulfillment_status = "returned";
+    orderUpdates.completed_at = new Date();
   }
 
   if (Object.keys(orderUpdates).length > 0) {

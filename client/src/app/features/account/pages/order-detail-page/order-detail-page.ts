@@ -42,7 +42,7 @@ export class OrderDetailPageComponent implements OnInit {
     ];
 
     let currentIndex = 0;
-    if (['delivered', 'completed', 'returned', 'refunded'].includes(s)) currentIndex = 3;
+    if (['delivered', 'completed', 'returned', 'refunded', 'return_requested', 'return_approved'].includes(s)) currentIndex = 3;
     else if (['shipped', 'in_transit'].includes(s)) currentIndex = 2;
     else if (['confirmed', 'processing', 'ready_to_ship'].includes(s)) currentIndex = 1;
     else currentIndex = 0;

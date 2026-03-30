@@ -543,7 +543,7 @@ const requestReturnMyOrder = async (req, res) => {
       requestedAt: new Date(),
     });
 
-    order.fulfillment_status = "returned";
+    order.fulfillment_status = "return_requested";
     await order.save();
 
     await OrderStatusHistory.create({

@@ -142,8 +142,8 @@ export class AccountOrderService {
 
     // Priority for returned/refunded states
     if (ff === 'returned' || s === 'returned') return 'Đã trả hàng';
-    if (s === 'return_requested') return 'Yêu cầu trả hàng';
-    if (s === 'return_approved') return 'Đã chấp nhận trả hàng';
+    if (s === 'return_requested' || ff === 'return_requested') return 'Yêu cầu trả hàng đang chờ duyệt';
+    if (s === 'return_approved' || ff === 'return_approved') return 'Yêu cầu trả hàng đã chấp nhận';
     if (s === 'refunded') return 'Đã hoàn tiền';
     if (s === 'cancelled') return 'Đã hủy';
 
