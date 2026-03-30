@@ -173,7 +173,7 @@ export class CommunityPostsService {
         likes: 120 + i * 11,
         comments: 18 + (i % 12) * 4,
         liked: false,
-        saved: i % 4 === 0,
+        saved: false,
         author: { ...author, following: i % 5 === 0 },
         chips: ['KANILA', 'Beauty'],
         tags: [{ name: 'Best Pick', brand: 'KANILA', price: `${399 + i * 7}.000 đ` }],

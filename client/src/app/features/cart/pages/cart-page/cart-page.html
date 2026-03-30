@@ -40,11 +40,7 @@
 
         <article class="cart-item-card" *ngFor="let item of cartItems">
           <label class="item-check">
-            <input
-              type="checkbox"
-              [ngModel]="item.selected"
-              (ngModelChange)="toggleItemSelected(item.id, $event)"
-            />
+            <input type="checkbox" [ngModel]="item.selected" (ngModelChange)="toggleItemSelected(item.id, $event)" />
           </label>
 
           <a class="item-image" [routerLink]="['/catalog', 'product', item.id]">
@@ -61,7 +57,8 @@
                 <strong>{{ item.price | number }}đ</strong>
                 <div class="item-price-meta">
                   <span *ngIf="item.oldPrice">{{ item.oldPrice | number }}đ</span>
-                  <em *ngIf="item.oldPrice">-{{ ((item.oldPrice - item.price) / item.oldPrice * 100) | number:'1.0-0' }}%</em>
+                  <em *ngIf="item.oldPrice">-{{ ((item.oldPrice - item.price) / item.oldPrice * 100) | number:'1.0-0'
+                    }}%</em>
                 </div>
               </div>
             </div>
@@ -69,28 +66,18 @@
 
           <div class="item-actions">
             <div class="item-action-icons">
-              <button
-                type="button"
-                class="icon-btn heart-btn"
-                [class.active]="item.inWishlist"
-                (click)="toggleWishlist(item.id)"
-                [attr.aria-label]="'Wishlist'"
-                title="Save item"
-              >
+              <button type="button" class="icon-btn heart-btn" [class.active]="item.inWishlist"
+                (click)="toggleWishlist(item.id)" [attr.aria-label]="'Wishlist'" title="Save item">
                 <span>{{ item.inWishlist ? '♥' : '♡' }}</span>
               </button>
-              <button
-                type="button"
-                class="danger icon-btn"
-                (click)="requestRemoveItem(item.id)"
-                [attr.aria-label]="'Remove'"
-                title="Remove item"
-              >
+              <button type="button" class="danger icon-btn" (click)="requestRemoveItem(item.id)"
+                [attr.aria-label]="'Remove'" title="Remove item">
                 <span>🗑</span>
               </button>
             </div>
             <div class="item-qty" [class.pulse]="qtyPulseItemId === item.id">
-              <button type="button" (click)="updateQty(item.id, -1)" [disabled]="item.quantity === 1 || busyItemId === item.id">-</button>
+              <button type="button" (click)="updateQty(item.id, -1)"
+                [disabled]="item.quantity === 1 || busyItemId === item.id">-</button>
               <span>{{ item.quantity }}</span>
               <button type="button" (click)="updateQty(item.id, 1)" [disabled]="busyItemId === item.id">+</button>
             </div>
@@ -101,17 +88,6 @@
       <aside class="cart-right">
         <div class="summary-card">
           <h2>Tóm tắt đơn hàng</h2>
-
-          <div class="promo-box">
-            <label for="promo-code">Mã ưu đãi</label>
-            <div class="promo-row">
-              <input id="promo-code" type="text" placeholder="Nhập mã giảm giá" [(ngModel)]="promoInput" />
-              <button type="button" (click)="applyPromo()" [disabled]="isPromoApplying">
-                {{ isPromoApplying ? 'Đang áp dụng...' : 'Áp dụng' }}
-              </button>
-            </div>
-            <p *ngIf="appliedPromoCode">Đã áp dụng: <strong>{{ appliedPromoCode }}</strong></p>
-          </div>
 
           <div class="summary-line">
             <span>Tạm tính</span>
@@ -131,7 +107,8 @@
             <strong>{{ total | number }}đ</strong>
           </div>
 
-          <button type="button" class="checkout-btn" (click)="goCheckout()" [disabled]="!selectedCount || isCheckoutNavigating">
+          <button type="button" class="checkout-btn" (click)="goCheckout()"
+            [disabled]="!selectedCount || isCheckoutNavigating">
             {{ isCheckoutNavigating ? 'Đang chuyển...' : '🔒 Thanh toán ngay' }}
           </button>
           <p class="summary-note" *ngIf="amountToFreeShip > 0">
@@ -162,7 +139,8 @@
         <a routerLink="/catalog">Xem thêm</a>
       </div>
       <div class="cart-reco-grid">
-        <a class="cart-reco-card" *ngFor="let item of recommendedProducts" [routerLink]="['/catalog', 'product', item.slug]">
+        <a class="cart-reco-card" *ngFor="let item of recommendedProducts"
+          [routerLink]="['/catalog', 'product', item.slug]">
           <div class="cart-reco-image">
             <img [src]="item.image" [alt]="item.name" />
           </div>
@@ -205,8 +183,8 @@
       <h4>{{ confirmMode === 'single' ? 'Xóa sản phẩm này?' : 'Xóa các sản phẩm đã chọn?' }}</h4>
       <p>
         {{ confirmMode === 'single'
-          ? 'Bạn có thể hoàn tác trong vài giây sau khi xóa.'
-          : 'Các sản phẩm đã chọn sẽ bị xóa. Bạn có thể hoàn tác ngay sau đó.' }}
+        ? 'Bạn có thể hoàn tác trong vài giây sau khi xóa.'
+        : 'Các sản phẩm đã chọn sẽ bị xóa. Bạn có thể hoàn tác ngay sau đó.' }}
       </p>
       <div class="confirm-actions">
         <button type="button" class="btn-soft" (click)="cancelRemove()">Hủy</button>

@@ -168,12 +168,56 @@ productSchema.index({ productStatus: 1, isActive: 1, brandId: 1, price: 1 });
 productSchema.index({ productStatus: 1, isActive: 1, categoryId: 1, bought: -1 });
 productSchema.index({ productStatus: 1, isActive: 1, averageRating: -1 });
 
-productSchema.pre("save", function syncProductStatus(next) {
+function slugify(text) {
+  if (!text) return "";
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents for Vietnamese
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]+/g, "")
+    .replace(/--+/g, "-");
+}
+
+productSchema.pre("save", async function handleProductPreSave(next) {
+  // 1. Sync productStatus and isActive
   if (this.isModified("productStatus") && !this.isModified("isActive")) {
     this.isActive = this.productStatus === "active";
   } else if (this.isModified("isActive") && !this.isModified("productStatus")) {
     this.productStatus = this.isActive ? "active" : "inactive";
   }
+
+  // 2. Handle Slug Generation & Uniqueness
+  // If slug is missing or empty, generate from productName
+  if (!this.slug || String(this.slug).trim() === "") {
+    this.slug = slugify(this.productName);
+  } else if (this.isModified("slug")) {
+    // If slug is modified (manual input), ensure it's still slugified
+    this.slug = slugify(this.slug);
+  }
+
+  // Ensure slug is unique by appending suffix if necessary
+  if (this.isModified("slug") || this.isNew) {
+    const Product = mongoose.model("Product");
+    let slugExists = await Product.findOne({
+      slug: this.slug,
+      _id: { $ne: this._id },
+    });
+    
+    let count = 0;
+    const baseSlug = this.slug;
+    while (slugExists) {
+      count++;
+      this.slug = `${baseSlug}-${count}`;
+      slugExists = await Product.findOne({
+        slug: this.slug,
+        _id: { $ne: this._id },
+      });
+    }
+  }
+
   next();
 });
 

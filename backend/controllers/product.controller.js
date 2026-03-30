@@ -239,7 +239,8 @@ const createProduct = async (req, res) => {
       return res.status(404).json({ success: false, message: "Category not found" });
     }
 
-    const product = await Product.create(req.body);
+    const product = new Product(req.body);
+    await product.save();
 
     res.status(201).json({
       success: true,
@@ -293,10 +294,20 @@ const updateProduct = async (req, res) => {
       }
     }
 
-    const product = await Product.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    // Apply updates from req.body
+    Object.assign(product, req.body);
+    
+    // Explicitly handle empty slug in body to trigger generation in pre-save
+    if (req.body.slug === "") {
+      product.slug = undefined;
+    }
+
+    await product.save();
 
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
@@ -345,9 +356,23 @@ const patchProduct = async (req, res) => {
     const updates = {};
     for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
     if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
-    const product = await Product.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
-      .populate("categoryId", "categoryName").populate("brandId", "brandName");
+    const product = await Product.findById(id);
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+
+    // Apply allowed updates
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) {
+        if (key === "slug" && req.body[key] === "") {
+          product.slug = undefined;
+        } else {
+          product[key] = req.body[key];
+        }
+      }
+    }
+
+    await product.save();
+    await product.populate("categoryId", "categoryName");
+    await product.populate("brandId", "brandName");
     res.status(200).json({ success: true, message: "Product patched successfully", data: product });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
