@@ -445,8 +445,8 @@
             <div class="wr-reviewed-item" *ngFor="let item of alreadyReviewedItems">
               <span>Đơn {{ item.orderNumber }}</span>
               <span>{{ starText(item.rating) }}</span>
-              <span class="wr-status-chip" [class.approved]="item.reviewStatus === 'approved'" [class.pending]="item.reviewStatus === 'pending'">
-                {{ item.reviewStatus === 'approved' ? 'Đã duyệt' : item.reviewStatus === 'pending' ? 'Chờ duyệt' : 'Bị từ chối' }}
+              <span class="wr-status-chip" [class.visible]="item.reviewStatus === 'visible'" [class.hidden]="item.reviewStatus === 'hidden'">
+                {{ item.reviewStatus === 'visible' ? 'Hiển thị' : 'Đã ẩn' }}
               </span>
             </div>
           </div>
@@ -477,8 +477,8 @@
             <div class="wr-reviewed-item" *ngFor="let item of alreadyReviewedItems">
               <span>Đơn {{ item.orderNumber }}</span>
               <span>{{ starText(item.rating) }}</span>
-              <span class="wr-status-chip" [class.approved]="item.reviewStatus === 'approved'" [class.pending]="item.reviewStatus === 'pending'">
-                {{ item.reviewStatus === 'approved' ? 'Đã duyệt' : 'Chờ duyệt' }}
+              <span class="wr-status-chip" [class.visible]="item.reviewStatus === 'visible'" [class.hidden]="item.reviewStatus === 'hidden'">
+                {{ item.reviewStatus === 'visible' ? 'Hiển thị' : 'Đã ẩn' }}
               </span>
             </div>
           </div>
@@ -488,7 +488,7 @@
         <div class="wr-success" *ngIf="writeReviewSuccess">
           <i class="bi bi-check-circle-fill"></i>
           <strong>Hoàn tất!</strong>
-          <p>Đánh giá của bạn đã được ghi nhận và đang chờ duyệt. Chúng mình sẽ xem xét sớm nhất!</p>
+          <p>Đánh giá của bạn đã được đăng thành công!</p>
         </div>
 
         <!-- Form -->
