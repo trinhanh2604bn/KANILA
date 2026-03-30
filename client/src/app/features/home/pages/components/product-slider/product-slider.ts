@@ -29,6 +29,8 @@ export class ProductSlider implements OnInit, OnChanges {
 
   @Input() productsOverride: Product[] | null = null;
   @Input() errorOverride: string | null = null;
+  /** Server-side sort key sent to the API (e.g. 'popular', 'new'). Defaults to 'popular'. */
+  @Input() sortBy: string = 'popular';
 
   constructor(private productService: ProductService) {}
 
@@ -46,7 +48,7 @@ export class ProductSlider implements OnInit, OnChanges {
     this.loading = true;
     this.errorMessage = null;
 
-    this.productService.getHomeSliderProducts(50).subscribe({
+    this.productService.getHomeSliderProducts(50, this.sortBy).subscribe({
       next: (list) => {
         this.products = list;
         this.currentPage = 1;

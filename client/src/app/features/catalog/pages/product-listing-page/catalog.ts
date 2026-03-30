@@ -406,6 +406,7 @@ export class Catalog implements OnInit {
     switch(sortValue) {
       case 'popular': return 'Bán chạy';
       case 'hot_deal': return 'Deal HOT';
+      case 'new': return 'Sản phẩm mới';
       case 'price_desc': return 'Giá Cao - Thấp';
       case 'price_asc': return 'Giá Thấp - Cao';
       default: return 'Mặc định';
@@ -591,6 +592,7 @@ export class Catalog implements OnInit {
     if (this.activeSort === 'price_asc') temp.sort((a, b) => a.price - b.price);
     else if (this.activeSort === 'price_desc') temp.sort((a, b) => b.price - a.price);
     else if (this.activeSort === 'popular') temp.sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0));
+    else if (this.activeSort === 'new') temp.sort((a, b) => b.id.localeCompare(a.id));
     else if (this.activeSort === 'hot_deal') {
       const onlySale = temp.filter((p) => p.isSale);
       onlySale.sort((a, b) => (b.oldPrice ?? b.price) - b.price - ((a.oldPrice ?? a.price) - a.price));

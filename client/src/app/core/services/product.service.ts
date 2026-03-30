@@ -51,12 +51,12 @@ export class ProductService {
   }
 
   /**
-   * Home product carousel: bounded pool sorted by popularity (client still paginates 5 per “page” in the slider).
+   * Home product carousel: bounded pool sorted by the given key (client still paginates 5 per "page" in the slider).
    * Uses one HTTP request instead of loading the full catalog.
    */
-  getHomeSliderProducts(limit = 50): Observable<Product[]> {
+  getHomeSliderProducts(limit = 50, sort: string = 'popular'): Observable<Product[]> {
     const cap = Math.min(50, Math.max(5, limit));
-    return this.getPaginatedProducts(1, cap, { sort: 'popular', fields: 'card' }).pipe(map((res) => res.data ?? []));
+    return this.getPaginatedProducts(1, cap, { sort, fields: 'card' }).pipe(map((res) => res.data ?? []));
   }
 
   /**

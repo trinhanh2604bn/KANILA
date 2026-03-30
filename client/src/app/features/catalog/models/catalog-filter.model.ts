@@ -1,4 +1,4 @@
-export type CatalogSortOption = 'popular' | 'hot_deal' | 'price_desc' | 'price_asc';
+export type CatalogSortOption = 'popular' | 'hot_deal' | 'price_desc' | 'price_asc' | 'new';
 
 export interface CatalogSubcategoryItem {
   id: string;

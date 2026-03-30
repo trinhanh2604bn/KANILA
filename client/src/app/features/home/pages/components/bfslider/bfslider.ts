@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-bfslider',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './bfslider.html',
   styleUrl: './bfslider.css',
 })

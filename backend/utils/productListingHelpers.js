@@ -90,6 +90,7 @@ function parseSortKey(sortRaw) {
   if (s === "price_desc") return { price: -1, createdAt: -1 };
   if (s === "popular" || s === "bought") return { bought: -1, createdAt: -1 };
   if (s === "hot_deal") return { bought: -1, createdAt: -1 };
+  if (s === "new" || s === "newest") return { createdAt: -1 };
   return { createdAt: -1 };
 }
 
