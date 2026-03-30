@@ -36,18 +36,18 @@ export class ReviewsApiService {
     );
   }
 
-  /** Admin approve — sets approvedByAccountId, approvedAt, recalcs review summary. */
-  approveReview(id: string, adminNote?: string): Observable<Review> {
+  /** Admin: hide a review from public display. */
+  hideReview(id: string): Observable<Review> {
     const safeId = encodeURIComponent(String(id));
-    return this.http.patch<ApiResponse<any>>(`${ADMIN_URL}/${safeId}/approve`, { adminNote: adminNote || '' }).pipe(
+    return this.http.patch<ApiResponse<any>>(`${ADMIN_URL}/${safeId}/hide`, {}).pipe(
       map((res) => this.mapReview(res.data))
     );
   }
 
-  /** Admin reject — clears approval fields, recalcs review summary. */
-  rejectReview(id: string, adminNote?: string): Observable<Review> {
+  /** Admin: unhide a review (make it publicly visible again). */
+  unhideReview(id: string): Observable<Review> {
     const safeId = encodeURIComponent(String(id));
-    return this.http.patch<ApiResponse<any>>(`${ADMIN_URL}/${safeId}/reject`, { adminNote: adminNote || '' }).pipe(
+    return this.http.patch<ApiResponse<any>>(`${ADMIN_URL}/${safeId}/unhide`, {}).pipe(
       map((res) => this.mapReview(res.data))
     );
   }
@@ -88,7 +88,7 @@ export class ReviewsApiService {
       customerName,
       rating: Number(raw.rating) || 0,
       content,
-      status: (raw.reviewStatus || raw.review_status || 'pending') as Review['status'],
+      status: (raw.reviewStatus || raw.review_status || 'visible') as Review['status'],
       images: Array.isArray(raw.images) ? raw.images : [],
       createdAt: raw.createdAt || raw.created_at || '',
     };

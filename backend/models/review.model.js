@@ -9,12 +9,9 @@ const reviewSchema = new mongoose.Schema(
     rating: { type: Number, required: true, min: 1, max: 5 },
     reviewTitle: { type: String, default: "" },
     reviewContent: { type: String, default: "" },
-    reviewStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    reviewStatus: { type: String, enum: ["visible", "hidden"], default: "visible" },
     helpfulCount: { type: Number, default: 0 },
     verifiedPurchaseFlag: { type: Boolean, default: false },
-    approvedByAccountId: { type: mongoose.Schema.Types.ObjectId, ref: "Account", default: null },
-    approvedAt: { type: Date, default: null },
-    adminNote: { type: String, default: "" },
   },
   { timestamps: true }
 );

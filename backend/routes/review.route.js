@@ -7,7 +7,6 @@ const {
   getReviewsByProductId,
   createReview,
   updateReview,
-  patchReview,
   deleteReview,
   getReviewWriteEligibility,
   submitReviewFromOrderItem,
@@ -22,7 +21,6 @@ router.get("/", getAllReviews);
 router.get("/product/:productId", getReviewsByProductId);
 router.post("/", createReview);
 router.put("/:id", updateReview);
-router.patch("/:id", patchReview);
 router.delete("/:id", deleteReview);
 
 // Helpful vote for a review (auth required)

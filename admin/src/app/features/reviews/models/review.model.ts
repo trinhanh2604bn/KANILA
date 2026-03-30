@@ -8,7 +8,7 @@ export interface Review {
   rating: number; // 1 to 5
   /** Main review body (maps to reviewContent). */
   content: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'visible' | 'hidden';
   images?: string[];
   createdAt: string;
 }

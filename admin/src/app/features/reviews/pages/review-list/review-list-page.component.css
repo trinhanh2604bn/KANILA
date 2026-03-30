@@ -299,3 +299,23 @@
 .text-success { color: var(--success); }
 
 @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Filter Chips ── */
+.filter-chips { display: flex; gap: var(--space-2); }
+.chip { padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+.chip:hover { border-color: var(--primary); color: var(--primary); }
+.chip-active { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+
+/* ── Header Stats ── */
+.header-stats { display: flex; gap: var(--space-3); }
+.stat-chip { padding: 4px 14px; border-radius: 100px; font-size: 13px; font-weight: 700; }
+.stat-visible { background: #e8f5e9; color: #2e7d32; }
+.stat-hidden { background: var(--muted-surface); color: var(--text-muted); }
+
+/* ── Hidden row ── */
+.row-hidden { opacity: 0.6; }
+.row-hidden:hover { opacity: 1; }
+
+/* ── Small button ── */
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+.w-40 { width: 10rem; }

@@ -11,9 +11,9 @@ const { pickCustomerId } = require("../utils/pickCustomerRef");
 
 const CUST = "customer_code full_name avatar_url";
 
-// Helper: recalculate review summary for a product (approved reviews only)
+// Helper: recalculate review summary for a product (visible reviews only)
 const recalcReviewSummary = async (productId) => {
-  const reviews = await Review.find({ productId, reviewStatus: "approved" });
+  const reviews = await Review.find({ productId, reviewStatus: "visible" });
   const reviewCount = reviews.length;
   const ratingCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   let totalRating = 0;
@@ -54,7 +54,7 @@ const getReviewsByProductId = async (req, res) => {
   try {
     const { productId } = req.params;
     if (!validateObjectId(productId)) return res.status(400).json({ success: false, message: "Invalid product ID" });
-    const reviews = await Review.find({ productId, reviewStatus: "approved" })
+    const reviews = await Review.find({ productId, reviewStatus: "visible" })
       .populate("customer_id", CUST)
       .populate("variantId", "variantName")
       .sort({ createdAt: -1 })
@@ -179,7 +179,7 @@ const submitReviewFromOrderItem = async (req, res) => {
       reviewTitle: reviewTitle ?? "",
       reviewContent: reviewContent ?? "",
       verifiedPurchaseFlag: true,
-      reviewStatus: "pending",
+      reviewStatus: "visible",
     };
 
     const created = await Review.create(payload);
@@ -260,7 +260,7 @@ const submitReviewDirect = async (req, res) => {
       reviewTitle: reviewTitle ?? "",
       reviewContent: reviewContent ?? "",
       verifiedPurchaseFlag: false,
-      reviewStatus: "pending",
+      reviewStatus: "visible",
     };
 
     const created = await Review.create(payload);
@@ -301,7 +301,7 @@ const patchMyReview = async (req, res) => {
     const existing = await Review.findById(id);
     if (!existing) return res.status(404).json({ success: false, message: "Review not found" });
     if (String(existing.customer_id) !== String(customer._id)) return res.status(403).json({ success: false, message: "Forbidden" });
-    if (existing.reviewStatus === "approved") return res.status(403).json({ success: false, message: "Approved reviews cannot be edited" });
+    // Owners can always edit their own review
 
     const allowed = ["rating", "reviewTitle", "reviewContent"];
     const updates = {};
@@ -363,20 +363,29 @@ const deleteReview = async (req, res) => {
     res.status(200).json({ success: true, message: "Review deleted successfully", data: review });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
-// PATCH /api/reviews/:id
-const patchReview = async (req, res) => {
+// PATCH /api/admin/reviews/:id/hide
+const hideReview = async (req, res) => {
   try {
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid ID" });
-    const allowed = ["reviewStatus", "adminNote"];
-    const updates = {};
-    for (const key of allowed) { if (req.body[key] !== undefined) updates[key] = req.body[key]; }
-    if (Object.keys(updates).length === 0) return res.status(400).json({ success: false, message: "No valid fields to update" });
-    const review = await Review.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+    const review = await Review.findByIdAndUpdate(id, { reviewStatus: "hidden" }, { new: true, runValidators: true })
       .populate("customer_id", CUST).populate("productId", "productName");
     if (!review) return res.status(404).json({ success: false, message: "Review not found" });
     await recalcReviewSummary(review.productId);
-    res.status(200).json({ success: true, message: "Review patched successfully", data: review });
+    res.status(200).json({ success: true, message: "Review hidden successfully", data: review });
+  } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+// PATCH /api/admin/reviews/:id/unhide
+const unhideReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid ID" });
+    const review = await Review.findByIdAndUpdate(id, { reviewStatus: "visible" }, { new: true, runValidators: true })
+      .populate("customer_id", CUST).populate("productId", "productName");
+    if (!review) return res.status(404).json({ success: false, message: "Review not found" });
+    await recalcReviewSummary(review.productId);
+    res.status(200).json({ success: true, message: "Review unhidden successfully", data: review });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
@@ -479,8 +488,10 @@ module.exports = {
   getReviewsByProductId,
   createReview,
   updateReview,
-  patchReview,
   deleteReview,
+  // Admin visibility
+  hideReview,
+  unhideReview,
   // Customer-facing (auth)
   getReviewWriteEligibility,
   submitReviewFromOrderItem,

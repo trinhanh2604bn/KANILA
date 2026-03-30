@@ -5,7 +5,7 @@ import { catchError, forkJoin, of, take } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../../../core/services/toast.service';
 
-type ReviewStatus = 'pending' | 'approved' | 'rejected';
+type ReviewStatus = 'visible' | 'hidden';
 
 interface MyReviewView {
   _id: string;
@@ -85,15 +85,13 @@ export class MyReviewsPageComponent implements OnInit {
   }
 
   statusLabel(status: ReviewStatus): string {
-    if (status === 'approved') return 'Đã duyệt';
-    if (status === 'rejected') return 'Bị từ chối';
-    return 'Chờ duyệt';
+    if (status === 'hidden') return 'Đã ẩn';
+    return 'Hiển thị';
   }
 
   statusClass(status: ReviewStatus): string {
-    if (status === 'approved') return 'done';
-    if (status === 'rejected') return 'rejected';
-    return 'pending';
+    if (status === 'hidden') return 'hidden';
+    return 'done';
   }
 
   clampedRating(rating: number): number {
@@ -101,7 +99,7 @@ export class MyReviewsPageComponent implements OnInit {
   }
 
   canEdit(review: MyReviewView): boolean {
-    return review.reviewStatus === 'pending' || review.reviewStatus === 'rejected';
+    return true;
   }
 
   editReview(review: MyReviewView): void {

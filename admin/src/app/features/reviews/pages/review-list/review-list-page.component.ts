@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { CommonModule, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -11,7 +11,7 @@ import { environment } from '../../../../core/config/environment';
 @Component({
   selector: 'app-review-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TitleCasePipe],
   templateUrl: './review-list-page.component.html',
   styleUrl: './review-list-page.component.css',
 })
@@ -23,50 +23,46 @@ export class ReviewListPageComponent implements OnInit {
   reviews = signal<Review[]>([]);
   loading = signal(true);
   searchQuery = signal('');
+  statusFilter = signal<'all' | 'visible' | 'hidden'>('all');
+  processingId = signal<string | null>(null);
 
-  // Moderation state
-  processingActionOnId = signal<string | null>(null);
-
-  // Undo state
-  lastAction = signal<{ id: string; previousStatus: string; newStatus: string } | null>(null);
-  showUndoToast = signal(false);
-  undoTimer: ReturnType<typeof setTimeout> | undefined;
-
-  // Media Preview Modal state (full-screen image)
+  // Media Preview
   previewImage = signal<string | null>(null);
 
-  /** Full review detail panel */
+  // Detail panel
   detailOpen = signal(false);
   detailLoading = signal(false);
   detailReview = signal<Review | null>(null);
 
+  filteredReviews = computed(() => {
+    let list = this.reviews();
+    const q = this.searchQuery().toLowerCase().trim();
+    const status = this.statusFilter();
+
+    if (status !== 'all') {
+      list = list.filter(r => r.status === status);
+    }
+    if (q) {
+      list = list.filter(r =>
+        r.productName.toLowerCase().includes(q) ||
+        r.content.toLowerCase().includes(q) ||
+        (r.title?.toLowerCase().includes(q) ?? false) ||
+        r.customerName.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  });
+
+  visibleCount = computed(() => this.reviews().filter(r => r.status === 'visible').length);
+  hiddenCount = computed(() => this.reviews().filter(r => r.status === 'hidden').length);
+
   ngOnInit() {
     this.api.getReviews().subscribe({
-      next: (data) => {
-        this.reviews.set(data.filter((r) => r.status === 'pending'));
-        this.loading.set(false);
-      },
+      next: (data) => { this.reviews.set(data); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
   }
 
-  get filteredReviews() {
-    let list = this.reviews();
-    const q = this.searchQuery().toLowerCase().trim();
-
-    if (q) {
-      list = list.filter(
-        (r) =>
-          r.productName.toLowerCase().includes(q) ||
-          r.content.toLowerCase().includes(q) ||
-          (r.title?.toLowerCase().includes(q) ?? false) ||
-          r.customerName.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }
-
-  /** Truncated text for the table (not the detail modal). */
   contentPreview(rev: Review, max = 140): string {
     const text = (rev.content || '').trim();
     if (!text) return 'No review text';
@@ -74,10 +70,32 @@ export class ReviewListPageComponent implements OnInit {
     return text.slice(0, max).trimEnd() + '…';
   }
 
-  openDetail(rev: Review): void {
-    if (this.processingActionOnId() === rev.id) return;
-    if (!rev.id) return;
+  toggleVisibility(rev: Review): void {
+    if (!rev.id || this.processingId()) return;
+    this.processingId.set(rev.id);
 
+    const action$ = rev.status === 'visible'
+      ? this.api.hideReview(rev.id)
+      : this.api.unhideReview(rev.id);
+
+    action$.subscribe({
+      next: (updated) => {
+        this.reviews.update(list => list.map(r => r.id === rev.id ? updated : r));
+        this.processingId.set(null);
+        if (this.detailReview()?.id === rev.id) {
+          this.detailReview.set(updated);
+        }
+        this.toast.success(updated.status === 'visible' ? 'Review is now visible' : 'Review has been hidden');
+      },
+      error: (e: any) => {
+        this.processingId.set(null);
+        this.toast.error(e?.error?.message || 'Failed to update review');
+      },
+    });
+  }
+
+  openDetail(rev: Review): void {
+    if (this.processingId() === rev.id) return;
     this.detailOpen.set(true);
     this.detailLoading.set(true);
     this.detailReview.set(rev);
@@ -115,82 +133,16 @@ export class ReviewListPageComponent implements OnInit {
   formatDateTime(iso: string): string {
     if (!iso) return '—';
     const d = new Date(iso);
-    return Number.isNaN(d.getTime())
-      ? '—'
-      : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
   }
 
-  moderateReview(review: Review, newStatus: 'approved' | 'rejected') {
-    if (!review.id) {
-      this.toast.error('Invalid review id');
-      return;
-    }
-    this.processingActionOnId.set(review.id);
+  openPreview(imgUrl: string) { this.previewImage.set(this.mediaUrl(imgUrl)); }
+  closePreview() { this.previewImage.set(null); }
 
-    const action$ = newStatus === 'approved'
-      ? this.api.approveReview(review.id)
-      : this.api.rejectReview(review.id);
+  getStarsArray(rating: number): number[] { return Array(Math.min(5, Math.max(0, rating))).fill(0); }
+  getEmptyStarsArray(rating: number): number[] { return Array(Math.max(0, 5 - rating)).fill(0); }
 
-    action$.subscribe({
-      next: () => {
-        this.lastAction.set({
-          id: review.id,
-          previousStatus: review.status,
-          newStatus: newStatus,
-        });
-
-        this.reviews.update((list) => list.filter((r) => r.id !== review.id));
-        this.processingActionOnId.set(null);
-
-        if (this.detailReview()?.id === review.id) {
-          this.closeDetail();
-        }
-
-        this.showUndoToast.set(true);
-        if (this.undoTimer) clearTimeout(this.undoTimer);
-        this.undoTimer = setTimeout(() => {
-          this.showUndoToast.set(false);
-        }, 5000);
-      },
-      error: () => {
-        this.processingActionOnId.set(null);
-      },
-    });
-  }
-
-  undoLastAction() {
-    const action = this.lastAction();
-    if (!action) return;
-
-    this.showUndoToast.set(false);
-    if (this.undoTimer) clearTimeout(this.undoTimer);
-
-    // Undo by re-fetching the review and adding back to list
-    this.api.getReviewById(action.id).subscribe({
-      next: (restoredData) => {
-        this.reviews.update((list) => [restoredData, ...list]);
-        this.lastAction.set(null);
-        this.toast.success('Change reverted');
-      },
-      error: () => {
-        /* error interceptor already toasts */
-      },
-    });
-  }
-
-  openPreview(imgUrl: string) {
-    this.previewImage.set(this.mediaUrl(imgUrl));
-  }
-
-  closePreview() {
-    this.previewImage.set(null);
-  }
-
-  getStarsArray(rating: number): number[] {
-    return Array(Math.min(5, Math.max(0, rating))).fill(0);
-  }
-
-  getEmptyStarsArray(rating: number): number[] {
-    return Array(Math.max(0, 5 - rating)).fill(0);
+  getStatusBadgeClass(status: string): string {
+    return status === 'visible' ? 'badge-success' : 'badge-muted';
   }
 }

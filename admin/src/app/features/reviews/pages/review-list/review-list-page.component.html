@@ -1,8 +1,12 @@
 <section class="page">
   <div class="page-header">
     <div class="header-left">
-      <h1 class="page-title">Review Moderation</h1>
-      <p class="page-subtitle">Approve or reject customer feedback securely</p>
+      <h1 class="page-title">Review Management</h1>
+      <p class="page-subtitle">View and manage customer reviews</p>
+    </div>
+    <div class="header-stats">
+      <span class="stat-chip stat-visible">{{ visibleCount() }} Visible</span>
+      <span class="stat-chip stat-hidden">{{ hiddenCount() }} Hidden</span>
     </div>
   </div>
 
@@ -10,6 +14,11 @@
     <div class="search-input-wrap">
       <span class="material-symbols-rounded search-icon">search</span>
       <input type="text" class="form-input search-input" placeholder="Search product, customer, or keyword..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    </div>
+    <div class="filter-chips">
+      <button class="chip" [class.chip-active]="statusFilter() === 'all'" (click)="statusFilter.set('all')">All</button>
+      <button class="chip" [class.chip-active]="statusFilter() === 'visible'" (click)="statusFilter.set('visible')">Visible</button>
+      <button class="chip" [class.chip-active]="statusFilter() === 'hidden'" (click)="statusFilter.set('hidden')">Hidden</button>
     </div>
   </div>
 
@@ -20,6 +29,7 @@
           <th>Product / Rating</th>
           <th>Review Content</th>
           <th>Customer & Date</th>
+          <th>Status</th>
           <th class="text-right">Actions</th>
         </tr>
       </thead>
@@ -30,19 +40,19 @@
               <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
               <td><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text skeleton-text-short mt-2"></div></td>
               <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
-              <td><div class="skeleton skeleton-circle ml-auto" style="width:120px; height:32px; border-radius:4px;"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-circle ml-auto" style="width:80px; height:32px; border-radius:4px;"></div></td>
             </tr>
           }
         } @else {
-          @for (rev of filteredReviews; track rev.id) {
+          @for (rev of filteredReviews(); track rev.id) {
             <tr
               class="review-row review-row-clickable"
-              [class.is-processing]="processingActionOnId() === rev.id"
+              [class.is-processing]="processingId() === rev.id"
+              [class.row-hidden]="rev.status === 'hidden'"
               (click)="openDetail(rev)"
-              role="button"
-              tabindex="0"
+              role="button" tabindex="0"
               (keydown.enter)="openDetail(rev)"
-              (keydown.space)="$event.preventDefault(); openDetail(rev)"
             >
               <td class="td-primary align-top w-56">
                 <div class="product-line">{{ rev.productName }}</div>
@@ -65,28 +75,33 @@
                 <div class="text-xs mt-1">{{ formatDateTime(rev.createdAt) }}</div>
               </td>
 
-              <td class="text-right align-top w-48" (click)="$event.stopPropagation()">
-                 @if (processingActionOnId() === rev.id) {
+              <td class="align-top">
+                <span class="badge" [ngClass]="getStatusBadgeClass(rev.status)">{{ rev.status | titlecase }}</span>
+              </td>
+
+              <td class="text-right align-top w-40" (click)="$event.stopPropagation()">
+                 @if (processingId() === rev.id) {
                     <div class="processing-spinner ml-auto"><div class="spinner"></div></div>
                  } @else {
-                    <div class="inline-actions">
-                       <button type="button" class="btn btn-soft btn-reject" title="Reject" (click)="moderateReview(rev, 'rejected')">
-                          <span class="material-symbols-rounded">close</span>
-                       </button>
-                       <button type="button" class="btn btn-soft btn-approve" title="Approve" (click)="moderateReview(rev, 'approved')">
-                          <span class="material-symbols-rounded">check</span> Approve
-                       </button>
-                    </div>
+                   @if (rev.status === 'visible') {
+                     <button type="button" class="btn btn-soft btn-sm" title="Hide from public" (click)="toggleVisibility(rev)">
+                       <span class="material-symbols-rounded">visibility_off</span> Hide
+                     </button>
+                   } @else {
+                     <button type="button" class="btn btn-primary btn-sm" title="Make visible" (click)="toggleVisibility(rev)">
+                       <span class="material-symbols-rounded">visibility</span> Unhide
+                     </button>
+                   }
                  }
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="4">
+              <td colspan="5">
                 <div class="empty-state py-8">
-                  <span class="material-symbols-rounded empty-icon text-success">done_all</span>
-                  <p class="empty-title">Inbox Zero</p>
-                  <p class="text-muted">No pending reviews require moderation.</p>
+                  <span class="material-symbols-rounded empty-icon">rate_review</span>
+                  <p class="empty-title">No reviews yet</p>
+                  <p class="text-muted">Customer reviews will appear here.</p>
                 </div>
               </td>
             </tr>
@@ -97,15 +112,6 @@
   </div>
 </section>
 
-<!-- Undo Toast -->
-@if (showUndoToast() && lastAction()) {
-  <div class="undo-toast card">
-    <span class="material-symbols-rounded text-primary">info</span>
-    <span class="toast-text font-medium text-sm">Review marked as {{ lastAction()?.newStatus }}.</span>
-    <button type="button" class="btn btn-ghost btn-undo" (click)="undoLastAction()">Undo</button>
-  </div>
-}
-
 <!-- Review detail modal -->
 @if (detailOpen()) {
   <div class="detail-backdrop fade-in" (click)="closeDetail()">
@@ -113,7 +119,7 @@
       <div class="detail-header">
         <div class="detail-header-text">
           <h2 id="detail-title" class="detail-product-name">{{ detailReview()?.productName }}</h2>
-          <span class="badge badge-muted detail-status">{{ detailReview()?.status | titlecase }}</span>
+          <span class="badge" [ngClass]="getStatusBadgeClass(detailReview()?.status || 'visible')">{{ detailReview()?.status | titlecase }}</span>
         </div>
         <button type="button" class="detail-close" (click)="closeDetail()" aria-label="Close">
           <span class="material-symbols-rounded">close</span>
@@ -168,14 +174,15 @@
           }
 
           <div class="detail-actions" (click)="$event.stopPropagation()">
-            <button type="button" class="btn btn-soft btn-reject" (click)="moderateReview(d, 'rejected')">
-              <span class="material-symbols-rounded">close</span>
-              Reject
-            </button>
-            <button type="button" class="btn btn-primary" (click)="moderateReview(d, 'approved')">
-              <span class="material-symbols-rounded">check</span>
-              Approve
-            </button>
+            @if (d.status === 'visible') {
+              <button type="button" class="btn btn-soft" (click)="toggleVisibility(d)">
+                <span class="material-symbols-rounded">visibility_off</span> Hide Review
+              </button>
+            } @else {
+              <button type="button" class="btn btn-primary" (click)="toggleVisibility(d)">
+                <span class="material-symbols-rounded">visibility</span> Unhide Review
+              </button>
+            }
           </div>
         </div>
       }
