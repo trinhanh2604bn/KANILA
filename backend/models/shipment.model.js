@@ -8,7 +8,7 @@ const shipmentSchema = new mongoose.Schema(
     carrierCode: { type: String, default: "" },
     serviceName: { type: String, default: "" },
     trackingNumber: { type: String, default: "" },
-    shipmentStatus: { type: String, enum: ["pending", "shipped", "in_transit", "delivered", "failed"], default: "pending" },
+    shipmentStatus: { type: String, enum: ["pending", "ready_to_ship", "shipped", "in_transit", "delivered", "failed", "returned"], default: "pending" },
     shippedAt: { type: Date, default: null },
     deliveredAt: { type: Date, default: null },
     failedAt: { type: Date, default: null },

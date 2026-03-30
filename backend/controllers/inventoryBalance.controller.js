@@ -21,7 +21,12 @@ const getAllInventoryBalances = async (req, res) => {
       balances = await loadInventoryBalancesStorefront();
     } else {
       balances = await InventoryBalance.find()
-        .select("variantId availableQty onHandQty reservedQty blockedQty")
+        .populate({
+          path: "variantId",
+          select: "sku variantName productId",
+          populate: { path: "productId", select: "productName" },
+        })
+        .populate("warehouseId", "warehouseCode warehouseName")
         .sort({ createdAt: -1 })
         .lean();
     }

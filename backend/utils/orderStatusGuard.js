@@ -1,75 +1,119 @@
 /**
- * Validate status transitions for orders (minimal safe rules).
+ * Validate status transitions using adjacency maps.
+ * Each status maps to an array of allowed next statuses.
  */
 
-const ORDER_FLOW = ["pending", "confirmed", "processing", "completed"];
-const PAYMENT_FLOW = ["unpaid", "authorized", "paid", "partially_refunded", "refunded"];
-const FULFILL_FLOW = ["unfulfilled", "partially_fulfilled", "fulfilled", "returned"];
+const ORDER_TRANSITIONS = {
+  pending:    ["confirmed", "cancelled"],
+  confirmed:  ["processing", "cancelled"],
+  processing: ["completed", "cancelled"],
+  completed:  ["returned"],          // only via return flow
+  cancelled:  [],                    // terminal
+  returned:   [],                    // terminal
+};
 
-function idx(arr, v) {
-  const i = arr.indexOf(v);
-  return i === -1 ? -1 : i;
-}
+const PAYMENT_TRANSITIONS = {
+  unpaid:              ["pending", "authorized", "paid"],
+  pending:             ["authorized", "paid", "failed"],
+  authorized:          ["paid", "failed"],
+  paid:                ["partially_refunded", "refunded"],
+  failed:              ["pending"],             // retry
+  partially_refunded:  ["refunded"],
+  refunded:            [],                      // terminal
+};
 
-function assertEnum(arr, v, label) {
-  if (!v) return { ok: true };
-  if (!arr.includes(v)) return { ok: false, message: `Invalid ${label}: ${v}` };
-  return { ok: true };
-}
+const FULFILLMENT_TRANSITIONS = {
+  unfulfilled:        ["preparing"],
+  preparing:          ["partially_shipped", "shipped"],
+  partially_shipped:  ["shipped"],
+  shipped:            ["in_transit", "delivered"],
+  in_transit:         ["delivered"],
+  delivered:          ["partially_returned", "returned"],
+  partially_returned: ["returned"],
+  returned:           [],                       // terminal
+};
+
+const SHIPMENT_TRANSITIONS = {
+  pending:       ["ready_to_ship", "failed"],
+  ready_to_ship: ["shipped", "failed"],
+  shipped:       ["in_transit", "delivered", "failed"],
+  in_transit:    ["delivered", "failed"],
+  delivered:     ["returned"],
+  failed:        ["pending"],                   // retry
+  returned:      [],
+};
+
+const RETURN_TRANSITIONS = {
+  requested: ["approved", "rejected"],
+  approved:  ["received"],
+  received:  ["completed"],
+  completed: [],
+  rejected:  [],
+};
+
+const REFUND_TRANSITIONS = {
+  requested:  ["approved", "rejected"],
+  approved:   ["processing"],
+  processing: ["completed"],
+  completed:  [],
+  rejected:   [],
+};
+
+const TRANSITION_MAPS = {
+  order_status:      ORDER_TRANSITIONS,
+  payment_status:    PAYMENT_TRANSITIONS,
+  fulfillment_status: FULFILLMENT_TRANSITIONS,
+  shipment_status:   SHIPMENT_TRANSITIONS,
+  return_status:     RETURN_TRANSITIONS,
+  refund_status:     REFUND_TRANSITIONS,
+};
 
 /**
- * @param {"order_status"|"payment_status"|"fulfillment_status"} field
- * @param {string} from
- * @param {string} to
+ * Validate a status transition.
+ * @param {string} field — one of order_status, payment_status, fulfillment_status, shipment_status, return_status, refund_status
+ * @param {string} from  — current status
+ * @param {string} to    — requested new status
+ * @returns {{ ok: boolean, message?: string }}
  */
 function validateStatusTransition(field, from, to) {
   if (from === to) return { ok: true };
 
-  if (field === "order_status") {
-    const e = assertEnum(ORDER_FLOW.concat(["cancelled"]), to, "order_status");
-    if (!e.ok) return e;
-    if (from === "cancelled" || from === "completed") {
-      return { ok: false, message: "order_status cannot change after completed or cancelled" };
-    }
-    if (to === "cancelled") return { ok: true };
-    const fi = idx(ORDER_FLOW, from);
-    const ti = idx(ORDER_FLOW, to);
-    if (fi === -1 || ti === -1) return { ok: false, message: "Invalid order_status transition" };
-    if (ti !== fi + 1) {
-      return { ok: false, message: "order_status must advance one step at a time" };
-    }
-    return { ok: true };
-  }
+  const map = TRANSITION_MAPS[field];
+  if (!map) return { ok: true }; // unknown field — allow
 
-  if (field === "payment_status") {
-    const e = assertEnum(PAYMENT_FLOW, to, "payment_status");
-    if (!e.ok) return e;
-    if (from === "refunded") return { ok: false, message: "payment_status already refunded" };
-    const fi = idx(PAYMENT_FLOW, from);
-    const ti = idx(PAYMENT_FLOW, to);
-    if (fi === -1 || ti === -1) return { ok: false, message: "Invalid payment_status transition" };
-    if (ti !== fi + 1) {
-      return { ok: false, message: "payment_status must advance one step at a time" };
-    }
-    return { ok: true };
-  }
+  const allowed = map[from];
+  if (!allowed) return { ok: false, message: `Unknown ${field} value: "${from}"` };
 
-  if (field === "fulfillment_status") {
-    const e = assertEnum(FULFILL_FLOW, to, "fulfillment_status");
-    if (!e.ok) return e;
-    if (from === "returned" || from === "fulfilled") {
-      if (to !== from) return { ok: false, message: "fulfillment_status is terminal" };
+  if (!allowed.includes(to)) {
+    const validValues = Object.keys(map);
+    if (!validValues.includes(to)) {
+      return { ok: false, message: `Invalid ${field} value: "${to}"` };
     }
-    const fi = idx(FULFILL_FLOW, from);
-    const ti = idx(FULFILL_FLOW, to);
-    if (fi === -1 || ti === -1) return { ok: false, message: "Invalid fulfillment_status transition" };
-    if (ti !== fi + 1) {
-      return { ok: false, message: "fulfillment_status must advance one step at a time" };
-    }
-    return { ok: true };
+    return {
+      ok: false,
+      message: `Cannot transition ${field} from "${from}" to "${to}". Allowed: [${allowed.join(", ")}]`,
+    };
   }
 
   return { ok: true };
 }
 
-module.exports = { validateStatusTransition, ORDER_FLOW, PAYMENT_FLOW, FULFILL_FLOW };
+// Legacy exports for compatibility
+const ORDER_FLOW = Object.keys(ORDER_TRANSITIONS);
+const PAYMENT_FLOW = Object.keys(PAYMENT_TRANSITIONS);
+const FULFILL_FLOW = Object.keys(FULFILLMENT_TRANSITIONS);
+
+module.exports = {
+  validateStatusTransition,
+  TRANSITION_MAPS,
+  ORDER_TRANSITIONS,
+  PAYMENT_TRANSITIONS,
+  FULFILLMENT_TRANSITIONS,
+  SHIPMENT_TRANSITIONS,
+  RETURN_TRANSITIONS,
+  REFUND_TRANSITIONS,
+  // Legacy
+  ORDER_FLOW,
+  PAYMENT_FLOW,
+  FULFILL_FLOW,
+};

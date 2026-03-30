@@ -18,15 +18,25 @@ export class ShipmentListPageComponent implements OnInit {
   shipments = signal<Shipment[]>([]);
   loading = signal(true);
   statusFilter = signal<ShipmentStatus | 'all'>('all');
+  searchQuery = signal('');
 
   filteredShipments = computed(() => {
     let list = this.shipments();
     const s = this.statusFilter();
+    const q = this.searchQuery().toLowerCase().trim();
     if (s !== 'all') list = list.filter(sh => sh.status === s);
+    if (q) {
+      list = list.filter(sh =>
+        sh.shipmentNumber.toLowerCase().includes(q) ||
+        sh.orderNumber.toLowerCase().includes(q) ||
+        sh.trackingNumber.toLowerCase().includes(q) ||
+        sh.carrier.toLowerCase().includes(q)
+      );
+    }
     return list;
   });
 
-  hasActiveFilters = computed(() => this.statusFilter() !== 'all');
+  hasActiveFilters = computed(() => this.statusFilter() !== 'all' || this.searchQuery().trim() !== '');
 
   ngOnInit(): void {
     this.api.getAll().subscribe(data => {
@@ -37,6 +47,7 @@ export class ShipmentListPageComponent implements OnInit {
 
   clearFilters(): void {
     this.statusFilter.set('all');
+    this.searchQuery.set('');
   }
 
   getStatusBadgeClass(status: ShipmentStatus): string {

@@ -9,8 +9,11 @@
   <div class="filter-bar card">
     <div class="filter-group">
       <div class="filter-left">
-        <span class="material-symbols-rounded filter-label-icon">local_shipping</span>
-        <span class="filter-count">{{ filteredShipments().length }} shipments</span>
+        <div class="search-input-wrap">
+          <span class="material-symbols-rounded search-icon">search</span>
+          <input type="text" class="form-input search-input" placeholder="Search shipment, order, tracking..."
+            [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+        </div>
       </div>
       <div class="filter-right">
         <select class="form-input filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
@@ -64,7 +67,9 @@
                 <span class="shipment-number">{{ shp.shipmentNumber }}</span>
               </td>
               <td>
-                <span class="order-ref" [title]="shp.orderNumber">{{ shp.orderNumber }}</span>
+                <a class="order-link" [routerLink]="['/orders', shp.orderId]" (click)="$event.stopPropagation()">
+                  {{ shp.orderNumber || '—' }}
+                </a>
               </td>
               <td class="td-secondary">{{ shp.carrier }}</td>
               <td>

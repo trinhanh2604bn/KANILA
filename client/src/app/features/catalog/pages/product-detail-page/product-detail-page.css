@@ -1801,6 +1801,159 @@
   font-size: 0.9rem;
 }
 
+/* --- Write Review: Eligibility States --- */
+.wr-state-box {
+  text-align: center;
+  padding: 28px 24px;
+  color: #5f3445;
+}
+.wr-state-box i {
+  font-size: 2.4rem;
+  display: block;
+  margin-bottom: 10px;
+  color: #6b1e2e;
+}
+.wr-state-box strong {
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+  color: #4d1729;
+}
+.wr-state-box p {
+  margin: 0 0 8px;
+  color: #7a5662;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.wr-state-login i { color: #6b1e2e; }
+.wr-state-info i { color: #8a6471; }
+
+.wr-cta-login {
+  margin-top: 12px;
+  border: none;
+  background: linear-gradient(135deg, #6b1e2e 0%, #d4344e 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 12px 28px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.wr-cta-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(107, 30, 46, 0.25);
+}
+
+.wr-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #f0dbe4;
+  border-top-color: #6b1e2e;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  animation: wrSpin 0.7s linear infinite;
+}
+@keyframes wrSpin {
+  to { transform: rotate(360deg); }
+}
+
+.wr-order-items {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  text-align: left;
+}
+.wr-order-item-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid #ebd2dd;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.wr-order-item-btn:hover {
+  border-color: #d4344e;
+  box-shadow: 0 4px 14px rgba(107, 30, 46, 0.1);
+  transform: translateY(-1px);
+}
+.wr-order-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wr-order-item-info strong {
+  font-size: 0.92rem;
+  color: #4d1729;
+}
+.wr-order-item-info span {
+  font-size: 0.82rem;
+  color: #7a5662;
+}
+.wr-order-item-btn i {
+  color: #6b1e2e;
+  font-size: 1rem;
+}
+
+.wr-reviewed-list {
+  margin-top: 14px;
+  border-top: 1px solid #f3e6ec;
+  padding-top: 10px;
+  text-align: left;
+}
+.wr-reviewed-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.82rem;
+  color: #7a5662;
+}
+.wr-status-chip {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.wr-status-chip.pending {
+  background: #fff3e0;
+  color: #e65100;
+}
+.wr-status-chip.approved {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.wr-verified-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: #eef8f1;
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  color: #2e7d32;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.wr-verified-badge i {
+  font-size: 1.1rem;
+  color: #2e7d32;
+}
+.wr-variant-chip {
+  background: #fff;
+  border: 1px solid #c8e6c9;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: #388e3c;
+}
+
 @media (max-width: 768px) {
   .wr-modal {
     max-width: 100%;

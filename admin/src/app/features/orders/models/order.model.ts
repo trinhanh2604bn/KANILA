@@ -1,6 +1,6 @@
-export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'completed' | 'cancelled';
-export type PaymentStatus = 'unpaid' | 'authorized' | 'paid' | 'partially_refunded' | 'refunded';
-export type FulfillmentStatus = 'unfulfilled' | 'partially_fulfilled' | 'fulfilled' | 'returned';
+export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'completed' | 'cancelled' | 'returned';
+export type PaymentStatus = 'unpaid' | 'pending' | 'authorized' | 'paid' | 'failed' | 'partially_refunded' | 'refunded';
+export type FulfillmentStatus = 'unfulfilled' | 'preparing' | 'partially_shipped' | 'shipped' | 'in_transit' | 'delivered' | 'partially_returned' | 'returned';
 
 export interface OrderItem {
   id: string;
@@ -12,6 +12,65 @@ export interface OrderItem {
   optionValues?: Record<string, string>;
   quantity: number;
   price: number;
+}
+
+/** Lightweight payment summary shown on Order Detail. */
+export interface PaymentSummary {
+  id: string;
+  status: string;
+  method: string;
+  provider: string;
+  amount: number;
+  refundedAmount: number;
+  createdAt: string;
+}
+
+/** Lightweight shipment summary shown on Order Detail. */
+export interface ShipmentSummary {
+  id: string;
+  shipmentNumber: string;
+  status: string;
+  carrier: string;
+  trackingNumber: string;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  createdAt: string;
+}
+
+/** Lightweight return summary shown on Order Detail. */
+export interface ReturnSummary {
+  id: string;
+  returnNumber: string;
+  status: string;
+  reason: string;
+  requestedAt: string;
+  completedAt: string | null;
+}
+
+/** Lightweight refund summary shown on Order Detail. */
+export interface RefundSummary {
+  id: string;
+  status: string;
+  requestedAmount: number;
+  approvedAmount: number;
+  refundedAmount: number;
+  reason: string;
+  requestedAt: string;
+  completedAt: string | null;
+}
+
+/** Status history entry. */
+export interface StatusHistoryEntry {
+  id: string;
+  oldOrderStatus: string;
+  newOrderStatus: string;
+  oldPaymentStatus: string;
+  newPaymentStatus: string;
+  oldFulfillmentStatus: string;
+  newFulfillmentStatus: string;
+  changedBy: string;
+  reason: string;
+  changedAt: string;
 }
 
 export interface Order {
@@ -31,10 +90,14 @@ export interface Order {
   fulfillmentStatus: FulfillmentStatus;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface UpdateOrderStatusPayload {
-  orderStatus?: OrderStatus;
-  paymentStatus?: PaymentStatus;
-  fulfillmentStatus?: FulfillmentStatus;
+  confirmedAt?: string;
+  completedAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
+  // Linked operational data (loaded on detail page)
+  payments?: PaymentSummary[];
+  shipments?: ShipmentSummary[];
+  returns?: ReturnSummary[];
+  refunds?: RefundSummary[];
+  history?: StatusHistoryEntry[];
 }

@@ -126,7 +126,12 @@ export class ReviewListPageComponent implements OnInit {
       return;
     }
     this.processingActionOnId.set(review.id);
-    this.api.updateReviewStatus(review.id, newStatus).subscribe({
+
+    const action$ = newStatus === 'approved'
+      ? this.api.approveReview(review.id)
+      : this.api.rejectReview(review.id);
+
+    action$.subscribe({
       next: () => {
         this.lastAction.set({
           id: review.id,
@@ -160,7 +165,8 @@ export class ReviewListPageComponent implements OnInit {
     this.showUndoToast.set(false);
     if (this.undoTimer) clearTimeout(this.undoTimer);
 
-    this.api.updateReviewStatus(action.id, action.previousStatus as Review['status']).subscribe({
+    // Undo by re-fetching the review and adding back to list
+    this.api.getReviewById(action.id).subscribe({
       next: (restoredData) => {
         this.reviews.update((list) => [restoredData, ...list]);
         this.lastAction.set(null);

@@ -1,15 +1,8 @@
 const Review = require("../models/review.model");
 const ReviewSummary = require("../models/reviewSummary.model");
-const Customer = require("../models/customer.model");
-const Product = require("../models/product.model");
 const validateObjectId = require("../utils/validateObjectId");
 
 const CUST = "customer_code full_name avatar_url";
-
-const isAdminAccount = (req) => {
-  const t = String(req.user?.account_type || req.user?.accountType || "").toLowerCase();
-  return t === "admin" || t === "staff";
-};
 
 // Helper: materialized summary sync (approved reviews only)
 const recalcReviewSummary = async (productId) => {
@@ -42,8 +35,6 @@ const recalcReviewSummary = async (productId) => {
 // GET /api/admin/reviews/pending?productId=&rating=&page=&limit=
 const getPendingReviews = async (req, res) => {
   try {
-    if (!isAdminAccount(req)) return res.status(403).json({ success: false, message: "Forbidden" });
-
     const { productId, rating, page, limit } = req.query;
     const pageNum = Math.max(1, Number(page || 1));
     const pageSize = Math.min(60, Math.max(1, Number(limit || 20)));
@@ -83,20 +74,17 @@ const getPendingReviews = async (req, res) => {
 // PATCH /api/admin/reviews/:id/approve
 const approveReview = async (req, res) => {
   try {
-    if (!isAdminAccount(req)) return res.status(403).json({ success: false, message: "Forbidden" });
-
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid review id" });
 
-    const adminAccountId = req.user?.account_id || req.user?.accountId;
-    if (!adminAccountId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const adminAccountId = req.user?.account_id || req.user?.accountId || req.user?._id;
 
     const review = await Review.findById(id);
     if (!review) return res.status(404).json({ success: false, message: "Review not found" });
 
     review.reviewStatus = "approved";
     review.adminNote = req.body?.adminNote ?? review.adminNote ?? "";
-    review.approvedByAccountId = adminAccountId;
+    review.approvedByAccountId = adminAccountId || null;
     review.approvedAt = new Date();
 
     await review.save();
@@ -111,13 +99,8 @@ const approveReview = async (req, res) => {
 // PATCH /api/admin/reviews/:id/reject
 const rejectReview = async (req, res) => {
   try {
-    if (!isAdminAccount(req)) return res.status(403).json({ success: false, message: "Forbidden" });
-
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid review id" });
-
-    const adminAccountId = req.user?.account_id || req.user?.accountId;
-    if (!adminAccountId) return res.status(401).json({ success: false, message: "Unauthorized" });
 
     const review = await Review.findById(id);
     if (!review) return res.status(404).json({ success: false, message: "Review not found" });
@@ -137,4 +120,3 @@ const rejectReview = async (req, res) => {
 };
 
 module.exports = { getPendingReviews, approveReview, rejectReview };
-

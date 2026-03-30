@@ -14,6 +14,7 @@ import { CouponAvailableItem, CouponService } from '../../../account/services/co
 import { SameBrandSectionComponent } from './components/same-brand/same-brand.component';
 import { RecentlyViewedSectionComponent } from './components/recently-viewed/recently-viewed.component';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../../../core/services/auth.service';
 
 interface PdpShade {
   id: string;
@@ -42,6 +43,26 @@ interface PdpReview {
   createdAtMs: number;
   helpful: number;
 }
+
+interface ReviewableItem {
+  orderItemId: string;
+  productId: string;
+  variantId: string;
+  variantLabel: string;
+  sku: string;
+  productName: string;
+  orderNumber: string;
+  purchaseDate: string | null;
+  quantity: number;
+}
+
+interface AlreadyReviewedItem extends ReviewableItem {
+  reviewId: string;
+  reviewStatus: string;
+  rating: number;
+}
+
+type ReviewableStatus = 'visible' | 'hidden';
 
 interface PdpMiniProduct {
   id?: string;
@@ -210,6 +231,12 @@ export class CatalogProductDetailPageComponent implements OnInit {
   writeReviewStars = [1, 2, 3, 4, 5];
   private readonly apiUrl = 'http://localhost:5000/api';
 
+  // --- Review Eligibility ---
+  writeReviewState: 'loading' | 'login_required' | 'no_purchase' | 'all_reviewed' | 'eligible' | 'form' = 'loading';
+  reviewableItems: ReviewableItem[] = [];
+  alreadyReviewedItems: AlreadyReviewedItem[] = [];
+  selectedOrderItemId: string | null = null;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -219,7 +246,8 @@ export class CatalogProductDetailPageComponent implements OnInit {
     private readonly checkoutService: CheckoutService,
     private readonly wishlistService: WishlistService,
     private readonly couponService: CouponService,
-    private readonly http: HttpClient
+    private readonly http: HttpClient,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -373,6 +401,10 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
   // ============ WRITE REVIEW MODAL ============
 
+  get isLoggedIn(): boolean {
+    return this.authService.isAuthenticated();
+  }
+
   openWriteReview(): void {
     this.writeReviewOpen = true;
     this.writeReviewRating = 5;
@@ -382,6 +414,62 @@ export class CatalogProductDetailPageComponent implements OnInit {
     this.writeReviewSuccess = false;
     this.writeReviewError = '';
     this.writeReviewSubmitting = false;
+    this.selectedOrderItemId = null;
+    this.reviewableItems = [];
+    this.alreadyReviewedItems = [];
+
+    if (!this.isLoggedIn) {
+      this.writeReviewState = 'login_required';
+      return;
+    }
+
+    this.writeReviewState = 'loading';
+    this.loadReviewableItems();
+  }
+
+  private loadReviewableItems(): void {
+    this.http
+      .get<any>(`${this.apiUrl}/reviews/reviewable-items/${this.productId}`)
+      .pipe(take(1))
+      .subscribe({
+        next: (res) => {
+          const data = res?.data ?? {};
+          this.reviewableItems = data.items ?? [];
+          this.alreadyReviewedItems = data.alreadyReviewed ?? [];
+
+          if (this.reviewableItems.length > 0) {
+            this.writeReviewState = 'eligible';
+            if (this.reviewableItems.length === 1) {
+              this.selectedOrderItemId = this.reviewableItems[0].orderItemId;
+              this.writeReviewState = 'form';
+            }
+          } else if (this.alreadyReviewedItems.length > 0) {
+            this.writeReviewState = 'all_reviewed';
+          } else {
+            this.writeReviewState = 'no_purchase';
+          }
+        },
+        error: (err) => {
+          const msg = err?.error?.message || '';
+          if (msg.toLowerCase().includes('đăng nhập') || err?.status === 401) {
+            this.writeReviewState = 'login_required';
+          } else {
+            // Allow direct review as fallback
+            this.writeReviewState = 'form';
+            this.selectedOrderItemId = null;
+          }
+        },
+      });
+  }
+
+  selectOrderItemForReview(orderItemId: string): void {
+    this.selectedOrderItemId = orderItemId;
+    this.writeReviewState = 'form';
+  }
+
+  goToLogin(): void {
+    this.writeReviewOpen = false;
+    this.router.navigate(['/auth/login'], { queryParams: { returnUrl: this.router.url } });
   }
 
   closeWriteReview(): void {
@@ -421,6 +509,11 @@ export class CatalogProductDetailPageComponent implements OnInit {
     this.writeReviewMediaBase64 = this.writeReviewMediaBase64.filter((_, idx) => idx !== i);
   }
 
+  get selectedReviewableItem(): ReviewableItem | null {
+    if (!this.selectedOrderItemId) return null;
+    return this.reviewableItems.find((i) => i.orderItemId === this.selectedOrderItemId) || null;
+  }
+
   submitWriteReview(): void {
     if (this.writeReviewSubmitting) return;
     this.writeReviewSuccess = false;
@@ -445,15 +538,24 @@ export class CatalogProductDetailPageComponent implements OnInit {
 
     this.writeReviewSubmitting = true;
 
+    const isVerified = !!this.selectedOrderItemId;
+    const url = isVerified ? `${this.apiUrl}/reviews/submit` : `${this.apiUrl}/reviews/submit-direct`;
+    const body: any = {
+      productId: this.productId,
+      rating: this.writeReviewRating,
+      reviewTitle: this.writeReviewTitle.trim(),
+      reviewContent: this.writeReviewContent.trim(),
+      mediaUrls: this.writeReviewMediaBase64,
+    };
+
+    if (isVerified) {
+      body.orderItemId = this.selectedOrderItemId;
+    } else {
+      body.variantId = this.resolveVariantIdForApi(this.selectedShadeId);
+    }
+
     this.http
-      .post<any>(`${this.apiUrl}/reviews/submit-direct`, {
-        productId: this.productId,
-        variantId: this.resolveVariantIdForApi(this.selectedShadeId),
-        rating: this.writeReviewRating,
-        reviewTitle: this.writeReviewTitle.trim(),
-        reviewContent: this.writeReviewContent.trim(),
-        mediaUrls: this.writeReviewMediaBase64,
-      })
+      .post<any>(url, body)
       .pipe(take(1))
       .subscribe({
         next: () => {
@@ -462,17 +564,31 @@ export class CatalogProductDetailPageComponent implements OnInit {
           this.toast.success('Đã gửi đánh giá! Cảm ơn bạn đã chia sẻ trải nghiệm.');
           setTimeout(() => {
             this.writeReviewOpen = false;
-          }, 1500);
+          }, 2000);
         },
         error: (err) => {
           this.writeReviewSubmitting = false;
           const msg = err?.error?.message || err?.message || '';
           if (msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('đăng nhập')) {
             this.writeReviewError = 'Vui lòng đăng nhập để viết đánh giá.';
+          } else if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('đã đánh giá')) {
+            this.writeReviewError = 'Bạn đã đánh giá sản phẩm này rồi.';
           } else {
             this.writeReviewError = msg || 'Không thể gửi đánh giá. Vui lòng thử lại.';
           }
         },
+      });
+  }
+
+  private refreshReviewsAfterSubmit(): void {
+    // Re-fetch product detail to refresh reviews + review summary
+    const slugOrId = this.route.snapshot.paramMap.get('slugOrId');
+    if (!slugOrId) return;
+    this.detailService
+      .getProductDetail(slugOrId)
+      .pipe(take(1))
+      .subscribe((detail) => {
+        if (detail) this.applyDetail(detail);
       });
   }
 

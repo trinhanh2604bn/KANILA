@@ -55,23 +55,24 @@ const orderSchema = new mongoose.Schema(
     currency_code: { type: String, default: "VND", trim: true },
     order_status: {
       type: String,
-      enum: ["pending", "confirmed", "processing", "completed", "cancelled"],
+      enum: ["pending", "confirmed", "processing", "completed", "cancelled", "returned"],
       default: "pending",
     },
     payment_status: {
       type: String,
-      enum: ["unpaid", "authorized", "paid", "partially_refunded", "refunded"],
+      enum: ["unpaid", "pending", "authorized", "paid", "failed", "partially_refunded", "refunded"],
       default: "unpaid",
     },
     fulfillment_status: {
       type: String,
-      enum: ["unfulfilled", "partially_fulfilled", "fulfilled", "returned"],
+      enum: ["unfulfilled", "preparing", "partially_shipped", "shipped", "in_transit", "delivered", "partially_returned", "returned"],
       default: "unfulfilled",
     },
     customer_note: { type: String, default: "" },
     placed_at: { type: Date, default: Date.now },
     confirmed_at: { type: Date, default: null },
     cancelled_at: { type: Date, default: null },
+    completed_at: { type: Date, default: null },
     cancellation_reason: { type: String, default: "" },
   },
   {

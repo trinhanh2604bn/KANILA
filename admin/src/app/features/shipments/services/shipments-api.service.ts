@@ -30,19 +30,40 @@ export class ShipmentsApiService {
     );
   }
 
-  updateStatus(id: string, status: ShipmentStatus): Observable<Shipment> {
-    const payload: any = { shipmentStatus: status };
-    if (status === 'shipped') payload.shippedAt = new Date().toISOString();
-    if (status === 'delivered') payload.deliveredAt = new Date().toISOString();
-    if (status === 'failed') payload.failedAt = new Date().toISOString();
+  // ── Admin lifecycle actions ──
 
-    return this.http.put<ApiResponse<any>>(`${API}/shipments/${id}`, payload).pipe(
+  readyToShip(id: string): Observable<Shipment> {
+    return this.http.patch<ApiResponse<any>>(`${API}/admin/shipments/${id}/ready-to-ship`, {}).pipe(
       map(res => this.mapShipment(res.data))
     );
   }
 
-  retryShipment(id: string): Observable<Shipment> {
-    return this.updateStatus(id, 'pending');
+  ship(id: string): Observable<Shipment> {
+    return this.http.patch<ApiResponse<any>>(`${API}/admin/shipments/${id}/ship`, {}).pipe(
+      map(res => this.mapShipment(res.data))
+    );
+  }
+
+  markInTransit(id: string): Observable<Shipment> {
+    return this.http.patch<ApiResponse<any>>(`${API}/admin/shipments/${id}/in-transit`, {}).pipe(
+      map(res => this.mapShipment(res.data))
+    );
+  }
+
+  deliver(id: string): Observable<Shipment> {
+    return this.http.patch<ApiResponse<any>>(`${API}/admin/shipments/${id}/deliver`, {}).pipe(
+      map(res => this.mapShipment(res.data))
+    );
+  }
+
+  fail(id: string, reason?: string): Observable<Shipment> {
+    return this.http.patch<ApiResponse<any>>(`${API}/admin/shipments/${id}/fail`, { reason: reason || '' }).pipe(
+      map(res => this.mapShipment(res.data))
+    );
+  }
+
+  retry(id: string): Observable<Shipment> {
+    return this.fail(id, 'Retrying shipment'); // backend: failed → pending via transition
   }
 
   private mapShipment(raw: any): Shipment {

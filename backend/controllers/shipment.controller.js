@@ -10,7 +10,11 @@ function resolveOrderIdParam(req) {
 const getAllShipments = async (req, res) => {
   try {
     const shipments = await Shipment.find()
-      .populate("order_id", "order_number")
+      .populate({
+        path: "order_id",
+        select: "order_number customer_id order_status payment_status fulfillment_status",
+        populate: { path: "customer_id", select: "full_name" },
+      })
       .populate("warehouseId", "warehouseCode warehouseName")
       .sort({ createdAt: -1 });
     res.status(200).json({ success: true, message: "Get all shipments successfully", count: shipments.length, data: shipments });
@@ -22,7 +26,11 @@ const getShipmentById = async (req, res) => {
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid ID" });
     const shipment = await Shipment.findById(id)
-      .populate("order_id", "order_number")
+      .populate({
+        path: "order_id",
+        select: "order_number customer_id order_status payment_status fulfillment_status",
+        populate: { path: "customer_id", select: "full_name" },
+      })
       .populate("warehouseId", "warehouseCode warehouseName");
     if (!shipment) return res.status(404).json({ success: false, message: "Shipment not found" });
     res.status(200).json({ success: true, message: "Get shipment successfully", data: shipment });

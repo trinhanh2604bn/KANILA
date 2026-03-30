@@ -1,10 +1,12 @@
 <section class="page detail-page">
-  <div class="page-header">
-    <a routerLink="/shipments" class="back-link">
-      <span class="material-symbols-rounded">arrow_back</span>
-      Back to Shipments
-    </a>
-  </div>
+  <!-- Breadcrumbs -->
+  <nav class="breadcrumb">
+    <a routerLink="/orders" class="breadcrumb-item">Operations</a>
+    <span class="breadcrumb-sep">/</span>
+    <a routerLink="/shipments" class="breadcrumb-item">Shipments</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">{{ shipment()?.shipmentNumber || 'Shipment Detail' }}</span>
+  </nav>
 
   @if (loading()) {
     <div class="loading-state">
@@ -19,6 +21,12 @@
         <span class="badge" [ngClass]="getStatusBadgeClass(s.status)">{{ getStatusLabel(s.status) }}</span>
       </div>
       <div class="action-bar-right">
+        @if (s.orderId) {
+          <a [routerLink]="['/orders', s.orderId]" class="btn btn-ghost">
+            <span class="material-symbols-rounded">receipt_long</span>
+            View Order
+          </a>
+        }
         @for (action of nextActions(); track action.status) {
           <button
             class="btn"

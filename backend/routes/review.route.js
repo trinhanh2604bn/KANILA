@@ -15,6 +15,7 @@ const {
   getMyReviews,
   patchMyReview,
   deleteMyReview,
+  getReviewableItems,
 } = require("../controllers/review.controller");
 const { voteOnReview } = require("../controllers/reviewVote.controller");
 router.get("/", getAllReviews);
@@ -30,6 +31,7 @@ router.post("/:reviewId/vote", authMiddleware, voteOnReview);
 // Authenticated review flows
 router.get("/me", authMiddleware, getMyReviews);
 router.get("/write-eligibility/:orderItemId", authMiddleware, getReviewWriteEligibility);
+router.get("/reviewable-items/:productId", authMiddleware, getReviewableItems);
 router.post("/submit", authMiddleware, submitReviewFromOrderItem);
 router.post("/submit-direct", authMiddleware, submitReviewDirect);
 router.patch("/me/:id", authMiddleware, patchMyReview);

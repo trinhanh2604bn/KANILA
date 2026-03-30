@@ -16,10 +16,10 @@ export class PaymentDetailPageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private api = inject(PaymentsApiService);
-  
+
   payment = signal<Payment | null>(null);
   loading = signal(true);
-  
+
   // Refund State
   refundAmountInput = signal<number>(0);
   isConfirmingRefund = signal(false);
@@ -53,7 +53,16 @@ export class PaymentDetailPageComponent implements OnInit {
   }
 
   formatPrice(price: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  }
+
+  getStatusBadgeClass(status: string): string {
+    const map: Record<string, string> = {
+      success: 'badge-success',
+      pending: 'badge-warning',
+      failed: 'badge-danger',
+    };
+    return map[status] || 'badge-secondary';
   }
 
   initiateRefund() {
@@ -79,7 +88,7 @@ export class PaymentDetailPageComponent implements OnInit {
   confirmRefund() {
     const p = this.payment();
     if (!p) return;
-    
+
     this.isProcessingRefund.set(true);
     this.isConfirmingRefund.set(false);
 
@@ -88,14 +97,19 @@ export class PaymentDetailPageComponent implements OnInit {
         this.payment.set(updatedPayment);
         this.isProcessingRefund.set(false);
         this.refundSuccess.set(true);
-        const amountRef = this.refundAmountInput();
         this.refundAmountInput.set(0);
-        setTimeout(() => this.refundSuccess.set(false), 5000); 
+        setTimeout(() => this.refundSuccess.set(false), 5000);
       },
-      error: (err) => {
+      error: () => {
         this.isProcessingRefund.set(false);
         this.refundError.set('Something went wrong. Please try again.');
       }
     });
+  }
+
+  copyPaymentId(): void {
+    const p = this.payment();
+    if (!p) return;
+    navigator.clipboard.writeText(p.id);
   }
 }

@@ -7,9 +7,28 @@
   </div>
 
   <div class="filter-bar card">
-    <div class="search-input-wrap">
-      <span class="material-symbols-rounded search-icon">search</span>
-      <input type="text" class="form-input search-input" placeholder="Search Payment ID, Order ID..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+    <div class="filter-group">
+      <div class="filter-left">
+        <div class="search-input-wrap">
+          <span class="material-symbols-rounded search-icon">search</span>
+          <input type="text" class="form-input search-input" placeholder="Search by Payment ID, Order, Customer..."
+            [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+        </div>
+      </div>
+      <div class="filter-right">
+        <select class="form-input filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="all">All Statuses</option>
+          <option value="success">Success</option>
+          <option value="pending">Pending</option>
+          <option value="failed">Failed</option>
+        </select>
+        @if (hasActiveFilters()) {
+          <button class="btn btn-ghost btn-reset" (click)="clearFilters()">
+            <span class="material-symbols-rounded">filter_list_off</span>
+            Reset
+          </button>
+        }
+      </div>
     </div>
   </div>
 
@@ -21,6 +40,7 @@
           <th>Order</th>
           <th>Customer</th>
           <th>Method</th>
+          <th>Provider</th>
           <th>Date</th>
           <th class="text-right">Amount</th>
           <th>Status</th>
@@ -36,18 +56,26 @@
               <td><div class="skeleton skeleton-text"></div></td>
               <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
               <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
+              <td><div class="skeleton skeleton-text skeleton-text-short"></div></td>
               <td><div class="skeleton skeleton-text text-right"></div></td>
               <td><div class="skeleton skeleton-circle" style="width:60px; height:24px; border-radius:4px;"></div></td>
               <td><div class="skeleton skeleton-circle" style="width:32px; height:32px;"></div></td>
             </tr>
           }
         } @else {
-          @for (payment of filteredPayments; track payment.id) {
+          @for (payment of filteredPayments(); track payment.id) {
             <tr class="clickable-row" [routerLink]="[payment.id]">
-              <td class="td-primary">{{ payment.id }}</td>
-              <td class="td-secondary">{{ payment.orderId }}</td>
-              <td>{{ payment.customerName }}</td>
-              <td class="td-secondary">{{ payment.method }}</td>
+              <td class="td-primary">
+                <span class="mono-text">{{ payment.id | slice:0:8 }}…</span>
+              </td>
+              <td>
+                <a class="order-link" [routerLink]="['/orders', payment.orderId]" (click)="$event.stopPropagation()">
+                  {{ payment.orderNumber || '—' }}
+                </a>
+              </td>
+              <td>{{ payment.customerName || '—' }}</td>
+              <td class="td-secondary">{{ payment.method || '—' }}</td>
+              <td class="td-secondary">{{ payment.provider || '—' }}</td>
               <td class="td-secondary">{{ payment.createdAt | date:'MMM d, y' }}</td>
               <td class="text-right font-medium">
                 {{ formatPrice(payment.amount) }}
@@ -56,10 +84,7 @@
                 }
               </td>
               <td>
-                <span class="badge" 
-                  [class.badge-success]="payment.status === 'success'"
-                  [class.badge-warning]="payment.status === 'pending'"
-                  [class.badge-danger]="payment.status === 'failed'">
+                <span class="badge" [ngClass]="getStatusBadgeClass(payment.status)">
                   {{ payment.status | titlecase }}
                 </span>
               </td>
@@ -69,10 +94,16 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="8">
+              <td colspan="9">
                 <div class="empty-state py-8">
                   <span class="material-symbols-rounded empty-icon">payments</span>
                   <p class="empty-title">No payments found</p>
+                  @if (hasActiveFilters()) {
+                    <p class="empty-hint">Try adjusting your search or filters</p>
+                    <button class="btn btn-soft mt-4" (click)="clearFilters()">Clear filters</button>
+                  } @else {
+                    <p class="empty-hint">Payment transactions will appear here when orders are processed</p>
+                  }
                 </div>
               </td>
             </tr>

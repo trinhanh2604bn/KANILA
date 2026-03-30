@@ -414,15 +414,91 @@
           </div>
         </div>
 
+        <!-- Loading state -->
+        <div class="wr-state-box" *ngIf="writeReviewState === 'loading'">
+          <div class="wr-spinner"></div>
+          <p>Đang kiểm tra quyền đánh giá...</p>
+        </div>
+
+        <!-- Login required -->
+        <div class="wr-state-box wr-state-login" *ngIf="writeReviewState === 'login_required'">
+          <i class="bi bi-person-lock"></i>
+          <strong>Vui lòng đăng nhập</strong>
+          <p>Bạn cần đăng nhập để viết đánh giá sản phẩm.</p>
+          <button class="wr-cta-login" type="button" (click)="goToLogin()">Đăng nhập ngay</button>
+        </div>
+
+        <!-- No purchase -->
+        <div class="wr-state-box wr-state-info" *ngIf="writeReviewState === 'no_purchase'">
+          <i class="bi bi-bag-x"></i>
+          <strong>Chưa mua sản phẩm này</strong>
+          <p>Chỉ khách hàng đã mua và nhận hàng thành công mới có thể viết đánh giá xác thực.</p>
+          <small class="muted">Đơn hàng cần ở trạng thái "Hoàn thành" để được đánh giá.</small>
+        </div>
+
+        <!-- All reviewed -->
+        <div class="wr-state-box wr-state-info" *ngIf="writeReviewState === 'all_reviewed'">
+          <i class="bi bi-check-circle"></i>
+          <strong>Bạn đã đánh giá tất cả đơn hàng</strong>
+          <p>Cảm ơn bạn! Bạn đã gửi đánh giá cho tất cả lần mua sản phẩm này.</p>
+          <div class="wr-reviewed-list" *ngIf="alreadyReviewedItems.length">
+            <div class="wr-reviewed-item" *ngFor="let item of alreadyReviewedItems">
+              <span>Đơn {{ item.orderNumber }}</span>
+              <span>{{ starText(item.rating) }}</span>
+              <span class="wr-status-chip" [class.approved]="item.reviewStatus === 'approved'" [class.pending]="item.reviewStatus === 'pending'">
+                {{ item.reviewStatus === 'approved' ? 'Đã duyệt' : item.reviewStatus === 'pending' ? 'Chờ duyệt' : 'Bị từ chối' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order item selector (multiple purchases) -->
+        <div class="wr-state-box" *ngIf="writeReviewState === 'eligible'">
+          <i class="bi bi-cart-check"></i>
+          <strong>Chọn đơn hàng để đánh giá</strong>
+          <p>Bạn có {{ reviewableItems.length }} lần mua chưa được đánh giá.</p>
+          <div class="wr-order-items">
+            <button
+              class="wr-order-item-btn"
+              type="button"
+              *ngFor="let item of reviewableItems"
+              (click)="selectOrderItemForReview(item.orderItemId)"
+            >
+              <div class="wr-order-item-info">
+                <strong>Đơn {{ item.orderNumber }}</strong>
+                <span *ngIf="item.variantLabel">{{ item.variantLabel }}</span>
+                <small class="muted" *ngIf="item.purchaseDate">{{ item.purchaseDate | date:'dd/MM/yyyy' }}</small>
+              </div>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+          <div class="wr-reviewed-list" *ngIf="alreadyReviewedItems.length">
+            <small class="muted">Đã đánh giá:</small>
+            <div class="wr-reviewed-item" *ngFor="let item of alreadyReviewedItems">
+              <span>Đơn {{ item.orderNumber }}</span>
+              <span>{{ starText(item.rating) }}</span>
+              <span class="wr-status-chip" [class.approved]="item.reviewStatus === 'approved'" [class.pending]="item.reviewStatus === 'pending'">
+                {{ item.reviewStatus === 'approved' ? 'Đã duyệt' : 'Chờ duyệt' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <!-- Success state -->
         <div class="wr-success" *ngIf="writeReviewSuccess">
           <i class="bi bi-check-circle-fill"></i>
           <strong>Hoàn tất!</strong>
-          <p>Đánh giá của bạn đã được ghi nhận. Chúng mình sẽ duyệt sớm nhất có thể.</p>
+          <p>Đánh giá của bạn đã được ghi nhận và đang chờ duyệt. Chúng mình sẽ xem xét sớm nhất!</p>
         </div>
 
         <!-- Form -->
-        <div *ngIf="!writeReviewSuccess" class="wr-form">
+        <div *ngIf="!writeReviewSuccess && writeReviewState === 'form'" class="wr-form">
+          <div class="wr-verified-badge" *ngIf="selectedOrderItemId && selectedReviewableItem">
+            <i class="bi bi-patch-check-fill"></i>
+            <span>Verified Purchase · Đơn {{ selectedReviewableItem.orderNumber }}</span>
+            <span class="wr-variant-chip" *ngIf="selectedReviewableItem.variantLabel">{{ selectedReviewableItem.variantLabel }}</span>
+          </div>
+
           <div class="wr-row">
             <label>Số sao</label>
             <div class="wr-stars">

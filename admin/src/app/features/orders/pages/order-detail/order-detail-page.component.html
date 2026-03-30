@@ -1,212 +1,356 @@
-<section class="order-detail-page">
-  <div class="detail-back">
-    <a routerLink="/orders" class="back-link">
-      <span class="material-symbols-rounded">arrow_back</span>
-      Back to Orders
-    </a>
-  </div>
+<section class="page detail-page">
+  <!-- Breadcrumbs -->
+  <nav class="breadcrumb">
+    <a routerLink="/orders" class="breadcrumb-item">Operations</a>
+    <span class="breadcrumb-sep">/</span>
+    <a routerLink="/orders" class="breadcrumb-item">Orders</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">{{ order()?.orderNumber || 'Order Detail' }}</span>
+  </nav>
 
   @if (loading()) {
     <div class="loading-state">
       <div class="spinner spinner-dark"></div>
-      <p>Loading order details…</p>
+      <p>Loading order details...</p>
     </div>
   } @else if (order(); as o) {
-    <!-- Hero: order identity + actions -->
-    <header class="order-hero card-elevated">
-      <div class="order-hero-main">
-        <p class="order-hero-label">Order</p>
-        <div class="order-hero-title-row">
+    <!-- ════ HERO HEADER ════ -->
+    <div class="sticky-action-bar card">
+      <div class="action-bar-left">
+        <div class="action-bar-title-group">
           <h1 class="order-id">{{ o.orderNumber }}</h1>
-          <span
-            class="status-pill"
-            [class.status-pending]="o.status === 'pending'"
-            [class.status-confirmed]="o.status === 'confirmed' || o.status === 'processing'"
-            [class.status-shipped]="o.status === 'shipped'"
-            [class.status-delivered]="o.status === 'delivered' || o.status === 'completed'"
-            [class.status-cancelled]="o.status === 'cancelled'"
-          >
-            {{ o.status | titlecase }}
-          </span>
+          <button class="btn-icon btn-icon--tiny" title="Copy Order Number" (click)="copyToClipboard(o.orderNumber, 'Order Number')">
+            <span class="material-symbols-rounded">content_copy</span>
+          </button>
         </div>
-        @if (o.createdAt) {
-          <p class="order-placed">Placed {{ o.createdAt | date: 'MMM d, y · h:mm a' }}</p>
-        }
+        <span class="badge" [ngClass]="getStatusClass(o.status)">{{ o.status | titlecase }}</span>
+        <span class="badge" [ngClass]="getStatusClass(o.paymentStatus)">{{ o.paymentStatus | titlecase }}</span>
+        <span class="badge" [ngClass]="getStatusClass(o.fulfillmentStatus)">{{ o.fulfillmentStatus | titlecase }}</span>
+        <span class="header-amount">{{ formatPrice(o.total) }}</span>
       </div>
-      <div class="order-hero-actions">
-        @if (nextAvailableAction(); as nextAct) {
-          <button type="button" class="btn btn-primary btn-workflow" [disabled]="updating()" (click)="updateStatus(nextAct.nextStatus)">
-            @if (updating()) {
-              <span class="spinner spinner-sm"></span>
-              Please wait
-            } @else {
-              <span class="material-symbols-rounded">{{ nextAct.icon }}</span>
-              {{ nextAct.label }}
+      <div class="action-bar-right">
+        @for (action of availableActions(); track action.action) {
+          <button class="btn"
+            [class.btn-primary]="action.variant === 'primary'"
+            [class.btn-soft]="action.variant === 'soft'"
+            [class.btn-danger-soft]="action.variant === 'danger'"
+            [class.btn-ghost]="action.variant === 'ghost'"
+            [disabled]="updating()"
+            (click)="handleAction(action.action)">
+            @if (updating()) { <div class="spinner"></div> } @else {
+              <span class="material-symbols-rounded">{{ action.icon }}</span>
             }
+            {{ action.label }}
           </button>
         }
-        @if (o.status !== 'cancelled' && o.status !== 'delivered' && o.status !== 'completed') {
-          <button type="button" class="btn btn-ghost btn-cancel" [disabled]="updating()" (click)="updateStatus('cancelled')">Cancel order</button>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <!-- ════ MAIN COLUMN ════ -->
+      <div class="main-column">
+
+        <!-- Line Items -->
+        @if (o.items.length > 0) {
+          <div class="card info-card">
+            <div class="card-header"><h2 class="card-title">Order Items</h2></div>
+            <div class="card-body p-0">
+              <table class="data-table compact-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of o.items; track item.id) {
+                    <tr>
+                      <td class="font-medium">{{ item.productName }}</td>
+                      <td class="text-muted">{{ item.sku || '—' }}</td>
+                      <td class="text-right">{{ item.quantity }}</td>
+                      <td class="text-right">{{ formatPrice(item.price) }}</td>
+                      <td class="text-right font-medium">{{ formatPrice(item.price * item.quantity) }}</td>
+                    </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="totals-row"><td colspan="4" class="text-right">Subtotal</td><td class="text-right">{{ formatPrice(o.subtotal) }}</td></tr>
+                  <tr class="totals-row"><td colspan="4" class="text-right">Shipping</td><td class="text-right">{{ formatPrice(o.shippingFee) }}</td></tr>
+                  <tr class="totals-row totals-grand"><td colspan="4" class="text-right font-bold">Grand Total</td><td class="text-right font-bold text-primary">{{ formatPrice(o.total) }}</td></tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        }
+
+        <!-- Shipments -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="material-symbols-rounded card-icon">local_shipping</span> Shipments</h2>
+            <span class="card-count">{{ o.shipments?.length || 0 }}</span>
+          </div>
+          <div class="card-body">
+            @if (o.shipments?.length) {
+              @for (s of o.shipments; track s.id) {
+                <div class="linked-card">
+                  <div class="linked-card-header">
+                    <a [routerLink]="['/shipments', s.id]" class="link font-medium">{{ s.shipmentNumber }}</a>
+                    <span class="badge badge-sm" [ngClass]="getStatusClass(s.status)">{{ s.status | titlecase }}</span>
+                  </div>
+                  <div class="linked-card-meta">
+                    <span>{{ s.carrier || '—' }}</span>
+                    @if (s.trackingNumber) {
+                      <span class="mono-text">{{ s.trackingNumber }}</span>
+                      <button class="btn-icon btn-icon--tiny" (click)="copyToClipboard(s.trackingNumber, 'Tracking')">
+                        <span class="material-symbols-rounded">content_copy</span>
+                      </button>
+                    }
+                  </div>
+                  @if (s.shippedAt) { <p class="text-muted text-xs">Shipped: {{ formatDate(s.shippedAt) }}</p> }
+                  @if (s.deliveredAt) { <p class="text-muted text-xs">Delivered: {{ formatDate(s.deliveredAt) }}</p> }
+                </div>
+              }
+            } @else {
+              <div class="empty-state-sm">
+                <span class="material-symbols-rounded">local_shipping</span>
+                <p>No shipments yet</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Returns -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="material-symbols-rounded card-icon">assignment_return</span> Returns</h2>
+            <span class="card-count">{{ o.returns?.length || 0 }}</span>
+          </div>
+          <div class="card-body">
+            @if (o.returns?.length) {
+              @for (r of o.returns; track r.id) {
+                <div class="linked-card">
+                  <div class="linked-card-header">
+                    <span class="font-medium">{{ r.returnNumber }}</span>
+                    <span class="badge badge-sm" [ngClass]="getStatusClass(r.status)">{{ r.status | titlecase }}</span>
+                  </div>
+                  <p class="text-muted text-xs">{{ r.reason || '—' }}</p>
+                  <p class="text-muted text-xs">Requested: {{ formatDate(r.requestedAt) }}</p>
+                  <div class="linked-card-actions">
+                    @if (getReturnNextAction(r.status); as next) {
+                      <button class="btn btn-sm btn-primary" [disabled]="updating()" (click)="
+                        next.action === 'approve' ? doApproveReturn(r.id) :
+                        next.action === 'receive' ? doReceiveReturn(r.id) :
+                        doCompleteReturn(r.id)
+                      ">{{ next.label }}</button>
+                    }
+                    @if (r.status === 'requested') {
+                      <button class="btn btn-sm btn-danger-soft" [disabled]="updating()" (click)="doRejectReturn(r.id)">Reject</button>
+                    }
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="empty-state-sm">
+                <span class="material-symbols-rounded">assignment_return</span>
+                <p>No returns</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Refunds -->
+        <div class="card info-card">
+          <div class="card-header">
+            <h2 class="card-title"><span class="material-symbols-rounded card-icon">currency_exchange</span> Refunds</h2>
+            <span class="card-count">{{ o.refunds?.length || 0 }}</span>
+          </div>
+          <div class="card-body">
+            @if (o.refunds?.length) {
+              @for (rf of o.refunds; track rf.id) {
+                <div class="linked-card">
+                  <div class="linked-card-header">
+                    <span class="font-medium">{{ formatPrice(rf.requestedAmount) }}</span>
+                    <span class="badge badge-sm" [ngClass]="getStatusClass(rf.status)">{{ rf.status | titlecase }}</span>
+                  </div>
+                  <p class="text-muted text-xs">{{ rf.reason || '—' }}</p>
+                  @if (rf.approvedAmount > 0) { <p class="text-xs">Approved: {{ formatPrice(rf.approvedAmount) }}</p> }
+                  @if (rf.refundedAmount > 0) { <p class="text-xs text-success">Refunded: {{ formatPrice(rf.refundedAmount) }}</p> }
+                  <div class="linked-card-actions">
+                    @if (getRefundNextAction(rf.status); as next) {
+                      <button class="btn btn-sm btn-primary" [disabled]="updating()" (click)="
+                        next.action === 'approve' ? doApproveRefund(rf.id) : doCompleteRefund(rf.id)
+                      ">{{ next.label }}</button>
+                    }
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="empty-state-sm">
+                <span class="material-symbols-rounded">currency_exchange</span>
+                <p>No refunds</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Status History -->
+        @if (o.history?.length) {
+          <div class="card info-card">
+            <div class="card-header"><h2 class="card-title"><span class="material-symbols-rounded card-icon">history</span> Status History</h2></div>
+            <div class="card-body">
+              <div class="history-timeline">
+                @for (h of o.history; track h.id; let first = $first) {
+                  <div class="history-item" [class.history-item-latest]="first">
+                    <div class="history-dot"></div>
+                    <div class="history-content">
+                      <div class="history-status-change">
+                        @if (h.oldOrderStatus !== h.newOrderStatus) {
+                          <span class="badge badge-xs" [ngClass]="getStatusClass(h.oldOrderStatus)">{{ h.oldOrderStatus }}</span>
+                          <span class="material-symbols-rounded history-arrow">arrow_forward</span>
+                          <span class="badge badge-xs" [ngClass]="getStatusClass(h.newOrderStatus)">{{ h.newOrderStatus }}</span>
+                        }
+                        @if (h.oldPaymentStatus !== h.newPaymentStatus) {
+                          <span class="badge badge-xs" [ngClass]="getStatusClass(h.oldPaymentStatus)">{{ h.oldPaymentStatus }}</span>
+                          <span class="material-symbols-rounded history-arrow">arrow_forward</span>
+                          <span class="badge badge-xs" [ngClass]="getStatusClass(h.newPaymentStatus)">{{ h.newPaymentStatus }}</span>
+                        }
+                        @if (h.oldFulfillmentStatus !== h.newFulfillmentStatus) {
+                          <span class="badge badge-xs" [ngClass]="getStatusClass(h.oldFulfillmentStatus)">{{ h.oldFulfillmentStatus }}</span>
+                          <span class="material-symbols-rounded history-arrow">arrow_forward</span>
+                          <span class="badge badge-xs" [ngClass]="getStatusClass(h.newFulfillmentStatus)">{{ h.newFulfillmentStatus }}</span>
+                        }
+                      </div>
+                      <p class="history-reason text-muted text-xs">{{ h.reason }}</p>
+                      <p class="history-time text-muted text-xs">{{ formatDateTime(h.changedAt) }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
         }
       </div>
-    </header>
 
-    <!-- Fulfillment timeline -->
-    <div class="timeline-card card-elevated">
-      <h2 class="timeline-heading">Fulfillment</h2>
-      <div class="stepper-scroll">
-        <div class="stepper">
-          @for (step of workflowSteps; track step; let i = $index; let last = $last) {
-            <div
-              class="step"
-              [attr.data-step]="step"
-              [class.step-done]="isStepDone(step, o.status)"
-              [class.step-current]="isStepCurrent(step, o.status)"
-              [class.step-future]="!isStepDone(step, o.status) && !isStepCurrent(step, o.status)"
-              [class.step-cancelled]="o.status === 'cancelled'"
-            >
-              <div class="step-bubble" aria-hidden="true">
-                @if (isStepDone(step, o.status)) {
-                  <span class="material-symbols-rounded step-check">check</span>
-                } @else if (isStepCurrent(step, o.status)) {
-                  <span class="step-index">{{ i + 1 }}</span>
-                } @else {
-                  <span class="step-index dim">{{ i + 1 }}</span>
-                }
-              </div>
-              <span class="step-name">{{ step | titlecase }}</span>
-            </div>
-            @if (!last) {
-              <div class="step-connector" [class.step-connector-on]="isConnectorAfter(step, o.status)"></div>
-            }
-          }
-        </div>
-      </div>
-      @if (o.status === 'cancelled') {
-        <p class="timeline-note"><span class="material-symbols-rounded">block</span> This order was cancelled.</p>
-      }
-    </div>
-
-    <div class="detail-layout">
-      <div class="detail-main">
-        <div class="panel items-panel">
-          <div class="panel-head">
-            <span class="panel-icon material-symbols-rounded">shopping_bag</span>
-            <h2 class="panel-title">Line items</h2>
-            <span class="panel-count">{{ o.items.length }} {{ o.items.length === 1 ? 'item' : 'items' }}</span>
-          </div>
-          <div class="table-wrap">
-            <table class="line-table">
-              <thead>
-                <tr>
-                  <th class="col-product">Product</th>
-                  <th class="col-sku">SKU</th>
-                  <th class="col-num">Price</th>
-                  <th class="col-num">Qty</th>
-                  <th class="col-num col-total">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of o.items; track item.id) {
-                  <tr>
-                    <td class="col-product">
-                      <div class="line-product">
-                        <div class="line-thumb">
-                          @if (item.imageUrl) {
-                            <img [src]="item.imageUrl" alt="" />
-                          } @else {
-                            <span class="material-symbols-rounded">inventory_2</span>
-                          }
-                        </div>
-                        <div class="line-text">
-                          <span class="line-name">{{ item.productName }}</span>
-                          @if (item.optionValues) {
-                            <span class="line-opts">
-                              @for (kv of item.optionValues | keyvalue; track kv.key) {
-                                <span class="opt-chip">{{ kv.key }}: {{ kv.value }}</span>
-                              }
-                            </span>
-                          }
-                        </div>
-                      </div>
-                    </td>
-                    <td class="col-sku"><code class="sku">{{ item.sku }}</code></td>
-                    <td class="col-num">{{ formatPrice(item.price) }}</td>
-                    <td class="col-num">{{ item.quantity }}</td>
-                    <td class="col-num col-total"><strong>{{ formatPrice(item.price * item.quantity) }}</strong></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <div class="totals-panel">
-            <div class="totals-row"><span>Subtotal</span><span>{{ formatPrice(o.subtotal) }}</span></div>
-            <div class="totals-row"><span>Shipping</span><span>{{ formatPrice(o.shippingFee) }}</span></div>
-            <div class="totals-row totals-grand"><span>Total</span><span>{{ formatPrice(o.total) }}</span></div>
-          </div>
-        </div>
-      </div>
-
-      <aside class="detail-aside">
-        <div class="panel side-panel">
-          <div class="panel-head panel-head-compact">
-            <span class="panel-icon material-symbols-rounded">person</span>
-            <h2 class="panel-title">Customer</h2>
-          </div>
-          <div class="panel-body">
-            <p class="aside-name">{{ o.customerName || '—' }}</p>
-            @if (o.customerEmail) {
-              <a class="aside-link" [href]="'mailto:' + o.customerEmail">{{ o.customerEmail }}</a>
-            }
-            @if (o.customerPhone) {
-              <p class="aside-muted">{{ o.customerPhone }}</p>
-            }
-          </div>
-        </div>
-
-        <div class="panel side-panel">
-          <div class="panel-head panel-head-compact">
-            <span class="panel-icon material-symbols-rounded">local_shipping</span>
-            <h2 class="panel-title">Shipping</h2>
-          </div>
-          <div class="panel-body">
-            @if (o.shippingAddress && o.shippingAddress.trim()) {
-              <p class="aside-address">{{ o.shippingAddress }}</p>
+      <!-- ════ SIDE COLUMN ════ -->
+      <div class="side-column">
+        <!-- Payments -->
+        <div class="card info-card">
+          <div class="card-header"><h2 class="card-title">Payments</h2></div>
+          <div class="card-body">
+            @if (o.payments?.length) {
+              @for (p of o.payments; track p.id) {
+                <div class="linked-card">
+                  <div class="linked-card-header">
+                    <a [routerLink]="['/payments', p.id]" class="link">{{ p.method || 'Payment' }}</a>
+                    <span class="badge badge-sm" [ngClass]="getStatusClass(p.status)">{{ p.status | titlecase }}</span>
+                  </div>
+                  <p class="font-medium">{{ formatPrice(p.amount) }}</p>
+                  <p class="text-muted text-xs">{{ p.provider || '—' }} · {{ formatDate(p.createdAt) }}</p>
+                </div>
+              }
             } @else {
-              <div class="aside-empty">
-                <span class="material-symbols-rounded">location_off</span>
-                <p>No address saved for this order.</p>
+              <div class="empty-state-sm">
+                <span class="material-symbols-rounded">payments</span>
+                <p>No payment transactions</p>
               </div>
             }
           </div>
         </div>
 
-        <div class="panel side-panel">
-          <div class="panel-head panel-head-compact">
-            <span class="panel-icon material-symbols-rounded">payments</span>
-            <h2 class="panel-title">Payment</h2>
-          </div>
-          <div class="panel-body">
-            <div class="payment-row">
-              <span
-                class="pay-pill"
-                [class.pay-paid]="o.paymentStatus === 'paid'"
-                [class.pay-unpaid]="o.paymentStatus === 'unpaid' || o.paymentStatus === 'authorized'"
-                [class.pay-refund]="o.paymentStatus === 'refunded' || o.paymentStatus === 'partially_refunded'"
-              >
-                {{ o.paymentStatus | titlecase }}
-              </span>
-            </div>
-            <p class="aside-hint">Order total <strong>{{ formatPrice(o.total) }}</strong></p>
+        <!-- Customer -->
+        <div class="card info-card">
+          <div class="card-header"><h2 class="card-title">Customer</h2></div>
+          <div class="card-body">
+            <div class="info-line"><span class="info-label">Name</span><span class="info-value font-medium">{{ o.customerName || '—' }}</span></div>
+            <div class="info-line"><span class="info-label">Email</span><span class="info-value">{{ o.customerEmail || '—' }}</span></div>
           </div>
         </div>
-      </aside>
+
+        <!-- Dates -->
+        <div class="card info-card">
+          <div class="card-header"><h2 class="card-title">Timeline</h2></div>
+          <div class="card-body">
+            <div class="info-line"><span class="info-label">Placed</span><span class="info-value">{{ formatDateTime(o.createdAt) }}</span></div>
+            @if (o.confirmedAt) { <div class="info-line"><span class="info-label">Confirmed</span><span class="info-value">{{ formatDateTime(o.confirmedAt) }}</span></div> }
+            @if (o.completedAt) { <div class="info-line"><span class="info-label">Completed</span><span class="info-value">{{ formatDateTime(o.completedAt) }}</span></div> }
+            @if (o.cancelledAt) { <div class="info-line"><span class="info-label">Cancelled</span><span class="info-value text-danger">{{ formatDateTime(o.cancelledAt) }}</span></div> }
+            @if (o.cancellationReason) { <div class="info-line"><span class="info-label">Reason</span><span class="info-value text-danger">{{ o.cancellationReason }}</span></div> }
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- ════ CREATE SHIPMENT DIALOG ════ -->
+    @if (showCreateShipment()) {
+      <div class="dialog-overlay" (click)="showCreateShipment.set(false)">
+        <div class="dialog-box" (click)="$event.stopPropagation()">
+          <h3 class="dialog-title">Create Shipment</h3>
+          <div class="dialog-body">
+            <label class="form-label">Carrier Code</label>
+            <input class="form-input" [(ngModel)]="newShipment.carrierCode" placeholder="e.g. GHN, GHTK" />
+            <label class="form-label mt-3">Tracking Number</label>
+            <input class="form-input" [(ngModel)]="newShipment.trackingNumber" placeholder="Tracking number" />
+            <label class="form-label mt-3">Service Name</label>
+            <input class="form-input" [(ngModel)]="newShipment.serviceName" placeholder="e.g. Express, Standard" />
+          </div>
+          <div class="dialog-actions">
+            <button class="btn btn-ghost" (click)="showCreateShipment.set(false)">Cancel</button>
+            <button class="btn btn-primary" [disabled]="updating()" (click)="submitCreateShipment()">
+              @if (updating()) { <div class="spinner"></div> } Create Shipment
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ════ CREATE REFUND DIALOG ════ -->
+    @if (showCreateRefund()) {
+      <div class="dialog-overlay" (click)="showCreateRefund.set(false)">
+        <div class="dialog-box" (click)="$event.stopPropagation()">
+          <h3 class="dialog-title">Create Refund</h3>
+          <div class="dialog-body">
+            <label class="form-label">Refund Amount (₫)</label>
+            <input class="form-input" type="number" [(ngModel)]="newRefund.amount" [max]="o.total" min="0" />
+            <label class="form-label mt-3">Reason</label>
+            <input class="form-input" [(ngModel)]="newRefund.reason" placeholder="Reason for refund" />
+          </div>
+          <div class="dialog-actions">
+            <button class="btn btn-ghost" (click)="showCreateRefund.set(false)">Cancel</button>
+            <button class="btn btn-primary" [disabled]="updating() || newRefund.amount <= 0" (click)="submitCreateRefund()">
+              @if (updating()) { <div class="spinner"></div> } Create Refund
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ════ CREATE RETURN DIALOG ════ -->
+    @if (showCreateReturn()) {
+      <div class="dialog-overlay" (click)="showCreateReturn.set(false)">
+        <div class="dialog-box" (click)="$event.stopPropagation()">
+          <h3 class="dialog-title">Create Return Request</h3>
+          <div class="dialog-body">
+            <label class="form-label">Return Reason</label>
+            <input class="form-input" [(ngModel)]="newReturn.reason" placeholder="Reason for return" />
+          </div>
+          <div class="dialog-actions">
+            <button class="btn btn-ghost" (click)="showCreateReturn.set(false)">Cancel</button>
+            <button class="btn btn-primary" [disabled]="updating()" (click)="submitCreateReturn()">
+              @if (updating()) { <div class="spinner"></div> } Create Return
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
   } @else {
-    <div class="card empty-state card-elevated">
+    <div class="empty-state card py-8 text-center">
       <span class="material-symbols-rounded empty-icon">error</span>
       <p class="empty-title">Order not found</p>
-      <a routerLink="/orders" class="btn btn-soft">Back to orders</a>
+      <a routerLink="/orders" class="btn btn-soft mt-4">Back to Orders</a>
     </div>
   }
 </section>

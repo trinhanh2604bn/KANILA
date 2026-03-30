@@ -7,6 +7,7 @@ import { environment } from '../../../core/config/environment';
 
 const URL = `${environment.apiUrl}/reviews`;
 const MEDIA_URL = `${environment.apiUrl}/review-media`;
+const ADMIN_URL = `${environment.apiUrl}/admin/reviews`;
 
 @Injectable({ providedIn: 'root' })
 export class ReviewsApiService {
@@ -35,10 +36,18 @@ export class ReviewsApiService {
     );
   }
 
-  /** PATCH is the moderation endpoint (allowed fields: reviewStatus, adminNote). */
-  updateReviewStatus(id: string, status: Review['status']): Observable<Review> {
+  /** Admin approve — sets approvedByAccountId, approvedAt, recalcs review summary. */
+  approveReview(id: string, adminNote?: string): Observable<Review> {
     const safeId = encodeURIComponent(String(id));
-    return this.http.patch<ApiResponse<any>>(`${URL}/${safeId}`, { reviewStatus: status }).pipe(
+    return this.http.patch<ApiResponse<any>>(`${ADMIN_URL}/${safeId}/approve`, { adminNote: adminNote || '' }).pipe(
+      map((res) => this.mapReview(res.data))
+    );
+  }
+
+  /** Admin reject — clears approval fields, recalcs review summary. */
+  rejectReview(id: string, adminNote?: string): Observable<Review> {
+    const safeId = encodeURIComponent(String(id));
+    return this.http.patch<ApiResponse<any>>(`${ADMIN_URL}/${safeId}/reject`, { adminNote: adminNote || '' }).pipe(
       map((res) => this.mapReview(res.data))
     );
   }
@@ -52,7 +61,6 @@ export class ReviewsApiService {
 
     const t = (raw.reviewTitle || raw.review_title || raw.title || '').trim();
     const b = (raw.reviewContent || raw.review_content || raw.body || '').trim();
-    /** When both exist, keep headline separate from body for the detail view. */
     const title = t && b ? t : undefined;
     const content = b || t || '';
 

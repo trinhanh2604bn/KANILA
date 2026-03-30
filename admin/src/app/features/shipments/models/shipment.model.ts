@@ -1,4 +1,4 @@
-export type ShipmentStatus = 'pending' | 'shipped' | 'in_transit' | 'delivered' | 'failed';
+export type ShipmentStatus = 'pending' | 'ready_to_ship' | 'shipped' | 'in_transit' | 'delivered' | 'failed' | 'returned';
 
 export interface ShipmentEvent {
   id: string;
@@ -39,20 +39,24 @@ export interface Shipment {
 
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   pending: 'Pending',
+  ready_to_ship: 'Ready to Ship',
   shipped: 'Shipped',
   in_transit: 'In Transit',
   delivered: 'Delivered',
   failed: 'Failed',
+  returned: 'Returned',
 };
 
 export const SHIPMENT_STATUS_FLOW: Record<ShipmentStatus, ShipmentStatus[]> = {
-  pending: ['shipped', 'failed'],
-  shipped: ['in_transit', 'failed'],
+  pending: ['ready_to_ship', 'failed'],
+  ready_to_ship: ['shipped', 'failed'],
+  shipped: ['in_transit', 'delivered', 'failed'],
   in_transit: ['delivered', 'failed'],
-  delivered: [],
+  delivered: ['returned'],
   failed: ['pending'],
+  returned: [],
 };
 
 export const SHIPMENT_WORKFLOW_STEPS: ShipmentStatus[] = [
-  'pending', 'shipped', 'in_transit', 'delivered',
+  'pending', 'ready_to_ship', 'shipped', 'in_transit', 'delivered',
 ];

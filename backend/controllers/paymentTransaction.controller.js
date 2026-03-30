@@ -9,8 +9,12 @@ function resolveOrderIdParam(req) {
 const getAllPaymentTransactions = async (req, res) => {
   try {
     const txns = await PaymentTransaction.find()
-      .populate("paymentIntentId", "intentStatus")
-      .populate("order_id", "order_number")
+      .populate("paymentIntentId", "intentStatus requestedAmount authorizedAmount capturedAmount payment_method_id providerCode")
+      .populate({
+        path: "order_id",
+        select: "order_number customer_id payment_status",
+        populate: { path: "customer_id", select: "full_name" },
+      })
       .sort({ createdAt: -1 });
     res.status(200).json({ success: true, message: "Get all payment transactions successfully", count: txns.length, data: txns });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
@@ -21,8 +25,12 @@ const getPaymentTransactionById = async (req, res) => {
     const { id } = req.params;
     if (!validateObjectId(id)) return res.status(400).json({ success: false, message: "Invalid ID" });
     const txn = await PaymentTransaction.findById(id)
-      .populate("paymentIntentId", "intentStatus")
-      .populate("order_id", "order_number");
+      .populate("paymentIntentId", "intentStatus requestedAmount authorizedAmount capturedAmount payment_method_id providerCode")
+      .populate({
+        path: "order_id",
+        select: "order_number customer_id payment_status",
+        populate: { path: "customer_id", select: "full_name" },
+      });
     if (!txn) return res.status(404).json({ success: false, message: "Payment transaction not found" });
     res.status(200).json({ success: true, message: "Get payment transaction successfully", data: txn });
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }

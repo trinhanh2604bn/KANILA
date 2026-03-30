@@ -11,7 +11,7 @@ const { pickCustomerId } = require("../utils/pickCustomerRef");
 
 const CUST = "customer_code full_name avatar_url";
 
-// Helper: recalculate review summary for a product
+// Helper: recalculate review summary for a product (approved reviews only)
 const recalcReviewSummary = async (productId) => {
   const reviews = await Review.find({ productId, reviewStatus: "approved" });
   const reviewCount = reviews.length;
@@ -380,6 +380,99 @@ const patchReview = async (req, res) => {
   } catch (error) { res.status(500).json({ success: false, message: error.message }); }
 };
 
+// GET /api/reviews/reviewable-items/:productId
+// Returns order items that the current customer bought (completed orders) and hasn't reviewed yet.
+const getReviewableItems = async (req, res) => {
+  try {
+    const customer = await getCustomerFromAuth(req);
+    if (!customer) return res.status(401).json({ success: false, message: "Vui lòng đăng nhập để viết đánh giá." });
+
+    const { productId } = req.params;
+    if (!productId || !validateObjectId(productId)) return res.status(400).json({ success: false, message: "Invalid productId" });
+
+    // Find completed orders belonging to this customer
+    const completedOrders = await Order.find({
+      customer_id: customer._id,
+      order_status: "completed",
+      payment_status: { $in: ["paid", "partially_refunded"] },
+    }).select("_id order_number placed_at").lean();
+
+    if (!completedOrders.length) {
+      return res.status(200).json({
+        success: true,
+        message: "No completed orders found",
+        data: { items: [], alreadyReviewed: [] },
+      });
+    }
+
+    const orderIds = completedOrders.map((o) => o._id);
+    const orderMap = new Map(completedOrders.map((o) => [String(o._id), o]));
+
+    // Find order items for this product in those completed orders
+    const orderItems = await OrderItem.find({
+      order_id: { $in: orderIds },
+      product_id: productId,
+    })
+      .populate("variant_id", "variantName sku")
+      .lean();
+
+    if (!orderItems.length) {
+      return res.status(200).json({
+        success: true,
+        message: "No order items for this product",
+        data: { items: [], alreadyReviewed: [] },
+      });
+    }
+
+    // Find existing reviews by this customer for these order items
+    const orderItemIds = orderItems.map((oi) => oi._id);
+    const existingReviews = await Review.find({
+      customer_id: customer._id,
+      orderItemId: { $in: orderItemIds },
+    }).select("orderItemId reviewStatus rating").lean();
+
+    const reviewedMap = new Map(existingReviews.map((r) => [String(r.orderItemId), r]));
+
+    const items = [];
+    const alreadyReviewed = [];
+
+    for (const oi of orderItems) {
+      const order = orderMap.get(String(oi.order_id));
+      const existing = reviewedMap.get(String(oi._id));
+      const entry = {
+        orderItemId: String(oi._id),
+        productId: String(oi.product_id),
+        variantId: oi.variant_id?._id ? String(oi.variant_id._id) : String(oi.variant_id),
+        variantLabel: oi.variant_id?.variantName || oi.variant_name_snapshot || "",
+        sku: oi.variant_id?.sku || oi.sku_snapshot || "",
+        productName: oi.product_name_snapshot || "",
+        orderNumber: order?.order_number || "",
+        purchaseDate: order?.placed_at || null,
+        quantity: oi.quantity,
+      };
+
+      if (existing) {
+        alreadyReviewed.push({
+          ...entry,
+          reviewId: String(existing._id),
+          reviewStatus: existing.reviewStatus,
+          rating: existing.rating,
+        });
+      } else {
+        items.push(entry);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Reviewable items retrieved",
+      data: { items, alreadyReviewed },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getAllReviews,
   getReviewById,
@@ -395,4 +488,5 @@ module.exports = {
   getMyReviews,
   patchMyReview,
   deleteMyReview,
+  getReviewableItems,
 };

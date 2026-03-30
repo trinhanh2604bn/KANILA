@@ -71,13 +71,23 @@ export class InventoryApiService {
     if (available === 0) status = 'out_of_stock';
     else if (available <= threshold) status = 'low_stock';
 
+    // Variant is populated: { _id, sku, variantName, productId: { _id, productName } }
+    const variant = raw.variantId && typeof raw.variantId === 'object' ? raw.variantId : null;
+    const productObj = variant?.productId && typeof variant.productId === 'object' ? variant.productId : null;
+    const productName = productObj?.productName || '';
+    const variantName = variant?.variantName || '';
+    // Combine as "ProductName - VariantName" so the component can split for grouping
+    const displayName = productName && variantName
+      ? `${productName} - ${variantName}`
+      : productName || variantName || '';
+
     return {
       id: String(raw._id),
-      variantId: String(raw.variantId?._id || raw.variantId || ''),
+      variantId: String(variant?._id || raw.variantId || ''),
       warehouseId: String(raw.warehouseId?._id || raw.warehouseId || ''),
-      productId: String(raw.variantId?.productId?._id || raw.variantId?.productId || ''),
-      productName: raw.variantId?.variantName || '',
-      sku: raw.variantId?.sku || '',
+      productId: String(productObj?._id || variant?.productId || ''),
+      productName: displayName,
+      sku: variant?.sku || '',
       optionValues: {},
       stockQuantity: available,
       lowStockThreshold: threshold,

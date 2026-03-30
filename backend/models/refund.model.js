@@ -5,7 +5,7 @@ const refundSchema = new mongoose.Schema(
     order_id: { type: mongoose.Schema.Types.ObjectId, ref: "Order", required: true },
     paymentTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: "PaymentTransaction", default: null },
     refundReason: { type: String, default: "" },
-    refundStatus: { type: String, enum: ["requested", "approved", "completed", "rejected"], default: "requested" },
+    refundStatus: { type: String, enum: ["requested", "approved", "processing", "completed", "rejected"], default: "requested" },
     requestedAmount: { type: Number, required: true, min: 0 },
     approvedAmount: { type: Number, default: 0 },
     refundedAmount: { type: Number, default: 0 },

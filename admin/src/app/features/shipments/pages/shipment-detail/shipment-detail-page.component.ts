@@ -73,7 +73,20 @@ export class ShipmentDetailPageComponent implements OnInit {
     }
 
     this.updating.set(true);
-    this.api.updateStatus(s.id, newStatus).subscribe({
+
+    // Dispatch to the correct admin endpoint
+    const call$ =
+      newStatus === 'ready_to_ship' ? this.api.readyToShip(s.id) :
+      newStatus === 'shipped' ? this.api.ship(s.id) :
+      newStatus === 'in_transit' ? this.api.markInTransit(s.id) :
+      newStatus === 'delivered' ? this.api.deliver(s.id) :
+      newStatus === 'failed' ? this.api.fail(s.id) :
+      newStatus === 'pending' ? this.api.retry(s.id) :
+      null;
+
+    if (!call$) { this.updating.set(false); return; }
+
+    call$.subscribe({
       next: (updated) => {
         this.shipment.set(updated);
         this.updating.set(false);
@@ -83,9 +96,9 @@ export class ShipmentDetailPageComponent implements OnInit {
           this.toast.success(`Status updated to ${SHIPMENT_STATUS_LABELS[newStatus]}`);
         }
       },
-      error: () => {
+      error: (e: any) => {
         this.updating.set(false);
-        this.toast.error('Failed to update status');
+        this.toast.error(e?.error?.message || 'Failed to update status');
       }
     });
   }
@@ -120,10 +133,10 @@ export class ShipmentDetailPageComponent implements OnInit {
 
   getStatusBadgeClass(status: ShipmentStatus): string {
     const map: Record<ShipmentStatus, string> = {
-      pending: 'badge-warning', shipped: 'badge-info', in_transit: 'badge-info',
-      delivered: 'badge-success', failed: 'badge-danger',
+      pending: 'badge-warning', ready_to_ship: 'badge-info', shipped: 'badge-info',
+      in_transit: 'badge-info', delivered: 'badge-success', failed: 'badge-danger', returned: 'badge-muted',
     };
-    return map[status];
+    return map[status] || 'badge-muted';
   }
 
   getStatusLabel(status: ShipmentStatus): string {
@@ -132,18 +145,19 @@ export class ShipmentDetailPageComponent implements OnInit {
 
   private getStatusIcon(status: ShipmentStatus): string {
     const map: Record<ShipmentStatus, string> = {
-      pending: 'inventory_2', shipped: 'local_shipping', in_transit: 'flight',
-      delivered: 'check_circle', failed: 'error',
+      pending: 'inventory_2', ready_to_ship: 'package_2', shipped: 'local_shipping',
+      in_transit: 'flight', delivered: 'check_circle', failed: 'error', returned: 'assignment_return',
     };
-    return map[status];
+    return map[status] || 'info';
   }
 
   private getActionLabel(status: ShipmentStatus): string {
     if (status === 'pending') return 'Retry Shipment';
     const map: Record<ShipmentStatus, string> = {
-      pending: '', shipped: 'Mark as Shipped', in_transit: 'Mark In Transit',
-      delivered: 'Mark Delivered', failed: 'Mark Failed',
+      pending: '', ready_to_ship: 'Ready to Ship', shipped: 'Mark as Shipped',
+      in_transit: 'Mark In Transit', delivered: 'Mark Delivered',
+      failed: 'Mark Failed', returned: 'Mark Returned',
     };
-    return map[status];
+    return map[status] || status;
   }
 }

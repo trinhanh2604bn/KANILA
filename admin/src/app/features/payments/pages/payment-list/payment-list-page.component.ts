@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -14,10 +14,11 @@ import { Payment } from '../../models/payment.model';
 })
 export class PaymentListPageComponent implements OnInit {
   private api = inject(PaymentsApiService);
-  
+
   payments = signal<Payment[]>([]);
   loading = signal(true);
   searchQuery = signal('');
+  statusFilter = signal('all');
 
   ngOnInit() {
     this.api.getPayments().subscribe({
@@ -27,22 +28,48 @@ export class PaymentListPageComponent implements OnInit {
       },
       error: () => {
         this.loading.set(false);
-        // Error handling covered by Interceptor/Toast in real app
       }
     });
   }
 
-  get filteredPayments() {
-    const q = this.searchQuery().toLowerCase();
-    if (!q) return this.payments();
-    return this.payments().filter(p => 
-      p.id.toLowerCase().includes(q) || 
-      p.orderId.toLowerCase().includes(q) ||
-      p.customerName.toLowerCase().includes(q)
-    );
+  filteredPayments = computed(() => {
+    let list = this.payments();
+    const q = this.searchQuery().toLowerCase().trim();
+    const status = this.statusFilter();
+
+    if (status !== 'all') {
+      list = list.filter(p => p.status === status);
+    }
+    if (q) {
+      list = list.filter(p =>
+        p.id.toLowerCase().includes(q) ||
+        p.orderNumber.toLowerCase().includes(q) ||
+        p.customerName.toLowerCase().includes(q) ||
+        p.method.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  });
+
+  hasActiveFilters = computed(() => {
+    return this.statusFilter() !== 'all' || this.searchQuery().trim() !== '';
+  });
+
+  clearFilters(): void {
+    this.statusFilter.set('all');
+    this.searchQuery.set('');
   }
 
   formatPrice(price: number): string {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  }
+
+  getStatusBadgeClass(status: string): string {
+    const map: Record<string, string> = {
+      success: 'badge-success',
+      pending: 'badge-warning',
+      failed: 'badge-danger',
+    };
+    return map[status] || 'badge-secondary';
   }
 }

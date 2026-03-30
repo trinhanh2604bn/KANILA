@@ -10,4 +10,6 @@ const reviewMediaSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+reviewMediaSchema.index({ reviewId: 1, sortOrder: 1 });
+
 module.exports = mongoose.model("ReviewMedia", reviewMediaSchema);
