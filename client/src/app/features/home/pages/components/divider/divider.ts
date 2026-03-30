@@ -1,9 +1,10 @@
 import { Component, Input } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-divider',
-  imports: [RouterLink],
+  imports: [RouterLink, NgIf],
   templateUrl: './divider.html',
   styleUrl: './divider.css',
 })

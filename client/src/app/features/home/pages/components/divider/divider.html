@@ -17,7 +17,7 @@
         height="auto"
       />
     </div>
-    <a [routerLink]="ctaLink" [queryParams]="ctaQueryParams" class="section-header__cta">
+    <a *ngIf="buttonText" [routerLink]="ctaLink" [queryParams]="ctaQueryParams" class="section-header__cta">
       <span>{{ buttonText }}</span>
       <span class="section-header__cta-chevron" aria-hidden="true">»</span>
     </a>

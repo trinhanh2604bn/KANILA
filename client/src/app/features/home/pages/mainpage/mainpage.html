@@ -35,7 +35,7 @@
   </section>
 
   <section class="coupon-campaign" *ngIf="campaignCoupons.length">
-    <app-divider title="ƯU ĐÃI ĐANG DIỄN RA" buttonText="Xem thêm"></app-divider>
+    <app-divider title="ƯU ĐÃI ĐANG DIỄN RA" buttonText=""></app-divider>
     <div class="campaign-grid">
       <article class="coupon-ticket" *ngFor="let cp of campaignCoupons; let i = index" [attr.data-index]="i">
         <div class="coupon-ticket__left">
@@ -85,7 +85,7 @@
   </section>
 
   <div class="mt-3">
-    <app-divider title="BEST SELLER" buttonText="Xem tất cả"></app-divider>
+    <app-divider title="BEST SELLER" buttonText="Xem tất cả" ctaLink="/catalog" [ctaQueryParams]="{ sort: 'popular' }"></app-divider>
   </div>
   <div class="mt-3 my-5">
     <app-product-slider></app-product-slider>
