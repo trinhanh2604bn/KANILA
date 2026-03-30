@@ -31,7 +31,7 @@ export const routes: Routes = [
       { path: 'audit-log', loadChildren: () => import('./features/audit-log/audit-log.routes').then(m => m.AUDIT_LOG_ROUTES) },
       { path: 'activity', loadChildren: () => import('./features/activity-feed/activity-feed.routes').then(m => m.ACTIVITY_FEED_ROUTES) },
       { path: 'settings', loadChildren: () => import('./features/settings/settings.routes').then(m => m.SETTINGS_ROUTES) },
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: '', redirectTo: 'accounts', pathMatch: 'full' },
     ],
   },
   { path: '**', redirectTo: 'login' },

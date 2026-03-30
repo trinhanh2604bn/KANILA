@@ -30,7 +30,7 @@ export class LoginPageComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.auth.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/accounts']);
       return;
     }
     setTimeout(() => this.emailInput()?.nativeElement.focus(), 150);
@@ -56,7 +56,7 @@ export class LoginPageComponent implements OnInit {
       next: () => {
         this.isLoading.set(false);
         this.loading.hide();
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['/accounts']);
       },
       error: (err: Error) => {
         this.isLoading.set(false);
