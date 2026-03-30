@@ -21,18 +21,18 @@ export class OrdersApiService {
     return forkJoin({
       order: this.http.get<ApiResponse<any>>(`${API}/orders/${id}`),
       items: this.http.get<ApiResponse<any[]>>(`${API}/order-items/order/${id}`),
-      totals: this.http.get<ApiResponse<any[]>>(`${API}/order-totals`),
+      totals: this.http.get<ApiResponse<any[]>>(`${API}/order-totals/order/${id}`),
     }).pipe(
       map(({ order, items, totals }) => {
         const o = order.data;
         const orderItems = items.data.map(i => this.mapOrderItem(i));
-        const orderTotal = totals.data.find((t: any) => t.orderId === id || t.orderId?._id === id);
+        const orderTotal = totals.data?.[0];
         return {
           ...this.mapOrder(o),
           items: orderItems,
-          subtotal: orderTotal?.subtotalAmount || 0,
-          shippingFee: orderTotal?.shippingFeeAmount || 0,
-          total: orderTotal?.grandTotalAmount || 0,
+          subtotal: orderTotal?.subtotal_amount ?? orderTotal?.subtotalAmount ?? 0,
+          shippingFee: orderTotal?.shipping_fee_amount ?? orderTotal?.shippingFeeAmount ?? 0,
+          total: orderTotal?.grand_total_amount ?? orderTotal?.grandTotalAmount ?? 0,
         };
       })
     );
@@ -81,12 +81,12 @@ export class OrdersApiService {
   private mapOrderItem(raw: any): OrderItem {
     return {
       id: raw._id,
-      productId: raw.productId?._id || raw.productId || '',
-      variantId: raw.variantId?._id || raw.variantId || '',
-      productName: raw.productNameSnapshot || '',
-      sku: raw.skuSnapshot || '',
+      productId: raw.product_id?._id || raw.product_id || raw.productId || '',
+      variantId: raw.variant_id?._id || raw.variant_id || raw.variantId || '',
+      productName: raw.product_name_snapshot || raw.productNameSnapshot || '',
+      sku: raw.sku_snapshot || raw.skuSnapshot || raw.variant_id?.sku || '',
       quantity: raw.quantity,
-      price: raw.unitFinalPriceAmount || raw.unitListPriceAmount || 0,
+      price: raw.unit_final_price_amount || raw.unit_list_price_amount || raw.unitFinalPriceAmount || raw.unitListPriceAmount || 0,
     };
   }
 }
