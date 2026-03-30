@@ -53,10 +53,12 @@ export class ShipmentListPageComponent implements OnInit {
   getStatusBadgeClass(status: ShipmentStatus): string {
     const map: Record<ShipmentStatus, string> = {
       pending: 'badge-warning',
+      ready_to_ship: 'badge-info',
       shipped: 'badge-info',
       in_transit: 'badge-info',
       delivered: 'badge-success',
       failed: 'badge-danger',
+      returned: 'badge-muted',
     };
     return map[status];
   }
