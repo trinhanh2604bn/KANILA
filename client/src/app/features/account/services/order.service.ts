@@ -140,16 +140,27 @@ export class AccountOrderService {
     const s = (status || '').toLowerCase();
     const ff = (fulfillmentStatus || '').toLowerCase();
 
-    if (ff === 'returned') return 'Đã trả hàng';
+    // Priority for returned/refunded states
+    if (ff === 'returned' || s === 'returned') return 'Đã trả hàng';
     if (s === 'return_requested') return 'Yêu cầu trả hàng';
+    if (s === 'return_approved') return 'Đã chấp nhận trả hàng';
     if (s === 'refunded') return 'Đã hoàn tiền';
     if (s === 'cancelled') return 'Đã hủy';
+
+    // Shipment/Delivery technical states
+    if (s === 'ready_to_ship') return 'Chờ bàn giao ĐVVC';
+    if (s === 'in_transit') return 'Đang vận chuyển';
+    if (s === 'shipped') return 'Đang giao hàng';
+    if (s === 'delivered') return 'Giao hàng thành công';
+    
+    // Core lifecycle states
     if (s === 'pending') return 'Chờ xác nhận';
     if (s === 'confirmed') return 'Đã xác nhận';
     if (s === 'processing') return 'Đang chuẩn bị hàng';
-    if (s === 'shipped') return 'Đang giao hàng';
-    if (s === 'delivered') return 'Đã giao hàng';
     if (s === 'completed') return 'Hoàn tất';
+
+    // Fallback for technical strings common in history
+    if (s.includes('ship')) return 'Đang giao hàng';
 
     return status || 'Đơn hàng';
   }

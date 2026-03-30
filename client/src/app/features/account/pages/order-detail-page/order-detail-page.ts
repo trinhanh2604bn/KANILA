@@ -42,9 +42,9 @@ export class OrderDetailPageComponent implements OnInit {
     ];
 
     let currentIndex = 0;
-    if (['delivered', 'completed'].includes(s)) currentIndex = 3;
-    else if (s === 'shipped') currentIndex = 2;
-    else if (['confirmed', 'processing'].includes(s)) currentIndex = 1;
+    if (['delivered', 'completed', 'returned', 'refunded'].includes(s)) currentIndex = 3;
+    else if (['shipped', 'in_transit'].includes(s)) currentIndex = 2;
+    else if (['confirmed', 'processing', 'ready_to_ship'].includes(s)) currentIndex = 1;
     else currentIndex = 0;
 
     return steps.map((step, idx) => ({
